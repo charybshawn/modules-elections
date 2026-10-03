@@ -6,16 +6,17 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
- * One sourced fact about a candidate: a platform plank, something they said,
- * an answer to a question, a past council vote, an endorsement, a finance
- * filing. Every entry carries the URL it came from -- a portfolio of
- * unsourced claims about a real person running for office is exactly what
- * this module must never become.
+ * One sourced fact about a candidate: a piece of their background, a
+ * platform plank, something they said, an answer to a question, a past
+ * council vote, an endorsement, a finance filing. Every entry carries the URL
+ * it came from -- a portfolio of unsourced claims about a real person running
+ * for office is exactly what this module must never become.
  *
  * @property int $id
  * @property int $candidate_id
  * @property string $kind one of Entry::KINDS
- * @property string $topic one of Entry::TOPICS
+ * @property string $topic one of Entry::topicsFor($kind): BACKGROUND_TOPICS
+ *                         for background entries, TOPICS for everything else
  * @property string $summary
  * @property string|null $quote
  * @property string|null $question
@@ -33,6 +34,7 @@ class Entry extends Model
      * Ordered as the portfolio's sections read, top to bottom.
      */
     public const KINDS = [
+        'background' => 'Background',
         'plank' => 'Platform',
         'statement' => 'Statement',
         'qa_answer' => 'Q&A answer',
@@ -56,17 +58,45 @@ class Entry extends Model
         'other' => 'Other',
     ];
 
+    /**
+     * What a background entry is about -- who the candidate is rather than
+     * what they stand for, so it gets its own list instead of TOPICS. Kept to
+     * their public life: nothing about family, health or home.
+     */
+    public const BACKGROUND_TOPICS = [
+        'career' => 'Career',
+        'business' => 'Business',
+        'education' => 'Education',
+        'community' => 'Community involvement',
+        'public_service' => 'Public service',
+        'local_roots' => 'Local roots',
+        'other' => 'Other',
+    ];
+
     public const SOURCE_TYPES = [
         'candidate_site' => 'Candidate website',
+        'personal_site' => 'Personal website or blog',
+        'linkedin' => 'LinkedIn',
         'instagram' => 'Instagram',
         'facebook_page' => 'Facebook page',
         'facebook_group' => 'Facebook group',
         'news' => 'News',
         'forum' => 'All-candidates forum',
+        'organization' => 'Organization website',
         'city' => 'City of Salmon Arm',
         'elections_bc' => 'Elections BC',
         'other' => 'Other',
     ];
+
+    /**
+     * The topic list that applies to an entry of the given kind.
+     *
+     * @return array<string, string>
+     */
+    public static function topicsFor(string $kind): array
+    {
+        return $kind === 'background' ? self::BACKGROUND_TOPICS : self::TOPICS;
+    }
 
     protected $fillable = [
         'kind',

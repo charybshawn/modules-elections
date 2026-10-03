@@ -58,7 +58,18 @@
                 Source: <a :href="candidate.bio_source_url" target="_blank" rel="noopener noreferrer" class="underline underline-offset-2">{{ hostOf(candidate.bio_source_url) }}</a>
               </p>
             </template>
-            <p v-else class="mt-3 text-sm text-gray-500 dark:text-gray-400">No bio on file yet.</p>
+            <p v-else-if="!portfolio.background.length" class="mt-3 text-sm text-gray-500 dark:text-gray-400">No bio on file yet.</p>
+
+            <div v-if="portfolio.background.length" class="mt-6 space-y-8">
+              <div v-for="group in portfolio.background" :key="group.topic ?? 'all'">
+                <h3 class="text-sm font-semibold text-gray-900 dark:text-white">{{ options.backgroundTopics[group.topic ?? ''] ?? group.topic }}</h3>
+                <ul class="mt-3 space-y-5">
+                  <li v-for="entry in group.entries" :key="entry.id">
+                    <EntryCard :entry="entry" :options="options" :editable="!readOnly" @delete="deleteEntry" />
+                  </li>
+                </ul>
+              </div>
+            </div>
           </section>
 
           <!-- Portfolio sections -->

@@ -12,15 +12,17 @@ use Illuminate\Support\Collection;
 /**
  * A candidate's portfolio as the page reads it, top to bottom:
  *
+ *   About               -- the bio, then background facts grouped by
+ *                          Entry::BACKGROUND_TOPICS ('background')
  *   Platform            -- planks, grouped by topic
  *   In their own words  -- statements and Q&A answers, grouped by topic
  *   Prior record        -- incumbents' past council record
  *   Endorsements
  *   Campaign finance
  *
- * plus the news coverage linked to them. Topic groups follow Entry::TOPICS
+ * plus the news coverage linked to them. Topic groups follow their list's
  * order (not alphabetical, not by count) so two candidates' pages always
- * list topics in the same place. Empty sections are left out.
+ * list topics in the same place. Empty sections and groups are left out.
  */
 class BuildCandidatePortfolio
 {
@@ -46,7 +48,7 @@ class BuildCandidatePortfolio
             $sections[] = [
                 'key' => $key,
                 'title' => $section['title'],
-                'groups' => $section['grouped'] ? $this->byTopic($entries) : [[
+                'groups' => $section['grouped'] ? $this->byTopic($entries, Entry::TOPICS) : [[
                     'topic' => null,
                     'entries' => EntryResource::collection($entries)->resolve(),
                 ]],
@@ -55,6 +57,7 @@ class BuildCandidatePortfolio
 
         return [
             'candidate' => CandidateResource::make($candidate)->resolve(),
+            'background' => $this->byTopic($candidate->entries->where('kind', 'background')->values(), Entry::BACKGROUND_TOPICS),
             'sections' => $sections,
             'articles' => ArticleResource::collection($candidate->articles)->resolve(),
             'entryCount' => $candidate->entries->count(),
@@ -63,10 +66,11 @@ class BuildCandidatePortfolio
 
     /**
      * @param  Collection<int, Entry>  $entries
+     * @param  array<string, string>  $topics
      */
-    private function byTopic(Collection $entries): array
+    private function byTopic(Collection $entries, array $topics): array
     {
-        return collect(array_keys(Entry::TOPICS))
+        return collect(array_keys($topics))
             ->map(fn (string $topic) => [
                 'topic' => $topic,
                 'entries' => EntryResource::collection($entries->where('topic', $topic)->values())->resolve(),

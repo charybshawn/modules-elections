@@ -64,18 +64,26 @@ export interface Options {
   statuses: Record<string, string>
   kinds: Record<string, string>
   topics: Record<string, string>
+  backgroundTopics: Record<string, string>
   sourceTypes: Record<string, string>
   eventKinds: Record<string, string>
+}
+
+export interface EntryGroup {
+  topic: string | null
+  entries: Entry[]
 }
 
 export interface PortfolioSection {
   key: string
   title: string
-  groups: { topic: string | null; entries: Entry[] }[]
+  groups: EntryGroup[]
 }
 
 export interface Portfolio {
   candidate: Candidate
+  /** Background facts for the About section, grouped by Options.backgroundTopics. */
+  background: EntryGroup[]
   sections: PortfolioSection[]
   articles: Article[]
   entryCount: number

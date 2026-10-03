@@ -79,9 +79,10 @@ inside an element doesn't matter. Write `&amp;` for `&` in URLs.
 |---|---|
 | `office` | `mayor`, `councillor` |
 | `status` | `declared` (announced, not yet on the City's official list), `nominated` (on the City's official nominations list), `withdrawn` |
-| `kind` | `plank` (a platform commitment or position they campaign on), `statement` (something they said that isn't a formal plank), `qa_answer` (an answer to a question: media questionnaire, forum, Facebook comment reply), `prior_record` (incumbents: a council vote, motion or public action in the current/past term), `endorsement` (who endorses them, or whom they endorse), `finance` (campaign finance disclosure facts) |
-| `topic` | `housing`, `taxes_budget`, `infrastructure`, `downtown_development`, `transportation`, `environment`, `public_safety`, `recreation_parks`, `economy_business`, `social_services`, `governance_transparency`, `other` |
-| `source_type` | `candidate_site`, `instagram`, `facebook_page`, `facebook_group`, `news`, `forum`, `city`, `elections_bc`, `other` |
+| `kind` | `background` (who they are: career, business, education, community roles, public service, local roots -- written by `backfill-salmon-arm-backgrounds`), `plank` (a platform commitment or position they campaign on), `statement` (something they said that isn't a formal plank), `qa_answer` (an answer to a question: media questionnaire, forum, Facebook comment reply), `prior_record` (incumbents: a council vote, motion or public action in the current/past term), `endorsement` (who endorses them, or whom they endorse), `finance` (campaign finance disclosure facts) |
+| `topic` (every kind except `background`) | `housing`, `taxes_budget`, `infrastructure`, `downtown_development`, `transportation`, `environment`, `public_safety`, `recreation_parks`, `economy_business`, `social_services`, `governance_transparency`, `other` |
+| `topic` (`background` entries) | `career` (jobs, profession, employers), `business` (businesses they own or run), `education` (schooling, degrees, credentials), `community` (boards, volunteering, clubs, coaching), `public_service` (elected or appointed office, City committees, past runs for office), `local_roots` (how long in Salmon Arm/the Shuswap and what brought them), `other` |
+| `source_type` | `candidate_site` (their campaign site), `personal_site` (their own non-campaign website or blog), `linkedin`, `instagram`, `facebook_page`, `facebook_group`, `news`, `forum`, `organization` (a business's, board's or club's own website), `city`, `elections_bc`, `other` |
 | event `kind` | `forum`, `deadline`, `advance_voting`, `general_voting`, `other` |
 
 ## Import behaviour (what to rely on)
@@ -107,7 +108,13 @@ inside an element doesn't matter. Write `&amp;` for `&` in URLs.
 - **Nothing is ever deleted by an import.** Retracted or wrong items are
   removed by hand on the candidate page; list them in the summary.
 - Entries with no `summary`, no http(s) `source_url` or an unknown `kind`
-  are skipped. Unknown `topic`/`source_type` fall back to `other`. All of
+  are skipped. Unknown `topic`/`source_type` fall back to `other` -- and a
+  `background` entry's topic is checked against the background list, so a
+  background entry with `<topic>housing</topic>` lands under "Other".
+- `background` entries show on the candidate page under **About**, grouped
+  by their topic, below the `bio` paragraph. Keep `bio` as a short neutral
+  summary and put each individual fact in its own `background` entry with
+  its own source. All of
   this is reported back after the import, so check the message.
 - `bio` without `bio_source_url` imports but is reported as a problem — always
   give the bio's source.

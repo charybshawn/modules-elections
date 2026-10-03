@@ -22,6 +22,7 @@ class Options
             'statuses' => Candidate::STATUSES,
             'kinds' => Entry::KINDS,
             'topics' => Entry::TOPICS,
+            'backgroundTopics' => Entry::BACKGROUND_TOPICS,
             'sourceTypes' => Entry::SOURCE_TYPES,
             'eventKinds' => ElectionEvent::KINDS,
         ];

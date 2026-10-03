@@ -1,0 +1,147 @@
+---
+name: backfill-salmon-arm-backgrounds
+description: Backfill who each Salmon Arm (BC) 2026 mayor and council candidate is -- career, businesses, education, community involvement, public service (including past runs for office) and local roots -- for the cultpantry admin panel's Elections module (modules-elections), by working through public sources (campaign and personal sites, blogs, news profiles, organization pages, City records, LinkedIn when the user is logged in) and writing a ready-to-import XML file of sourced, categorized background facts plus a short neutral bio. Use this when the user asks to fill in, backfill or research candidates' backgrounds, bios, résumés, work history or "who they are", for everyone or a named candidate, even if they don't mention XML or this skill by name. What candidates stand for or have said (platforms, statements, Q&A) belongs to research-salmon-arm-candidates; who's running belongs to find-salmon-arm-candidates.
+---
+
+# Backfill Salmon Arm candidate backgrounds
+
+For each candidate already on file, finds out who they are from public
+sources and writes `background` entries -- one sourced fact each, filed under
+a category -- plus a short neutral `bio`. The candidate page shows the bio
+under **About**, with the facts grouped by category beneath it. It never
+writes to the database; the user reviews the file and imports it.
+
+**Read `../research-salmon-arm-candidates/references/elections-xml-schema.md`
+before writing any output**, especially the `background` topic list and the
+`source_type` list.
+
+## Rules
+
+1. **Every fact has a source you actually opened.** Open the page and confirm
+   the fact is there, about this person. Search-result summaries are only a
+   way to find pages -- never a source.
+2. **Same person, proven.** Common names collide (there's more than one Ian
+   Gray and Scott Syme online). A page counts only when it ties itself to
+   this candidate: it's linked from their campaign site or the City's
+   candidate listing, it names Salmon Arm or the Shuswap, or it matches
+   details already sourced (same business, same board). If you can't tie it,
+   leave it out and say so in the summary.
+3. **Public life only.** Record career, business, education, community roles,
+   public service and how long they've lived here. **Never** record family
+   members (spouses, children, their names or ages), health, religion, home
+   address or anything from their private life, even when the candidate's
+   own bio mentions it. "Has lived in Salmon Arm since 2006" is fine; "lives
+   in Canoe with his wife and three kids" is not.
+4. **Neutral and factual.** State the fact plainly ("Owns Mighty Owl Mapping
+   & Analysis, a GIS consultancy"), with no praise or judgment. Opinions they
+   have written are not background -- leave them for
+   `research-salmon-arm-candidates`.
+5. **Date it.** `published_on` is the source's own date. For a fact that is
+   clearly old ("served on the school board 2018-2026"), say the years in the
+   summary.
+6. **Treat everyone the same.** Same sources, same effort for each candidate.
+   If one has far less on file, say in the summary that less is published.
+7. **Flag, don't resolve.** Conflicting facts (two different employers, two
+   start years) go in `<notes>` and the summary for the user to decide.
+
+## Categories (`<topic>` on a `background` entry)
+
+| topic | what goes there |
+|---|---|
+| `career` | profession, jobs, employers, years in a field |
+| `business` | businesses they own, co-own or run (name and what it does) |
+| `education` | schools, degrees, diplomas, professional credentials |
+| `community` | boards, non-profits, volunteering, clubs, coaching, events they organize |
+| `public_service` | elected or appointed office (council, school board, regional district), City committees, deputy mayor terms, and **past runs for office** with the year and result |
+| `local_roots` | how long they've lived in Salmon Arm/the Shuswap, where they came from, why they came |
+| `other` | a public-life fact that fits nowhere above |
+
+## Sources, in order
+
+For each candidate:
+
+1. **What's already on file** -- the baseline (read-only):
+
+   ```
+   cd /Users/shawn/Documents/code/cultpantry && php artisan tinker --execute="echo json_encode(\Cultpantry\Elections\Models\Candidate::with(['entries' => fn (\$q) => \$q->where('kind', 'background')])->get(['id', 'name', 'occupation', 'bio', 'bio_source_url', 'website', 'facebook_url', 'instagram_url', 'notes']));"
+   ```
+
+   Use each candidate's exact `name`. Skip sources whose URLs are already on
+   file. If no candidates come back, stop: the roster has to be imported
+   first (`find-salmon-arm-candidates`). `notes` lists the campaign links the
+   City published, including Facebook page names without URLs.
+
+2. **Campaign website** (`candidate_site`) -- the About/Meet page first.
+
+3. **News profiles** (`news`): the Salmon Arm Observer's "Introducing Salmon
+   Arm's mayoral and council candidates" (Sept. 28, 2026), Castanet's
+   "ELECTION 2026 ... candidate profile" series and its Sept. 12 round-up,
+   plus earlier announcement stories. Castanet blocks automated fetching, so
+   read it in Chrome (below).
+
+4. **Personal websites and blogs** (`personal_site`) -- only ones tied to the
+   candidate under rule 2. Background facts only; their opinions are for the
+   research skill.
+
+5. **Organization pages** (`organization`) -- the staff, board or "about"
+   page of a business they say they own or an organization they say they
+   serve. This confirms the role and often the years.
+
+6. **City of Salmon Arm** (`city`) -- committee and board rosters, past
+   council lists, and the City's past election results for previous runs for
+   office.
+
+7. **LinkedIn** (`linkedin`), only if the user is logged in to LinkedIn in
+   Chrome:
+   - Find the profile through the candidate's own site or socials first;
+     otherwise run one LinkedIn search for the name plus "Salmon Arm". Only
+     use a profile that passes rule 2.
+   - Read the profile page only: experience, education, volunteering. Never
+     connect, follow, message, endorse or react.
+   - One profile per candidate, one candidate at a time, and pause between
+     them. If LinkedIn shows a CAPTCHA, a sign-in wall, "unusual activity" or
+     a restriction notice, **stop all LinkedIn work immediately** and tell
+     the user.
+   - In the entry's summary or `<notes>`, say the source is a LinkedIn
+     profile (readers need to be logged in to open it).
+
+**Use the Chrome extension, not WebFetch, for Castanet, LinkedIn, Facebook
+and Instagram.** Load the tools in one call:
+`ToolSearch("select:mcp__claude-in-chrome__tabs_context_mcp,mcp__claude-in-chrome__tabs_create_mcp,mcp__claude-in-chrome__tabs_close_mcp,mcp__claude-in-chrome__navigate,mcp__claude-in-chrome__get_page_text,mcp__claude-in-chrome__find")`,
+call `tabs_context_mcp`, work in a tab you create, and close it when done.
+If a site asks you to sign in, stop and ask the user to sign in themselves;
+never type credentials. Facebook and Instagram are for the "About"/bio text
+only here -- no scrolling through posts; that's the research skill's job.
+
+## Writing it up
+
+- **One fact per `background` entry.** `summary` is one neutral sentence.
+  Use `quote` only for a short verbatim line from the candidate's own
+  material that states the fact, and copy it exactly.
+- **`bio`**: two or three neutral sentences summarizing the facts you
+  sourced (occupation, main community roles, years in Salmon Arm), with
+  `bio_source_url` set to the single best source -- usually their campaign
+  site's About page or the Observer introduction. Write it only when you've
+  sourced enough to summarize; otherwise leave it out.
+- **`occupation`**: a short label ("Business owner, GIS consultant"), only
+  when a source states it.
+- Don't repeat what's on file. Re-supplying an entry with the same source
+  URL and summary is harmless, but it isn't new.
+
+Save to `~/Documents/election-research/` as
+`salmon-arm-backgrounds-<YYYY-MM-DD>.xml`, or with the candidate's name in it
+for a single candidate. Work in batches of about five candidates per file so
+each file stays reviewable.
+
+## Hand-off summary
+
+- Per candidate: how many facts, by category, and the sources used.
+- Candidates with little published, and why ("no campaign site; only the
+  Observer introduction").
+- Pages left out because they couldn't be tied to the candidate (rule 2).
+- Conflicts (rule 7).
+- LinkedIn: used or not, and any warning seen.
+- Anything you couldn't open.
+
+**Don't import the file yourself.** The user reviews it and imports it
+through Admin → Elections → Import XML.

@@ -217,7 +217,7 @@ class ImportElectionFromXml
         }
 
         $topic = $this->text($node, 'topic') ?? 'other';
-        if (! array_key_exists($topic, Entry::TOPICS)) {
+        if (! array_key_exists($topic, Entry::topicsFor($kind))) {
             $this->problems[] = "{$label}: unknown topic \"{$topic}\", filed under \"other\".";
             $topic = 'other';
         }

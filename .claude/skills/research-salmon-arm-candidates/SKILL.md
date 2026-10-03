@@ -1,6 +1,6 @@
 ---
 name: research-salmon-arm-candidates
-description: Research the candidates already on file in the cultpantry admin panel's Elections module (modules-elections) for the Salmon Arm (BC) 2026 municipal election (mayor and council) and write a ready-to-import XML file. It covers bios, platform planks, statements, answers to questions from media, forums and Facebook, incumbents' council record, endorsements, campaign finance, election news coverage, withdrawals and election events (forums, voting days). Use this whenever the user asks to research, update, refresh or look into Salmon Arm election candidates, a specific candidate, their platform or promises, election coverage, or all-candidates forums, even if they don't mention XML, the import or this skill by name. Finding out who's running is find-salmon-arm-candidates, which must be run and imported first.
+description: Research the candidates already on file in the cultpantry admin panel's Elections module (modules-elections) for the Salmon Arm (BC) 2026 municipal election (mayor and council) and write a ready-to-import XML file. It covers platform planks, statements, answers to questions from media, forums and Facebook, incumbents' council record, endorsements, campaign finance, election news coverage, withdrawals and election events (forums, voting days). Use this whenever the user asks to research, update, refresh or look into Salmon Arm election candidates, a specific candidate, their platform or promises, election coverage, or all-candidates forums, even if they don't mention XML, the import or this skill by name. Finding out who's running is find-salmon-arm-candidates, which must be run and imported first; candidates' backgrounds and bios are backfill-salmon-arm-backgrounds.
 ---
 
 # Research Salmon Arm candidates
@@ -14,6 +14,9 @@ reviews the file and imports it themselves.
 
 It researches only the candidates already on file. The roster (who's running)
 comes from `find-salmon-arm-candidates`, which the user runs and imports first.
+Who each candidate is (career, education, community roles, the `bio`) comes
+from `backfill-salmon-arm-backgrounds`; leave `background` entries and the bio
+to it.
 
 **Read `references/elections-xml-schema.md` before writing any output.** It
 has the field list, the controlled value lists, and exactly how the import
