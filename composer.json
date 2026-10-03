@@ -1,0 +1,22 @@
+{
+    "name": "cultpantry/elections",
+    "description": "Salmon Arm municipal election tracker: sourced candidate portfolios, news and events, with a bulk XML import.",
+    "type": "library",
+    "license": "proprietary",
+    "require": {
+        "php": "^8.2",
+        "illuminate/support": "^12.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "Cultpantry\\Elections\\": "src/"
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Cultpantry\\Elections\\ElectionsServiceProvider"
+            ]
+        }
+    }
+}

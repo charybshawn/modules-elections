@@ -1,0 +1,15 @@
+{
+    "package": "cultpantry/elections",
+    "name": "Elections",
+    "description": "Salmon Arm 2026 municipal election tracker -- sourced candidate portfolios (bio, platform, Q&A, prior record), news and election events, with bulk XML import.",
+    "publish_tag": "elections-pages",
+    "provider": "Cultpantry\\Elections\\ElectionsServiceProvider",
+    "tables": [
+        "elections_article_candidate",
+        "elections_entries",
+        "elections_articles",
+        "elections_events",
+        "elections_candidates"
+    ],
+    "table_prefix": "elections_"
+}
