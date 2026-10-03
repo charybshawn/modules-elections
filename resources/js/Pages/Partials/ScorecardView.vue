@@ -4,8 +4,8 @@
     <section class="py-6">
       <div class="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
         <h2 class="text-lg font-semibold text-gray-900 dark:text-white">{{ scorecard.title }}</h2>
-        <a v-if="isHttpUrl(scorecard.source_url ?? scorecard.url)" :href="(scorecard.source_url ?? scorecard.url)!" target="_blank" rel="noopener noreferrer" class="text-sm text-indigo-600 hover:underline dark:text-indigo-400">
-          {{ scorecard.source_url ? 'Their answers on' : 'Open' }} {{ hostOf(scorecard.source_url ?? scorecard.url) }} &rarr;
+        <a v-if="link" :href="link" target="_blank" rel="noopener noreferrer" class="text-sm text-indigo-600 hover:underline dark:text-indigo-400">
+          {{ scorecard.source_url ? 'Their answers on' : 'Open' }} {{ hostOf(link) }} &rarr;
         </a>
       </div>
       <p v-if="scorecard.publisher || scorecard.retrieved_on" class="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
@@ -96,6 +96,9 @@ const stanceStyle: Record<string, { icon: string; chip: string; bar: string; tex
   opposed: { icon: '×', chip: 'bg-red-100 text-red-800 dark:bg-red-900/60 dark:text-red-200', bar: 'bg-red-500', text: 'text-red-700 dark:text-red-400' },
   no_response: { icon: '–', chip: 'bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400', bar: 'bg-gray-300 dark:bg-gray-600', text: 'text-gray-500 dark:text-gray-400' },
 }
+
+/** The candidate's own page on the publisher's site, else the scorecard's. */
+const link = computed(() => [props.scorecard.source_url, props.scorecard.url].find((u): u is string => isHttpUrl(u)) ?? null)
 
 const itemCount = computed(() => props.scorecard.categories.reduce((n, c) => n + c.items.length, 0))
 const pct = (n: number) => (itemCount.value ? (n / itemCount.value) * 100 : 0)
