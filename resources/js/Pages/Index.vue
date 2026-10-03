@@ -46,10 +46,13 @@
         </div>
       </dl>
 
-      <TagHeatMap id="subject-heat" :heat="heat" :selected="filters.tag" :matching-count="matchingCount" class="mb-6" @select="selectSubject" />
+      <!-- Desktop: candidates take the main column; the subject list heads the
+           sidebar with Upcoming below. Phones: subjects, then candidates, then
+           Upcoming. -->
+      <div class="grid grid-cols-1 gap-8 lg:grid-cols-3 lg:grid-rows-[auto_1fr]">
+        <TagHeatList :heat="heat" :selected="filters.tag" :matching-count="matchingCount" class="lg:col-start-3 lg:row-start-1" @select="selectSubject" />
 
-      <div class="grid grid-cols-1 gap-8 lg:grid-cols-3">
-        <div class="min-w-0 lg:col-span-2 space-y-8">
+        <div id="candidate-list" class="min-w-0 space-y-8 lg:col-span-2 lg:col-start-1 lg:row-span-2 lg:row-start-1">
           <p v-if="newCandidateCount" class="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-amber-800 dark:text-amber-300">
             New information on {{ newCandidateCount }} candidate{{ newCandidateCount === 1 ? '' : 's' }} since your last visit.
             <button type="button" class="tap-target-touch text-xs font-medium underline underline-offset-2" @click="seen.markAllSeen()">Mark all as seen</button>
@@ -187,7 +190,7 @@
           </section>
         </div>
 
-        <aside class="space-y-6">
+        <aside class="space-y-6 lg:col-start-3 lg:row-start-2">
           <section>
             <h2 :class="sectionHeadingClass">Upcoming</h2>
             <p v-if="upcomingEvents.length === 0" class="mt-3 text-sm text-gray-500 dark:text-gray-400">No upcoming events on file.</p>
@@ -244,7 +247,7 @@
 </template>
 
 <script setup lang="ts">
-import TagHeatMap from './Partials/TagHeatMap.vue'
+import TagHeatList from './Partials/TagHeatList.vue'
 import { cellOf, tierBadgeClass, tierShortLabel, tierWeight, type SubjectCoverage } from './Partials/coverage'
 import ElectionsNav from './Partials/ElectionsNav.vue'
 import { computed, nextTick, ref, reactive } from 'vue'
@@ -298,17 +301,18 @@ const officeChoices = [
 ] as const
 
 /**
- * Pick a subject in the heat map: it folds to a strip, which is then
- * scrolled to the top with the candidate cards right under it.
+ * Pick a subject: its candidates float to the top of the list. On phones,
+ * where the subject list sits above the cards, scroll the cards into view
+ * (just below the sticky headers); on desktop they're already beside it.
  */
 const selectSubject = async (slug: string | null) => {
   filters.tag = slug
-  if (slug === null) return
+  if (slug === null || window.matchMedia('(min-width: 1024px)').matches) return
   await nextTick()
   window.setTimeout(() => {
-    const strip = document.getElementById('subject-heat')
-    if (!strip) return
-    const target = () => Math.max(0, strip.getBoundingClientRect().top + window.scrollY - stickyHeaderHeight() - 8)
+    const cards = document.getElementById('candidate-list')
+    if (!cards) return
+    const target = () => Math.max(0, cards.getBoundingClientRect().top + window.scrollY - stickyHeaderHeight() - 8)
     const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
     window.scrollTo({ top: target(), behavior: reduceMotion ? 'auto' : 'smooth' })
     // Browsers skip smooth scrolling in some cases (background tabs); land it anyway.
