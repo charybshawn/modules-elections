@@ -6,6 +6,7 @@ use Cultpantry\Elections\Models\Candidate;
 use Cultpantry\Elections\Models\ElectionEvent;
 use Cultpantry\Elections\Models\Entry;
 use Cultpantry\Elections\Models\Plank;
+use Cultpantry\Elections\Models\ScorecardAnswer;
 
 /**
  * Every controlled value list the pages need for labels and selects, in one
@@ -26,6 +27,7 @@ class Options
             'backgroundTopics' => Entry::BACKGROUND_TOPICS,
             'sourceTypes' => Entry::SOURCE_TYPES,
             'plankTiers' => Plank::TIERS,
+            'scorecardStances' => ScorecardAnswer::STANCES,
             'eventKinds' => ElectionEvent::KINDS,
         ];
     }

@@ -9,6 +9,9 @@ use Cultpantry\Elections\Models\Entry;
 use Cultpantry\Elections\Models\Plank;
 use Cultpantry\Elections\Models\PulseIssue;
 use Cultpantry\Elections\Models\PulseSnapshot;
+use Cultpantry\Elections\Models\Scorecard;
+use Cultpantry\Elections\Models\ScorecardAnswer;
+use Cultpantry\Elections\Models\ScorecardResponse;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -22,9 +25,12 @@ use SimpleXMLElement;
  *
  * Match keys: candidates on name, entries on (candidate, source URL + quote
  * or summary), planks on (candidate, key), articles on URL, events on
- * (title, starts_at), Community Pulse snapshots on taken_on. Re-importing
- * the same file is a no-op -- except that a pulse snapshot is replaced as a
- * whole (its issues and mentions) each time its date is imported.
+ * (title, starts_at), Community Pulse snapshots on taken_on, scorecards on
+ * key (their categories and statements on key within them, a candidate's
+ * response on the candidate). Re-importing the same file is a no-op --
+ * except that a pulse snapshot is replaced as a whole (its issues and
+ * mentions) each time its date is imported, and a scorecard response's
+ * <answers> or <takeaways>, when supplied, replace what's on file.
  *
  * Unlike the market import, a candidate field left out of the file is left
  * alone rather than cleared: research passes are incremental (one finds the
@@ -84,6 +90,8 @@ class ImportElectionFromXml
             'articles' => $counts(),
             'events' => $counts(),
             'pulse' => $counts(),
+            'scorecards' => $counts(),
+            'responses' => $counts(),
         ];
 
         DB::transaction(function () use ($xml, &$result) {
@@ -99,6 +107,9 @@ class ImportElectionFromXml
             foreach ($xml->pulse ?? [] as $node) {
                 $this->importPulse($node, $result);
             }
+            foreach ($xml->scorecards->scorecard ?? [] as $node) {
+                $this->importScorecard($node, $result);
+            }
         });
 
         $result['problems'] = $this->problems;
@@ -112,7 +123,7 @@ class ImportElectionFromXml
     public function summarize(array $result): string
     {
         $parts = [];
-        foreach (['candidates', 'entries', 'planks', 'articles', 'events', 'pulse'] as $type) {
+        foreach (['candidates', 'entries', 'planks', 'articles', 'events', 'pulse', 'scorecards', 'responses'] as $type) {
             ['created' => $created, 'updated' => $updated, 'unchanged' => $unchanged] = $result[$type];
             if ($created + $updated + $unchanged === 0) {
                 continue;
@@ -502,6 +513,178 @@ class ImportElectionFromXml
     /**
      * @return array<int, string>
      */
+    /**
+     * A scorecard: its fields, then categories and their statements (matched
+     * on key, in file order), then each candidate's response. Nothing missing
+     * from the file is deleted -- a statement the publisher dropped has to be
+     * removed by hand.
+     */
+    private function importScorecard(SimpleXMLElement $node, array &$result): void
+    {
+        $key = $this->text($node, 'key');
+        if ($key === null) {
+            $this->problems[] = 'Skipped a <scorecard> with no <key>.';
+
+            return;
+        }
+
+        $scorecard = Scorecard::firstOrNew(['key' => $key]);
+        foreach (['title', 'publisher', 'about'] as $field) {
+            if (($value = $this->text($node, $field)) !== null) {
+                $scorecard->{$field} = $value;
+            }
+        }
+        if (($url = $this->text($node, 'url')) !== null) {
+            if ($this->isHttpUrl($url)) {
+                $scorecard->url = $url;
+            } else {
+                $this->problems[] = "Scorecard {$key}: <url> isn't an http(s) URL.";
+            }
+        }
+        if (($retrieved = $this->date($node, 'retrieved_on', "Scorecard {$key}")) !== null) {
+            $scorecard->retrieved_on = $retrieved;
+        }
+        if ($scorecard->title === null) {
+            $this->problems[] = "Skipped new scorecard {$key}: no <title>.";
+
+            return;
+        }
+        $this->tally($scorecard, $result['scorecards']);
+
+        $categories = [];
+        $items = [];
+        foreach ($node->categories->category ?? [] as $position => $c) {
+            $catKey = $this->text($c, 'key');
+            $name = $this->text($c, 'name');
+            if ($catKey === null || $name === null) {
+                $this->problems[] = "Scorecard {$key}: skipped a category with no <key>/<name>.";
+
+                continue;
+            }
+            $category = $scorecard->categories()->firstOrNew(['key' => $catKey]);
+            $category->fill([
+                'name' => $name,
+                'intro' => $this->text($c, 'intro') ?? $category->intro,
+                'local_context' => $this->text($c, 'local_context') ?? $category->local_context,
+                'position' => count($categories),
+            ]);
+            if (isset($c->sources)) {
+                $sources = array_values(array_filter($this->list($c->sources, 'source'), $this->isHttpUrl(...)));
+                $category->sources = $sources === [] ? null : $sources;
+            }
+            $category->save();
+            $categories[$catKey] = $category;
+
+            foreach ($c->items->item ?? [] as $i) {
+                $itemKey = $this->text($i, 'key');
+                $statement = $this->text($i, 'statement');
+                if ($itemKey === null || $statement === null || isset($items[$itemKey])) {
+                    $this->problems[] = "Scorecard {$key}: skipped a statement with no <key>/<statement> or a key already used.";
+
+                    continue;
+                }
+                $items[$itemKey] = $category->items()->updateOrCreate(['key' => $itemKey], [
+                    'statement' => $statement,
+                    'position' => count(array_filter($items, fn ($item) => $item->category_id === $category->id)),
+                ]);
+            }
+        }
+
+        // Answers can name statements from an earlier import of this scorecard.
+        foreach ($scorecard->categories()->with('items')->get() as $category) {
+            $categories[$category->key] ??= $category;
+            foreach ($category->items as $item) {
+                $items[$item->key] ??= $item;
+            }
+        }
+
+        foreach ($node->responses->response ?? [] as $r) {
+            $this->importScorecardResponse($scorecard, $r, $categories, $items, $result);
+        }
+    }
+
+    /**
+     * @param  array<string, \Cultpantry\Elections\Models\ScorecardCategory>  $categories
+     * @param  array<string, \Cultpantry\Elections\Models\ScorecardItem>  $items
+     */
+    private function importScorecardResponse(Scorecard $scorecard, SimpleXMLElement $node, array $categories, array $items, array &$result): void
+    {
+        $name = $this->text($node, 'candidate');
+        $candidateId = $name === null ? null : Candidate::where('name', $name)->value('id');
+        if ($candidateId === null) {
+            $this->problems[] = "Scorecard {$scorecard->key}: response from \"{$name}\", who isn't on file -- skipped.";
+
+            return;
+        }
+
+        /** @var ScorecardResponse $response */
+        $response = $scorecard->responses()->firstOrNew(['candidate_id' => $candidateId]);
+        if (($url = $this->text($node, 'source_url')) !== null) {
+            if ($this->isHttpUrl($url)) {
+                $response->source_url = $url;
+            } else {
+                $this->problems[] = "{$name}: scorecard <source_url> isn't an http(s) URL.";
+            }
+        }
+        $responded = $this->bool($node, 'responded');
+        $response->responded = $responded ?? $response->responded ?? true;
+        $changed = ! $response->exists || $response->isDirty();
+        $response->save();
+
+        if (isset($node->answers)) {
+            $before = $response->answers()->orderBy('item_id')->pluck('stance', 'item_id')->all();
+            $after = [];
+            foreach ($node->answers->answer ?? [] as $a) {
+                $itemKey = (string) $a['item'];
+                $stance = trim((string) $a);
+                if (! isset($items[$itemKey])) {
+                    $this->problems[] = "{$name}: answer to unknown statement \"{$itemKey}\" -- skipped.";
+
+                    continue;
+                }
+                if (! array_key_exists($stance, ScorecardAnswer::STANCES)) {
+                    $this->problems[] = "{$name}: unknown stance \"{$stance}\" on \"{$itemKey}\" -- skipped.";
+
+                    continue;
+                }
+                $after[$items[$itemKey]->id] = $stance;
+            }
+            ksort($after);
+            if ($after !== $before) {
+                $response->answers()->delete();
+                foreach ($after as $itemId => $stance) {
+                    $response->answers()->create(['item_id' => $itemId, 'stance' => $stance]);
+                }
+                $changed = true;
+            }
+        }
+
+        if (isset($node->takeaways)) {
+            $before = $response->takeaways()->orderBy('category_id')->pluck('summary', 'category_id')->all();
+            $after = [];
+            foreach ($node->takeaways->takeaway ?? [] as $t) {
+                $catKey = (string) $t['category'];
+                $summary = trim((string) $t);
+                if (! isset($categories[$catKey]) || $summary === '') {
+                    $this->problems[] = "{$name}: takeaway for unknown category \"{$catKey}\" or empty -- skipped.";
+
+                    continue;
+                }
+                $after[$categories[$catKey]->id] = $summary;
+            }
+            ksort($after);
+            if ($after !== $before) {
+                $response->takeaways()->delete();
+                foreach ($after as $categoryId => $summary) {
+                    $response->takeaways()->create(['category_id' => $categoryId, 'summary' => $summary]);
+                }
+                $changed = true;
+            }
+        }
+
+        $result['responses'][$response->wasRecentlyCreated ? 'created' : ($changed ? 'updated' : 'unchanged')]++;
+    }
+
     private function list(?SimpleXMLElement $parent, string $child): array
     {
         $items = [];

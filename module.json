@@ -5,6 +5,12 @@
     "publish_tag": "elections-pages",
     "provider": "Cultpantry\\Elections\\ElectionsServiceProvider",
     "tables": [
+        "elections_scorecard_takeaways",
+        "elections_scorecard_answers",
+        "elections_scorecard_responses",
+        "elections_scorecard_items",
+        "elections_scorecard_categories",
+        "elections_scorecards",
         "elections_article_candidate",
         "elections_pulse_mentions",
         "elections_pulse_issues",

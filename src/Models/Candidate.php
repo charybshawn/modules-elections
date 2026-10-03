@@ -117,4 +117,9 @@ class Candidate extends Model
             ->withTimestamps()
             ->orderByDesc('published_on');
     }
+
+    public function scorecardResponses(): HasMany
+    {
+        return $this->hasMany(ScorecardResponse::class);
+    }
 }

@@ -9,6 +9,8 @@ use Cultpantry\Elections\Http\Resources\PlankResource;
 use Cultpantry\Elections\Models\Candidate;
 use Cultpantry\Elections\Models\Entry;
 use Cultpantry\Elections\Models\Plank;
+use Cultpantry\Elections\Models\ScorecardAnswer;
+use Cultpantry\Elections\Models\ScorecardResponse;
 use Illuminate\Support\Collection;
 
 /**
@@ -19,6 +21,9 @@ use Illuminate\Support\Collection;
  *   Platform            -- planks in Plank::TIERS, ranked by the candidate's
  *                          own emphasis, each with the statements behind it
  *                          ('platform'; null when there's nothing yet)
+ *   Scorecards          -- their stance on each statement of third-party
+ *                          questionnaires like Vote4Tomorrow, under the
+ *                          publisher's own category headers ('scorecards')
  *   In their own words  -- statements and Q&A answers, grouped by topic
  *   Prior record        -- incumbents' past council record
  *   Endorsements
@@ -62,6 +67,7 @@ class BuildCandidatePortfolio
             'candidate' => CandidateResource::make($candidate)->resolve(),
             'background' => $this->byTopic($candidate->entries->where('kind', 'background')->values(), Entry::BACKGROUND_TOPICS),
             'platform' => $this->platform($candidate),
+            'scorecards' => $this->scorecards($candidate),
             'sections' => $sections,
             'articles' => ArticleResource::collection($candidate->articles)->resolve(),
             'entryCount' => $candidate->entries->count(),
@@ -99,6 +105,76 @@ class BuildCandidatePortfolio
             'source_count' => $sourceCount,
             'limited_sources' => $sourceCount < 2,
         ];
+    }
+
+    /**
+     * Each scorecard the candidate has a response on file for: the
+     * publisher's categories and statements in their order, the candidate's
+     * stance on each, how everyone who answered split on it, and our
+     * per-category reading. A candidate who didn't answer gets the
+     * scorecard with every stance 'no_response' and no reading.
+     */
+    private function scorecards(Candidate $candidate): array
+    {
+        $responses = ScorecardResponse::with(['scorecard.categories.items', 'answers', 'takeaways'])
+            ->where('candidate_id', $candidate->id)
+            ->get()
+            ->sortBy(fn (ScorecardResponse $r) => $r->scorecard->title);
+
+        return $responses->map(function (ScorecardResponse $response) {
+            $scorecard = $response->scorecard;
+            $stances = $response->answers->pluck('stance', 'item_id');
+            $takeaways = $response->takeaways->pluck('summary', 'category_id');
+
+            // How every candidate who answered split on each statement.
+            $field = ScorecardAnswer::query()
+                ->whereHas('response', fn ($q) => $q->where('scorecard_id', $scorecard->id)->where('responded', true))
+                ->selectRaw('item_id, stance, count(*) as total')
+                ->groupBy('item_id', 'stance')
+                ->get()
+                ->groupBy('item_id')
+                ->map(fn ($rows) => $rows->pluck('total', 'stance')->map(fn ($n) => (int) $n)->all());
+            $respondents = ScorecardResponse::where('scorecard_id', $scorecard->id)->where('responded', true)->count();
+
+            $totals = array_fill_keys(array_keys(ScorecardAnswer::STANCES), 0);
+            $categories = $scorecard->categories->map(function ($category) use ($response, $stances, $takeaways, $field, &$totals) {
+                $items = $category->items->map(function ($item) use ($response, $stances, $field, &$totals) {
+                    $stance = $response->responded ? ($stances[$item->id] ?? 'no_response') : 'no_response';
+                    $totals[$stance]++;
+
+                    return [
+                        'key' => $item->key,
+                        'statement' => $item->statement,
+                        'stance' => $stance,
+                        'field' => $field[$item->id] ?? [],
+                    ];
+                })->values()->all();
+
+                return [
+                    'key' => $category->key,
+                    'name' => $category->name,
+                    'intro' => $category->intro,
+                    'local_context' => $category->local_context,
+                    'sources' => $category->sources ?? [],
+                    'items' => $items,
+                    'takeaway' => $response->responded ? ($takeaways[$category->id] ?? null) : null,
+                ];
+            })->values()->all();
+
+            return [
+                'key' => $scorecard->key,
+                'title' => $scorecard->title,
+                'publisher' => $scorecard->publisher,
+                'url' => $scorecard->url,
+                'about' => $scorecard->about,
+                'retrieved_on' => $scorecard->retrieved_on?->toDateString(),
+                'source_url' => $response->source_url,
+                'responded' => $response->responded,
+                'respondents' => $respondents,
+                'totals' => $totals,
+                'categories' => $categories,
+            ];
+        })->values()->all();
     }
 
     /**

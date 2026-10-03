@@ -47,6 +47,7 @@ class CandidateController extends Controller implements HasMiddleware
         $tabs = [
             'about',
             ...($portfolio['platform'] === null ? [] : ['platform']),
+            ...($portfolio['scorecards'] === [] ? [] : ['scorecards']),
             ...array_column($portfolio['sections'], 'key'),
             ...($portfolio['articles'] === [] ? [] : ['news']),
             // Research notes are admin working material (CandidateResource

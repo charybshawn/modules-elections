@@ -156,6 +156,11 @@
           </AccountSection>
         </div>
 
+        <!-- Scorecards: third-party questionnaires under the publisher's own headers -->
+        <div v-else-if="activeTab === 'scorecards'" class="divide-y-4 divide-gray-100 dark:divide-gray-800">
+          <ScorecardView v-for="scorecard in portfolio.scorecards" :key="scorecard.key" :scorecard="scorecard" :candidate-name="candidate.name" :stances="options.scorecardStances" />
+        </div>
+
         <!-- In their own words, Prior record, Endorsements, Campaign finance -->
         <div v-else-if="activeSection" class="divide-y divide-gray-200 dark:divide-gray-700">
           <AccountSection
@@ -217,6 +222,7 @@ import CandidatePhoto from '../Partials/CandidatePhoto.vue'
 import EntryCard from '../Partials/EntryCard.vue'
 import FactList from '../Partials/FactList.vue'
 import PlankItem from '../Partials/PlankItem.vue'
+import ScorecardView from '../Partials/ScorecardView.vue'
 import { newPillClass } from '../Partials/classes'
 import { formatDate, hostOf, isHttpUrl, useReadOnly } from '../Partials/format'
 import { toUnix, useSeen } from '../Partials/seen'
@@ -307,6 +313,9 @@ const tabs = computed(() => [
   { id: 'about', title: 'About', count: backgroundEntries.value.length, hasNew: backgroundEntries.value.some(isNewEntry) },
   ...(props.portfolio.platform
     ? [{ id: 'platform', title: 'Platform', count: allPlanks.value.length, hasNew: allPlanks.value.some(isNewPlank) || plankEntries.value.some(isNewEntry) }]
+    : []),
+  ...(props.portfolio.scorecards.length
+    ? [{ id: 'scorecards', title: props.portfolio.scorecards.length === 1 ? props.portfolio.scorecards[0].title : 'Scorecards', count: 0, hasNew: false }]
     : []),
   ...props.portfolio.sections.map((s) => {
     const entries = sectionEntries(s.key)

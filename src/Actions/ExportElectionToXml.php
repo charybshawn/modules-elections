@@ -8,6 +8,7 @@ use Cultpantry\Elections\Models\ElectionEvent;
 use Cultpantry\Elections\Models\Entry;
 use Cultpantry\Elections\Models\Plank;
 use Cultpantry\Elections\Models\PulseSnapshot;
+use Cultpantry\Elections\Models\Scorecard;
 use SimpleXMLElement;
 
 /**
@@ -125,10 +126,73 @@ class ExportElectionToXml
             }
         }
 
+        $scorecards = Scorecard::with(['categories.items', 'responses.candidate', 'responses.answers', 'responses.takeaways'])->orderBy('key')->get();
+        if ($scorecards->isNotEmpty()) {
+            $scorecardsNode = $xml->addChild('scorecards');
+            foreach ($scorecards as $scorecard) {
+                $this->appendScorecard($scorecardsNode, $scorecard);
+            }
+        }
+
         $dom = dom_import_simplexml($xml)->ownerDocument;
         $dom->formatOutput = true;
 
         return $dom->saveXML();
+    }
+
+    private function appendScorecard(SimpleXMLElement $parent, Scorecard $scorecard): void
+    {
+        $node = $parent->addChild('scorecard');
+        foreach (['key', 'title', 'publisher', 'url', 'about'] as $field) {
+            $this->addChild($node, $field, $scorecard->{$field});
+        }
+        $this->addChild($node, 'retrieved_on', $scorecard->retrieved_on?->toDateString());
+
+        $itemKeys = [];
+        $categoryKeys = [];
+        $categoriesNode = $node->addChild('categories');
+        foreach ($scorecard->categories as $category) {
+            $categoryKeys[$category->id] = $category->key;
+            $c = $categoriesNode->addChild('category');
+            foreach (['key', 'name', 'intro', 'local_context'] as $field) {
+                $this->addChild($c, $field, $category->{$field});
+            }
+            if ($category->sources) {
+                $sources = $c->addChild('sources');
+                foreach ($category->sources as $url) {
+                    $this->addChild($sources, 'source', $url);
+                }
+            }
+            $items = $c->addChild('items');
+            foreach ($category->items as $item) {
+                $itemKeys[$item->id] = $item->key;
+                $i = $items->addChild('item');
+                $this->addChild($i, 'key', $item->key);
+                $this->addChild($i, 'statement', $item->statement);
+            }
+        }
+
+        $responsesNode = $node->addChild('responses');
+        foreach ($scorecard->responses->sortBy(fn ($r) => $r->candidate->name) as $response) {
+            $r = $responsesNode->addChild('response');
+            $this->addChild($r, 'candidate', $response->candidate->name);
+            $this->addChild($r, 'source_url', $response->source_url);
+            $this->addChild($r, 'responded', $response->responded ? 'true' : 'false');
+            if ($response->answers->isNotEmpty()) {
+                $answers = $r->addChild('answers');
+                foreach ($response->answers->sortBy('item_id') as $answer) {
+                    $this->addChild($answers, 'answer', $answer->stance);
+                    $answers->answer[count($answers->answer) - 1]['item'] = $itemKeys[$answer->item_id] ?? '';
+                }
+            }
+            if ($response->takeaways->isNotEmpty()) {
+                $takeaways = $r->addChild('takeaways');
+                foreach ($response->takeaways->sortBy('category_id') as $takeaway) {
+                    $this->addChild($takeaways, 'takeaway', $takeaway->summary);
+                    $takeaways->takeaway[count($takeaways->takeaway) - 1]['category'] = $categoryKeys[$takeaway->category_id] ?? '';
+                }
+            }
+        }
     }
 
     private function appendPlank(SimpleXMLElement $planksNode, Plank $plank): void

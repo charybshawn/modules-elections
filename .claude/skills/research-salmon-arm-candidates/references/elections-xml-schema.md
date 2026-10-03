@@ -198,3 +198,58 @@ Written by `community-pulse-salmon-arm`. Sits beside `<candidates>`, `<articles>
 - **Re-importing a `taken_on` replaces that snapshot's issues and mentions** (unlike everything else, which merges). A new pass gets a new date.
 - Keep issue `<key>`s stable between snapshots so the page can show "+12 people since last time".
 - No resident names, quotes or identifying detail anywhere in a pulse.
+
+## Scorecards (`<scorecards>`)
+
+Third-party candidate scorecards, such as Vote4Tomorrow: a fixed list of
+statements under the publisher's own category headers, with each candidate's
+stance on each statement. They're shown on a candidate's page in a tab named
+after the scorecard.
+
+```xml
+<scorecards>
+  <scorecard>
+    <key>vote4tomorrow-2026</key>                  <!-- required; match key -->
+    <title>Vote4Tomorrow</title>
+    <publisher>Shuswap Climate Action Society</publisher>
+    <url>https://vote4tomorrow.ca/election-2026/salmon-arm/</url>
+    <about>One neutral paragraph on what it is.</about>
+    <retrieved_on>2026-10-02</retrieved_on>
+    <categories>
+      <category>
+        <key>buildings</key>                       <!-- match key within the scorecard -->
+        <name>Buildings</name>                     <!-- the publisher's header, verbatim -->
+        <intro>The publisher's intro, verbatim.</intro>
+        <local_context>Our neutral, sourced note on this area in Salmon Arm today.</local_context>
+        <sources><source>https://...</source></sources>
+        <items>
+          <item><key>electrify-new-buildings</key><statement>Verbatim statement.</statement></item>
+        </items>
+      </category>
+    </categories>
+    <responses>
+      <response>
+        <candidate>Exact name on file</candidate>
+        <source_url>https://vote4tomorrow.ca/election-2026/salmon-arm/slug/</source_url>
+        <responded>true</responded>              <!-- false = listed as not answering -->
+        <answers>
+          <answer item="electrify-new-buildings">supportive</answer>  <!-- supportive|neutral|opposed|no_response -->
+        </answers>
+        <takeaways>
+          <takeaway category="buildings">What their stances here could mean in practice for Salmon Arm.</takeaway>
+        </takeaways>
+      </response>
+    </responses>
+  </scorecard>
+</scorecards>
+```
+
+- **Matching.** Categories and statements are matched by key, in file order, and a statement's
+  key must be unique across the whole scorecard. A response is matched by candidate.
+- **Re-imports.** When a response includes `<answers>` or `<takeaways>`, those replace what's on
+  file. Nothing is deleted otherwise.
+- **Readings.** Takeaways are AI-assisted, and the page labels them that way.
+  - Lead with the one local decision the category turns on, then list the rest briefly.
+  - Use only facts that are in the category's `<local_context>` sources.
+  - Keep them neutral and conditional ("points to", "no signal on"), never judging whether a position is right.
+  - A candidate who didn't respond gets `<responded>false</responded>` and no answers or takeaways. The page says they didn't answer, never that they're opposed.

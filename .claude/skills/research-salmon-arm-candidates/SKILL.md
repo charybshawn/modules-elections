@@ -276,6 +276,26 @@ two).
 in rank order with tier and source count, which sources were used, and any
 statements left out because they weren't the candidate's own words.
 
+## Scorecard pass (Vote4Tomorrow and similar)
+
+When the user asks for candidates' scorecard stances, or a refresh nearer
+voting day, write a `<scorecards>` file. See the schema doc's "Scorecards" section.
+
+1. **Fetch the scorecard.** Get the publisher's summary page and every candidate's page,
+   including candidates who didn't answer. Vote4Tomorrow loads with plain `curl`. Save copies
+   under `~/Documents/election-research/<scorecard>-<date>/`.
+2. **Copy headers, intros and statements verbatim.** Record a stance for every statement, and
+   mark non-responders `<responded>false</responded>`.
+3. **Write a `<local_context>` for each category** from pages you opened: City pages and
+   reports, Observer and Castanet stories (Castanet through Chrome). Keep the source list with it.
+4. **Write one takeaway per responding candidate per category.**
+   - Start with the local decision the category turns on (for example the step-code timeline,
+     bus service levels, or a construction-waste bylaw) and where their answer points.
+   - Then list the other stances briefly.
+   - Use only facts that are in the local context. Add a candidate-specific fact only if it's
+     sourced, such as an incumbent's recorded vote.
+5. **Reuse keys** on a refresh, so stances are replaced in place.
+
 ## Scale
 
 A full pass over every candidate is large. Do the official sources and news

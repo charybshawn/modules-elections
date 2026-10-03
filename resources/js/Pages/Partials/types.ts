@@ -71,6 +71,7 @@ export interface Options {
   backgroundTopics: Record<string, string>
   sourceTypes: Record<string, string>
   plankTiers: Record<string, string>
+  scorecardStances: Record<string, string>
   eventKinds: Record<string, string>
 }
 
@@ -114,12 +115,54 @@ export interface PortfolioSection {
   groups: EntryGroup[]
 }
 
+export interface ScorecardItem {
+  key: string
+  /** The publisher's statement, verbatim. */
+  statement: string
+  /** Options.scorecardStances key; 'no_response' when unanswered. */
+  stance: string
+  /** How everyone who answered split on it, by stance. */
+  field: Record<string, number>
+}
+
+export interface ScorecardCategory {
+  key: string
+  /** The publisher's header and intro. */
+  name: string
+  intro: string | null
+  /** Our neutral note on this area in Salmon Arm, and its sources. */
+  local_context: string | null
+  sources: string[]
+  items: ScorecardItem[]
+  /** AI-assisted reading of this candidate's stances here; null when none or they didn't answer. */
+  takeaway: string | null
+}
+
+export interface Scorecard {
+  key: string
+  title: string
+  publisher: string | null
+  url: string | null
+  about: string | null
+  retrieved_on: string | null
+  /** The candidate's own page on the publisher's site. */
+  source_url: string | null
+  responded: boolean
+  /** How many candidates answered. */
+  respondents: number
+  /** This candidate's stance counts across every statement. */
+  totals: Record<string, number>
+  categories: ScorecardCategory[]
+}
+
 export interface Portfolio {
   candidate: Candidate
   /** Background facts for the About section, grouped by Options.backgroundTopics. */
   background: EntryGroup[]
   /** The Platform tab; null until anything is on file. */
   platform: Platform | null
+  /** Third-party scorecards (e.g. Vote4Tomorrow) the candidate has a response on file for. */
+  scorecards: Scorecard[]
   sections: PortfolioSection[]
   articles: Article[]
   entryCount: number
