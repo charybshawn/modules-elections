@@ -23,7 +23,7 @@ import { computed } from 'vue'
 import { Link } from '@inertiajs/vue3'
 
 const sections = computed(() => [
-  { name: 'admin.elections.index', title: 'Candidates', active: route().current('admin.elections.index') || route().current('admin.elections.candidates.*') },
+  { name: 'admin.elections.index', title: 'Candidates', active: route().current('admin.elections.index') || route().current('admin.elections.candidates.*') || route().current('admin.elections.compare') },
   { name: 'admin.elections.tags.index', title: 'Browse by subject', active: route().current('admin.elections.tags.*') },
   { name: 'admin.elections.pulse.index', title: 'Community Pulse', active: route().current('admin.elections.pulse.*') },
 ])

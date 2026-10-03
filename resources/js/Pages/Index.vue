@@ -1,5 +1,5 @@
 <template>
-  <div class="pb-24 md:pt-6 md:pb-6">
+  <div :class="compare.slugs.length ? 'pb-36 md:pb-28' : 'pb-24 md:pb-6'" class="md:pt-6">
     <AdminMobileHeader title="Elections" />
 
     <div class="px-4 sm:px-0">
@@ -83,10 +83,10 @@
           <section v-for="group in candidateGroups" :key="group.office">
             <h2 :class="sectionHeadingClass">{{ group.label }} <span class="font-normal normal-case tracking-normal text-gray-400">{{ group.candidates.length }}</span></h2>
             <TransitionGroup tag="ul" class="relative mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2" move-class="transition-transform duration-300 ease-out" enter-from-class="opacity-0 scale-95" enter-active-class="transition duration-200" leave-to-class="opacity-0 scale-95" leave-active-class="absolute transition duration-150">
-              <li v-for="candidate in group.candidates" :key="candidate.id">
+              <li v-for="candidate in group.candidates" :key="candidate.id" class="relative">
                 <Link
                   :href="route('admin.elections.candidates.show', candidate.slug)"
-                  class="tap-target-touch flex items-center gap-4 rounded-lg bg-white dark:bg-gray-800 shadow-sm p-4 hover:ring-2 hover:ring-amber-400/60 transition-opacity"
+                  class="tap-target-touch flex items-center gap-4 rounded-lg bg-white dark:bg-gray-800 shadow-sm p-4 pr-24 hover:ring-2 hover:ring-amber-400/60 transition-opacity"
                   :class="[candidate.status === 'withdrawn' ? 'opacity-60' : '', selectedTag && !tagCell(candidate) ? 'opacity-40' : '', selectedTag && tagCell(candidate) ? 'ring-1 ring-indigo-300 dark:ring-indigo-500/50' : '']"
                 >
                   <CandidatePhoto :name="candidate.name" :url="candidate.photo_url" class="h-14 w-14 shrink-0 rounded-full text-lg" />
@@ -113,6 +113,21 @@
                     </div>
                   </div>
                 </Link>
+                <!-- Compare toggle: a sibling of the card link, so tapping it never opens the profile. -->
+                <button
+                  v-if="candidate.status !== 'withdrawn'"
+                  type="button"
+                  :aria-pressed="isPicked(candidate)"
+                  :aria-label="isPicked(candidate) ? `Remove ${candidate.name} from comparison` : `Compare ${candidate.name}`"
+                  :disabled="!isPicked(candidate) && compare.slugs.length >= COMPARE_MAX"
+                  :class="isPicked(candidate) ? 'bg-indigo-600 text-white ring-indigo-600' : 'bg-white text-gray-600 ring-gray-300 hover:bg-gray-50 disabled:opacity-40 dark:bg-gray-700 dark:text-gray-300 dark:ring-gray-600'"
+                  class="tap-target-touch absolute right-2 top-2 inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs font-medium shadow-sm ring-1 transition"
+                  @click="togglePicked(candidate)"
+                >
+                  <svg v-if="isPicked(candidate)" class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" /></svg>
+                  <svg v-else class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 5v14M5 12h14" /></svg>
+                  Compare
+                </button>
               </li>
             </TransitionGroup>
           </section>
@@ -177,6 +192,35 @@
         </aside>
       </div>
     </div>
+    <!-- Compare tray: slides up once a candidate is picked. Full-width bar on
+         phones (the app's bottom-bar look), a floating pill on larger screens. -->
+    <Transition enter-from-class="translate-y-full opacity-0" enter-active-class="transition duration-300 ease-out" leave-to-class="translate-y-full opacity-0" leave-active-class="transition duration-200 ease-in">
+      <div
+        v-if="compare.slugs.length"
+        class="fixed inset-x-0 bottom-0 z-40 border-t border-gray-200 bg-white px-4 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] shadow-[0_-4px_14px_rgba(0,0,0,0.18)] md:inset-x-auto md:bottom-4 md:left-1/2 md:w-[min(40rem,calc(100%-2rem))] md:-translate-x-1/2 md:rounded-xl md:border md:pb-3 lg:ml-32 dark:border-gray-600 dark:bg-gray-700"
+        role="region"
+        aria-label="Compare candidates"
+      >
+        <div class="flex items-center gap-3">
+          <div class="flex min-w-0 flex-1 gap-1.5 overflow-x-auto scrollbar-hide">
+            <span v-for="c in pickedCandidates" :key="c.slug" class="inline-flex shrink-0 items-center gap-0.5 rounded-full bg-gray-100 py-0.5 pl-2.5 pr-0.5 text-sm text-gray-800 dark:bg-gray-600 dark:text-gray-100">
+              {{ c.name }}
+              <button type="button" class="inline-flex h-6 w-6 items-center justify-center rounded-full hover:bg-gray-200 dark:hover:bg-gray-500" :aria-label="`Remove ${c.name}`" @click="togglePicked(c)">
+                <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12" /></svg>
+              </button>
+            </span>
+            <span v-if="compare.slugs.length < 2" class="shrink-0 self-center text-xs text-gray-500 dark:text-gray-400">Pick one more</span>
+          </div>
+          <button type="button" class="tap-target-touch shrink-0 text-xs font-medium text-gray-500 underline underline-offset-2 dark:text-gray-400" @click="compare.slugs = []">Clear</button>
+          <Link
+            :href="compareHref"
+            :class="compare.slugs.length < 2 ? 'pointer-events-none opacity-50' : ''"
+            :aria-disabled="compare.slugs.length < 2"
+            class="tap-target-touch inline-flex shrink-0 items-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white hover:bg-indigo-700"
+          >Compare {{ compare.slugs.length }}</Link>
+        </div>
+      </div>
+    </Transition>
   </div>
 </template>
 
@@ -269,6 +313,22 @@ const stickyHeaderHeight = () =>
     const isHeader = rect.height > 0 && rect.width > window.innerWidth / 2 && stuckTop < window.innerHeight / 3 && rect.height < window.innerHeight / 3
     return isHeader ? Math.max(bottom, stuckTop + rect.height) : bottom
   }, 0)
+
+// ---- Compare (up to three; remembered so Back keeps the picks) ----
+const COMPARE_MAX = 3
+const compare = useRemember(reactive({ slugs: [] as string[] }), 'elections-compare-picks') as { slugs: string[] }
+const isPicked = (c: Candidate) => compare.slugs.includes(c.slug)
+const togglePicked = (c: { slug: string }) => {
+  compare.slugs = compare.slugs.includes(c.slug)
+    ? compare.slugs.filter((s) => s !== c.slug)
+    : compare.slugs.length < COMPARE_MAX
+      ? [...compare.slugs, c.slug]
+      : compare.slugs
+}
+const pickedCandidates = computed(() =>
+  compare.slugs.map((slug) => props.candidates.find((c) => c.slug === slug)).filter((c): c is Candidate => c !== undefined),
+)
+const compareHref = computed(() => route('admin.elections.compare', { c: compare.slugs }))
 
 const selectedTag = computed(() => props.coverage.tags.find((t) => t.slug === filters.tag) ?? null)
 const tagCell = (candidate: Candidate) => (filters.tag ? cellOf(props.coverage, candidate.id, filters.tag) : undefined)
