@@ -44,6 +44,7 @@ The shared list of subject tags. Every research skill picks tags from here: 1 to
 | `active-transportation` | Walking, cycling and trails network | Sidewalks, bike routes, multi-use paths and the Active Transportation Network Plan. |
 | `public-transit` | Public transit | Local and regional bus service. |
 | `ev-charging` | EV charging | Public electric-vehicle charging. |
+| `roads-traffic` | Roads, highways and traffic safety | Road conditions, highways through town, speed limits, intersections and traffic safety. |
 
 ## environment
 
