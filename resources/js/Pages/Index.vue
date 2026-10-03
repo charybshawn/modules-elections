@@ -155,13 +155,32 @@
                 <div class="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
                   {{ [article.outlet, formatDate(article.published_on)].filter(Boolean).join(' · ') }}
                 </div>
-                <div v-if="article.candidates?.length" class="mt-1 flex flex-wrap gap-1.5">
+                <!-- Who it covers: folded to one line, opened on demand (round-ups name everyone). -->
+                <div v-if="article.candidates?.length" class="mt-1">
                   <Link
-                    v-for="c in article.candidates"
-                    :key="c.slug"
-                    :href="route('admin.elections.candidates.show', c.slug)"
-                    class="rounded bg-gray-100 px-1.5 py-0.5 text-xs text-gray-700 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300"
-                  >{{ c.name }}</Link>
+                    v-if="article.candidates.length === 1"
+                    :href="route('admin.elections.candidates.show', article.candidates[0].slug)"
+                    class="text-xs text-gray-600 hover:underline dark:text-gray-300"
+                  >{{ article.candidates[0].name }}</Link>
+                  <template v-else>
+                    <button
+                      type="button"
+                      :aria-expanded="openArticles.has(article.id)"
+                      class="tap-target-touch inline-flex items-center gap-1 text-xs font-medium text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white"
+                      @click="toggleArticle(article.id)"
+                    >
+                      Mentions {{ article.candidates.length }} candidates
+                      <svg :class="openArticles.has(article.id) ? 'rotate-180' : ''" class="h-3.5 w-3.5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
+                    </button>
+                    <div v-if="openArticles.has(article.id)" class="mt-1.5 flex flex-wrap gap-1.5">
+                      <Link
+                        v-for="c in article.candidates"
+                        :key="c.slug"
+                        :href="route('admin.elections.candidates.show', c.slug)"
+                        class="rounded bg-gray-100 px-1.5 py-0.5 text-xs text-gray-700 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300"
+                      >{{ c.name }}</Link>
+                    </div>
+                  </template>
                 </div>
               </li>
             </ul>
@@ -313,6 +332,15 @@ const stickyHeaderHeight = () =>
     const isHeader = rect.height > 0 && rect.width > window.innerWidth / 2 && stuckTop < window.innerHeight / 3 && rect.height < window.innerHeight / 3
     return isHeader ? Math.max(bottom, stuckTop + rect.height) : bottom
   }, 0)
+
+// ---- Latest coverage: which stories have their candidate list open ----
+const openArticles = ref(new Set<number>())
+const toggleArticle = (id: number) => {
+  const next = new Set(openArticles.value)
+  if (next.has(id)) next.delete(id)
+  else next.add(id)
+  openArticles.value = next
+}
 
 // ---- Compare (up to three; remembered so Back keeps the picks) ----
 const COMPARE_MAX = 3
