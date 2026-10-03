@@ -26,6 +26,7 @@ class ArticleResource extends JsonResource
                 ->map(fn ($c) => ['name' => $c->name, 'slug' => $c->slug])
                 ->values()
                 ->all()),
+            'tags' => $this->whenLoaded('tags', fn () => TagResource::collection($this->tags)->resolve(), []),
         ];
     }
 }

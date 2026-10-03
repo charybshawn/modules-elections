@@ -24,8 +24,17 @@ export interface Candidate {
   updated_at: string | null
 }
 
+export interface TagRef {
+  slug: string
+  name: string
+  /** Options.topics key -- the heading it files under. */
+  topic: string
+}
+
 export interface Entry {
   id: number
+  /** Subject tags; statements filed under a plank are tagged through the plank. */
+  tags: TagRef[]
   kind: string
   topic: string
   summary: string
@@ -41,6 +50,7 @@ export interface Entry {
 
 export interface Article {
   id: number
+  tags: TagRef[]
   title: string
   url: string
   outlet: string | null
@@ -77,6 +87,7 @@ export interface Options {
 
 export interface Plank {
   id: number
+  tags: TagRef[]
   key: string
   title: string
   topic: string
@@ -119,6 +130,7 @@ export interface ScorecardItem {
   key: string
   /** The publisher's statement, verbatim. */
   statement: string
+  tags: TagRef[]
   /** Options.scorecardStances key; 'no_response' when unanswered. */
   stance: string
   /** How everyone who answered split on it, by stance. */
@@ -185,7 +197,10 @@ export interface PulseIssue {
   summary: string | null
   wants: string[]
   questions: string[]
-  /** Candidates with a plank on this topic, by plank tier; null for the "other" topic. */
+  tags: TagRef[]
+  /** How coverage was matched: shared tags, or (untagged issues) the broad topic. */
+  coverage_by: 'tags' | 'topic'
+  /** Candidates with a plank on this issue's tags (or topic), by plank tier; null for an untagged "other" issue. */
   coverage: Record<string, { name: string; slug: string; plank: string }[]> | null
 }
 

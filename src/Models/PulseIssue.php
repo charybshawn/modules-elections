@@ -2,6 +2,7 @@
 
 namespace Cultpantry\Elections\Models;
 
+use Cultpantry\Elections\Models\Concerns\HasTags;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -26,6 +27,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  */
 class PulseIssue extends Model
 {
+    use HasTags;
+
     protected $table = 'elections_pulse_issues';
 
     public const HEAT = [

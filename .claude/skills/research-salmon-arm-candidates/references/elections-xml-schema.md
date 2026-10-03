@@ -253,3 +253,46 @@ after the scorecard.
   - Use only facts that are in the category's `<local_context>` sources.
   - Keep them neutral and conditional ("points to", "no signal on"), never judging whether a position is right.
   - A candidate who didn't respond gets `<responded>false</responded>` and no answers or takeaways. The page says they didn't answer, never that they're opposed.
+
+## Tags (`<vocabulary>`, `<tags>`, `<tagging>`)
+
+Subject tags come from a controlled vocabulary, listed in `references/tags.md`. Each tag files
+under one `Entry::TOPICS` heading.
+
+**Vocabulary.** Defining or updating tags goes at the top of a file. Tags match on slug, and a
+supplied field replaces what's on file:
+
+```xml
+<vocabulary>
+  <tag><slug>homelessness</slug><topic>social_services</topic><name>Homelessness</name><description>What belongs here.</description></tag>
+</vocabulary>
+```
+
+**Tags on a record.** Add `<tags><tag>slug</tag>…</tags>` inside any `<plank>`, `<entry>`,
+`<article>`, pulse `<issue>` or scorecard `<item>`.
+- When `<tags>` is present, it replaces that record's tags; an empty `<tags/>` clears them.
+- When it's left out, the record keeps the tags it has.
+- An unknown slug is reported as a problem, never created. Add it to `<vocabulary>` in the same
+  file first.
+
+**Tagging records already on file** without repeating them. Each element replaces that record's
+tags:
+
+```xml
+<tagging>
+  <plank candidate="Exact Name" key="plank-key"><tags><tag>wastewater</tag></tags></plank>
+  <entry candidate="Exact Name" hash="match_hash"><tags>…</tags></entry>
+  <article url="https://…"><tags>…</tags></article>
+  <issue taken_on="2026-10-03" key="issue-key"><tags>…</tags></issue>
+  <item scorecard="vote4tomorrow-2026" key="statement-key"><tags>…</tags></item>
+</tagging>
+```
+
+**Tagging rules:**
+- Give each item 1 to 3 tags: the most specific ones a reader browsing that subject would expect
+  to find it under.
+- Tag what the item is about, not who said it.
+- Give identical ideas identical tags across candidates.
+- Background facts aren't tagged. A plank's statements are reached through the plank.
+- Community Pulse matches an issue to candidates' planks by shared tags, so tag pulse issues with
+  the same slugs that planks use.

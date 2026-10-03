@@ -11,7 +11,9 @@ use Cultpantry\Elections\Models\PulseIssue;
 use Cultpantry\Elections\Models\PulseSnapshot;
 use Cultpantry\Elections\Models\Scorecard;
 use Cultpantry\Elections\Models\ScorecardAnswer;
+use Cultpantry\Elections\Models\ScorecardItem;
 use Cultpantry\Elections\Models\ScorecardResponse;
+use Cultpantry\Elections\Models\Tag;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -92,9 +94,15 @@ class ImportElectionFromXml
             'pulse' => $counts(),
             'scorecards' => $counts(),
             'responses' => $counts(),
+            'tags' => $counts(),
+            'tagged' => $counts(),
         ];
 
         DB::transaction(function () use ($xml, &$result) {
+            // The vocabulary first, so everything below can use new tags.
+            foreach ($xml->vocabulary->tag ?? [] as $node) {
+                $this->importTag($node, $result);
+            }
             foreach ($xml->candidates->candidate ?? [] as $node) {
                 $this->importCandidate($node, $result);
             }
@@ -110,7 +118,12 @@ class ImportElectionFromXml
             foreach ($xml->scorecards->scorecard ?? [] as $node) {
                 $this->importScorecard($node, $result);
             }
+            foreach ($xml->tagging ?? [] as $node) {
+                $this->importTagging($node, $result);
+            }
         });
+
+        Tag::pruneOrphans();
 
         $result['problems'] = $this->problems;
 
@@ -123,7 +136,7 @@ class ImportElectionFromXml
     public function summarize(array $result): string
     {
         $parts = [];
-        foreach (['candidates', 'entries', 'planks', 'articles', 'events', 'pulse', 'scorecards', 'responses'] as $type) {
+        foreach (['tags', 'candidates', 'entries', 'planks', 'articles', 'events', 'pulse', 'scorecards', 'responses', 'tagged'] as $type) {
             ['created' => $created, 'updated' => $updated, 'unchanged' => $unchanged] = $result[$type];
             if ($created + $updated + $unchanged === 0) {
                 continue;
@@ -257,6 +270,7 @@ class ImportElectionFromXml
         }
 
         $this->tally($plank, $result['planks']);
+        $this->syncTags($plank, $node, "{$candidate->name}: plank \"{$plank->title}\"", $result);
 
         $sources = 0;
         foreach ($node->entries->entry ?? [] as $entryNode) {
@@ -327,6 +341,7 @@ class ImportElectionFromXml
         }
 
         $this->tally($entry, $result['entries']);
+        $this->syncTags($entry, $node, "{$candidate->name}: entry", $result);
 
         return true;
     }
@@ -355,6 +370,8 @@ class ImportElectionFromXml
         if ($isNew || $changed) {
             $article->save();
         }
+
+        $this->syncTags($article, $node, "Article \"{$title}\"", $result);
 
         $ids = [];
         foreach ($node->candidates->candidate ?? [] as $nameNode) {
@@ -478,7 +495,7 @@ class ImportElectionFromXml
             }
             $pct = fn (string $child) => ($v = $this->text($i, $child)) === null ? null : max(0, min(100, (int) $v));
 
-            $snapshot->issues()->create([
+            $issue = $snapshot->issues()->create([
                 'key' => $key,
                 'title' => $title,
                 'topic' => $topic,
@@ -491,6 +508,7 @@ class ImportElectionFromXml
                 'wants' => $this->list($i->wants, 'want'),
                 'questions' => $this->list($i->questions, 'question'),
             ]);
+            $this->syncTags($issue, $i, "Pulse {$takenOn}: issue \"{$title}\"", $result);
         }
 
         foreach ($node->mentions->mention ?? [] as $m) {
@@ -587,6 +605,7 @@ class ImportElectionFromXml
                     'statement' => $statement,
                     'position' => count(array_filter($items, fn ($item) => $item->category_id === $category->id)),
                 ]);
+                $this->syncTags($items[$itemKey], $i, "Scorecard {$key}: statement \"{$itemKey}\"", $result);
             }
         }
 
@@ -683,6 +702,100 @@ class ImportElectionFromXml
         }
 
         $result['responses'][$response->wasRecentlyCreated ? 'created' : ($changed ? 'updated' : 'unchanged')]++;
+    }
+
+    /**
+     * A vocabulary entry: <tag><slug/><topic/><name/><description/></tag>.
+     * Matched on slug; supplied fields replace, omitted ones are left alone.
+     */
+    private function importTag(SimpleXMLElement $node, array &$result): void
+    {
+        $slug = $this->text($node, 'slug');
+        if ($slug === null || ! preg_match('/^[a-z0-9]+(?:-[a-z0-9]+)*$/', $slug)) {
+            $this->problems[] = 'Skipped a vocabulary tag with no <slug> or one that isn\'t lowercase-kebab-case.';
+
+            return;
+        }
+
+        $tag = Tag::firstOrNew(['slug' => $slug]);
+        $topic = $this->text($node, 'topic');
+        if ($topic !== null && ! array_key_exists($topic, Entry::TOPICS)) {
+            $this->problems[] = "Tag {$slug}: unknown topic \"{$topic}\", left as it was.";
+            $topic = null;
+        }
+        $tag->topic = $topic ?? $tag->topic ?? 'other';
+        $tag->name = $this->text($node, 'name') ?? $tag->name ?? $slug;
+        $tag->description = $this->text($node, 'description') ?? $tag->description;
+
+        $this->tally($tag, $result['tags']);
+    }
+
+    /**
+     * Replaces a record's tags with its <tags><tag>slug</tag></tags>, when
+     * the element is there at all -- an empty <tags/> clears them, a record
+     * without one keeps what it has. Unknown slugs are reported, not created.
+     */
+    private function syncTags(\Illuminate\Database\Eloquent\Model $model, SimpleXMLElement $node, string $label, array &$result): void
+    {
+        if (! isset($node->tags)) {
+            return;
+        }
+
+        $slugs = $this->list($node->tags, 'tag');
+        $ids = $slugs === [] ? collect() : Tag::whereIn('slug', $slugs)->pluck('id', 'slug');
+        foreach (array_diff($slugs, $ids->keys()->all()) as $unknown) {
+            $this->problems[] = "{$label}: unknown tag \"{$unknown}\" -- add it to <vocabulary> first.";
+        }
+
+        /** @var \Illuminate\Database\Eloquent\Relations\MorphToMany $relation */
+        $relation = $model->tags();
+        $changes = $relation->sync($ids->values()->all());
+        $changed = $changes['attached'] !== [] || $changes['detached'] !== [];
+        $result['tagged'][$changed ? 'updated' : 'unchanged']++;
+    }
+
+    /**
+     * Tags for records already on file, without repeating the records:
+     *
+     *   <tagging>
+     *     <plank candidate="Name" key="plank-key"><tags><tag>slug</tag></tags></plank>
+     *     <entry candidate="Name" hash="match_hash"><tags>…</tags></entry>
+     *     <article url="https://…"><tags>…</tags></article>
+     *     <issue taken_on="YYYY-MM-DD" key="issue-key"><tags>…</tags></issue>
+     *     <item scorecard="scorecard-key" key="statement-key"><tags>…</tags></item>
+     *   </tagging>
+     *
+     * Each record's tags are replaced by the ones listed.
+     */
+    private function importTagging(SimpleXMLElement $node, array &$result): void
+    {
+        foreach ($node->children() as $ref) {
+            $a = fn (string $name) => trim((string) $ref[$name]);
+            $model = match ($ref->getName()) {
+                'plank' => Plank::whereHas('candidate', fn ($q) => $q->where('name', $a('candidate')))->where('key', $a('key'))->first(),
+                'entry' => Entry::whereHas('candidate', fn ($q) => $q->where('name', $a('candidate')))->where('match_hash', $a('hash'))->first(),
+                'article' => Article::where('url_hash', Article::hashFor($a('url')))->first(),
+                'issue' => PulseIssue::whereHas('snapshot', fn ($q) => $q->whereDate('taken_on', $a('taken_on')))->where('key', $a('key'))->first(),
+                'item' => ScorecardItem::whereHas('category.scorecard', fn ($q) => $q->where('key', $a('scorecard')))->where('key', $a('key'))->first(),
+                default => false,
+            };
+            $attributes = [];
+            foreach ($ref->attributes() as $name => $value) {
+                $attributes[] = "{$name}=\"{$value}\"";
+            }
+            $label = '<tagging> '.$ref->getName().' '.implode(' ', $attributes);
+            if ($model === false) {
+                $this->problems[] = "Unknown element in <tagging>: <{$ref->getName()}>.";
+
+                continue;
+            }
+            if ($model === null) {
+                $this->problems[] = "{$label}: no such record on file -- skipped.";
+
+                continue;
+            }
+            $this->syncTags($model, $ref, $label, $result);
+        }
     }
 
     private function list(?SimpleXMLElement $parent, string $child): array

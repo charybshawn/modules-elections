@@ -7,6 +7,7 @@ use Cultpantry\Elections\Http\Controllers\Admin\Concerns\ElectionsAdminMiddlewar
 use Cultpantry\Elections\Models\Article;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Routing\Controllers\HasMiddleware;
+use Cultpantry\Elections\Models\Tag;
 
 /**
  * Articles only arrive by XML import; this is just the way to drop one that
@@ -21,6 +22,7 @@ class ArticleController extends Controller implements HasMiddleware
         $this->authorize('delete', $article);
 
         $article->delete();
+        Tag::pruneOrphans();
 
         return redirect()->back()->with('success', 'Article removed.');
     }

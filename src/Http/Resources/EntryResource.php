@@ -25,6 +25,7 @@ class EntryResource extends JsonResource
             'published_on' => $this->published_on?->toDateString(),
             // When it went on file -- what "new since your last visit" compares.
             'added_at' => $this->created_at?->toIso8601String(),
+            'tags' => $this->whenLoaded('tags', fn () => TagResource::collection($this->tags)->resolve(), []),
         ];
     }
 }

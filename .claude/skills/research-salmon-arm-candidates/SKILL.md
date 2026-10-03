@@ -276,6 +276,23 @@ two).
 in rank order with tier and source count, which sources were used, and any
 statements left out because they weren't the candidate's own words.
 
+## Tagging
+
+Tag everything you write: planks, statements, Q&A answers, articles and scorecard statements.
+- Use `<tags>` on the record, with 1 to 3 slugs from `references/tags.md`. The schema doc's
+  "Tags" section has the rules.
+- If nothing fits, add a tag in a `<vocabulary>` block at the top of the same file, with a
+  topic, a name and a one-line description. Flag it in the hand-off.
+  - Prefer widening an existing tag's description to adding a near-duplicate.
+  - Keep `references/tags.md` in step.
+
+**Backfill or re-tag existing records** when the user asks, or after the vocabulary changes:
+- Read the records with the baseline `tinker` query.
+- Write a `<tagging>` file to `~/Documents/election-research/salmon-arm-tags-<date>.xml`.
+- Large batches split well across subagents: give each one the vocabulary and a slice of
+  records, then merge and validate. Every slug must be in the vocabulary, each record gets 1 to
+  3 tags, and there are no missing or extra records.
+
 ## Scorecard pass (Vote4Tomorrow and similar)
 
 When the user asks for candidates' scorecard stances, or a refresh nearer

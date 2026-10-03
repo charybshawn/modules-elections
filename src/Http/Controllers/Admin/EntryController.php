@@ -8,6 +8,7 @@ use Cultpantry\Elections\Models\Candidate;
 use Cultpantry\Elections\Models\Entry;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Routing\Controllers\HasMiddleware;
+use Cultpantry\Elections\Models\Tag;
 
 /**
  * Entries only arrive by XML import; this is how a wrong or irrelevant one
@@ -23,6 +24,7 @@ class EntryController extends Controller implements HasMiddleware
         $this->authorize('delete', $entry);
 
         $entry->delete();
+        Tag::pruneOrphans();
 
         return redirect()->route('admin.elections.candidates.show', $candidate)->with('success', 'Entry deleted.');
     }

@@ -9,6 +9,7 @@ use Cultpantry\Elections\Models\Entry;
 use Cultpantry\Elections\Models\Plank;
 use Cultpantry\Elections\Models\PulseSnapshot;
 use Cultpantry\Elections\Models\Scorecard;
+use Cultpantry\Elections\Models\Tag;
 use SimpleXMLElement;
 
 /**
@@ -28,8 +29,19 @@ class ExportElectionToXml
     {
         $xml = new SimpleXMLElement('<?xml version="1.0" encoding="UTF-8"?><election></election>');
 
+        $tags = Tag::orderBy('topic')->orderBy('name')->get();
+        if ($tags->isNotEmpty()) {
+            $vocabulary = $xml->addChild('vocabulary');
+            foreach ($tags as $tag) {
+                $node = $vocabulary->addChild('tag');
+                foreach (['slug', 'topic', 'name', 'description'] as $field) {
+                    $this->addChild($node, $field, $tag->{$field});
+                }
+            }
+        }
+
         $candidatesNode = $xml->addChild('candidates');
-        foreach (Candidate::with(['entries', 'planks.entries'])->orderBy('name')->get() as $candidate) {
+        foreach (Candidate::with(['entries.tags', 'planks.tags', 'planks.entries.tags'])->orderBy('name')->get() as $candidate) {
             $node = $candidatesNode->addChild('candidate');
             foreach (self::CANDIDATE_FIELDS as $field) {
                 $this->addChild($node, $field, $candidate->{$field});
@@ -54,13 +66,14 @@ class ExportElectionToXml
         }
 
         $articlesNode = $xml->addChild('articles');
-        foreach (Article::with('candidates')->orderBy('published_on')->orderBy('id')->get() as $article) {
+        foreach (Article::with(['candidates', 'tags'])->orderBy('published_on')->orderBy('id')->get() as $article) {
             $node = $articlesNode->addChild('article');
             $this->addChild($node, 'title', $article->title);
             $this->addChild($node, 'url', $article->url);
             $this->addChild($node, 'outlet', $article->outlet);
             $this->addChild($node, 'published_on', $article->published_on?->toDateString());
             $this->addChild($node, 'summary', $article->summary);
+            $this->appendTags($node, $article);
             if ($article->candidates->isNotEmpty()) {
                 $names = $node->addChild('candidates');
                 foreach ($article->candidates as $candidate) {
@@ -81,7 +94,7 @@ class ExportElectionToXml
             $this->addChild($node, 'description', $event->description);
         }
 
-        foreach (PulseSnapshot::with(['issues', 'mentions.candidate'])->orderBy('taken_on')->get() as $snapshot) {
+        foreach (PulseSnapshot::with(['issues.tags', 'mentions.candidate'])->orderBy('taken_on')->get() as $snapshot) {
             $node = $xml->addChild('pulse');
             $this->addChild($node, 'taken_on', $snapshot->taken_on->toDateString());
             $this->addChild($node, 'period_from', $snapshot->period_from?->toDateString());
@@ -108,6 +121,7 @@ class ExportElectionToXml
                 foreach (['voices', 'support_pct', 'oppose_pct', 'mixed_pct'] as $field) {
                     $this->addChild($i, $field, $issue->{$field} === null ? null : (string) $issue->{$field});
                 }
+                $this->appendTags($i, $issue);
                 foreach (['wants' => 'want', 'questions' => 'question'] as $field => $child) {
                     if ($issue->{$field}) {
                         $list = $i->addChild($field);
@@ -126,7 +140,7 @@ class ExportElectionToXml
             }
         }
 
-        $scorecards = Scorecard::with(['categories.items', 'responses.candidate', 'responses.answers', 'responses.takeaways'])->orderBy('key')->get();
+        $scorecards = Scorecard::with(['categories.items.tags', 'responses.candidate', 'responses.answers', 'responses.takeaways'])->orderBy('key')->get();
         if ($scorecards->isNotEmpty()) {
             $scorecardsNode = $xml->addChild('scorecards');
             foreach ($scorecards as $scorecard) {
@@ -169,6 +183,7 @@ class ExportElectionToXml
                 $i = $items->addChild('item');
                 $this->addChild($i, 'key', $item->key);
                 $this->addChild($i, 'statement', $item->statement);
+                $this->appendTags($i, $item);
             }
         }
 
@@ -207,6 +222,7 @@ class ExportElectionToXml
         $this->addChild($node, 'rationale', $plank->rationale);
         $this->addChild($node, 'priority_position', $plank->priority_position === null ? null : (string) $plank->priority_position);
         $this->addChild($node, 'has_commitment', $plank->has_commitment ? 'true' : 'false');
+        $this->appendTags($node, $plank);
 
         if ($plank->entries->isNotEmpty()) {
             $entriesNode = $node->addChild('entries');
@@ -228,6 +244,19 @@ class ExportElectionToXml
         $this->addChild($node, 'source_type', $entry->source_type);
         $this->addChild($node, 'source_name', $entry->source_name);
         $this->addChild($node, 'published_on', $entry->published_on?->toDateString());
+        $this->appendTags($node, $entry);
+    }
+
+    /** <tags><tag>slug</tag>…</tags>, left out when the record has none. */
+    private function appendTags(SimpleXMLElement $node, \Illuminate\Database\Eloquent\Model $model): void
+    {
+        if ($model->tags->isEmpty()) {
+            return;
+        }
+        $tags = $node->addChild('tags');
+        foreach ($model->tags as $tag) {
+            $this->addChild($tags, 'tag', $tag->slug);
+        }
     }
 
     /**

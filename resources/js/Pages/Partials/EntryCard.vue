@@ -28,6 +28,7 @@
       <span v-if="entry.published_on">· {{ formatDate(entry.published_on) }}</span>
       <span v-else class="text-amber-600 dark:text-amber-400">· undated</span>
     </p>
+    <TagChips v-if="entry.tags?.length" :tags="entry.tags" class="mt-1.5" />
 
     <div v-if="editable" class="mt-1 flex gap-3 text-xs">
       <button type="button" class="tap-target-touch text-red-600 hover:text-red-800 dark:text-red-400" @click="$emit('delete', entry)">Delete</button>
@@ -36,6 +37,7 @@
 </template>
 
 <script setup lang="ts">
+import TagChips from './TagChips.vue'
 import type { Entry, Options } from './types'
 import { formatDate, hostOf, isHttpUrl } from './format'
 

@@ -6,6 +6,7 @@ use Cultpantry\Elections\Http\Controllers\Admin\CommunityPulseController;
 use Cultpantry\Elections\Http\Controllers\Admin\ElectionEventController;
 use Cultpantry\Elections\Http\Controllers\Admin\EntryController;
 use Cultpantry\Elections\Http\Controllers\Admin\PlankController;
+use Cultpantry\Elections\Http\Controllers\Admin\TagController;
 use Illuminate\Support\Facades\Route;
 
 // 'web' is REQUIRED here and is not optional. Core routes/web.php gets the
@@ -34,6 +35,9 @@ Route::prefix('admin')->name('admin.')->middleware(['web', 'auth', 'admin'])->gr
         Route::delete('candidates/{candidate}/planks/{plank}', [PlankController::class, 'destroy'])->name('planks.destroy');
 
         Route::delete('events/{event}', [ElectionEventController::class, 'destroy'])->name('events.destroy');
+
+        Route::get('tags', [TagController::class, 'index'])->name('tags.index');
+        Route::get('tags/{tag}', [TagController::class, 'show'])->name('tags.show');
 
         Route::get('pulse', [CommunityPulseController::class, 'index'])->name('pulse.index');
         Route::delete('pulse/{snapshot}', [CommunityPulseController::class, 'destroy'])->name('pulse.destroy');

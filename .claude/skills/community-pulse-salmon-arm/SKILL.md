@@ -65,8 +65,9 @@ the database; the user reviews and imports the file.
 
 ## Writing the snapshot
 
-- Map each issue to a module `topic` (the same list planks use) so the page
-  can set it beside candidates' platforms; use `other` only when nothing fits.
+- Map each issue to a module `topic`, and tag it with 1 to 3 slugs from
+  `../research-salmon-arm-candidates/references/tags.md`. The page matches issues to
+  candidates' planks by shared tags, so use the same slugs planks use.
 - Reuse issue `<key>`s from earlier snapshots (check the last export or the
   page) so changes over time line up.
 - `<conclusions>`: three to five plain-language takeaways, each tied to an

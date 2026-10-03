@@ -6,6 +6,7 @@ use Cultpantry\Elections\Http\Resources\ArticleResource;
 use Cultpantry\Elections\Http\Resources\CandidateResource;
 use Cultpantry\Elections\Http\Resources\EntryResource;
 use Cultpantry\Elections\Http\Resources\PlankResource;
+use Cultpantry\Elections\Http\Resources\TagResource;
 use Cultpantry\Elections\Models\Candidate;
 use Cultpantry\Elections\Models\Entry;
 use Cultpantry\Elections\Models\Plank;
@@ -44,7 +45,7 @@ class BuildCandidatePortfolio
 
     public function handle(Candidate $candidate): array
     {
-        $candidate->load(['entries', 'articles', 'planks.entries', 'planks.rankHistory']);
+        $candidate->load(['entries.tags', 'articles.tags', 'planks.tags', 'planks.entries.tags', 'planks.rankHistory']);
 
         $sections = [];
         foreach (self::SECTIONS as $key => $section) {
@@ -116,7 +117,7 @@ class BuildCandidatePortfolio
      */
     private function scorecards(Candidate $candidate): array
     {
-        $responses = ScorecardResponse::with(['scorecard.categories.items', 'answers', 'takeaways'])
+        $responses = ScorecardResponse::with(['scorecard.categories.items.tags', 'answers', 'takeaways'])
             ->where('candidate_id', $candidate->id)
             ->get()
             ->sortBy(fn (ScorecardResponse $r) => $r->scorecard->title);
@@ -145,6 +146,7 @@ class BuildCandidatePortfolio
                     return [
                         'key' => $item->key,
                         'statement' => $item->statement,
+                        'tags' => TagResource::collection($item->tags)->resolve(),
                         'stance' => $stance,
                         'field' => $field[$item->id] ?? [],
                     ];

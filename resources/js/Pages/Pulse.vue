@@ -62,7 +62,8 @@
                   <span :class="heatClass(issue.heat)" class="rounded-full px-2 py-0.5 text-xs font-medium">{{ heat[issue.heat] ?? issue.heat }} heat</span>
                 </div>
               </div>
-              <div class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ options.topics[issue.topic] ?? issue.topic }}</div>
+              <TagChips v-if="issue.tags.length" :tags="issue.tags" class="mt-2" />
+              <div v-else class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ options.topics[issue.topic] ?? issue.topic }}</div>
 
               <!-- Stance split -->
               <div v-if="hasStance(issue)" class="mt-3">
@@ -93,8 +94,10 @@
 
               <!-- Residents vs candidates -->
               <div v-if="issue.coverage" class="mt-5 border-t border-gray-200 dark:border-gray-700 pt-4">
-                <h4 class="text-sm font-semibold text-gray-900 dark:text-white">Candidates campaigning on {{ (options.topics[issue.topic] ?? issue.topic).toLowerCase() }}</h4>
-                <p v-if="coverageCount(issue) === 0" class="mt-1 text-sm text-amber-800 dark:text-amber-300">No candidate has a plank on this topic yet.</p>
+                <h4 class="text-sm font-semibold text-gray-900 dark:text-white">
+                  Candidates campaigning on {{ issue.coverage_by === 'tags' ? issue.tags.map((t) => t.name.toLowerCase()).join(' or ') : (options.topics[issue.topic] ?? issue.topic).toLowerCase() }}
+                </h4>
+                <p v-if="coverageCount(issue) === 0" class="mt-1 text-sm text-amber-800 dark:text-amber-300">No candidate has a plank on this yet.</p>
                 <dl v-else class="mt-2 space-y-2 text-sm">
                   <div v-for="(people, tier) in issue.coverage" :key="tier" v-show="people.length" class="flex flex-col sm:flex-row sm:gap-3">
                     <dt class="shrink-0 sm:w-44 text-gray-500 dark:text-gray-400">{{ options.plankTiers[tier] ?? tier }} ({{ people.length }})</dt>
@@ -138,6 +141,7 @@ import { Link, router } from '@inertiajs/vue3'
 import AdminLayout from '@/Layouts/AdminLayout.vue'
 import AdminMobileHeader from '@/Components/Admin/AdminMobileHeader.vue'
 import { useConfirmDialog } from '@/composables/useConfirmDialog'
+import TagChips from './Partials/TagChips.vue'
 import { secondaryButtonClass, sectionHeadingClass } from './Partials/classes'
 import { formatDate, useReadOnly } from './Partials/format'
 import type { Options, PulseIssue, PulseSnapshot } from './Partials/types'

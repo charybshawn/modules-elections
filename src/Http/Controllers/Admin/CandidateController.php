@@ -16,6 +16,7 @@ use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Support\Carbon;
 use Inertia\Inertia;
 use Inertia\Response;
+use Cultpantry\Elections\Models\Tag;
 
 /**
  * The dashboard, candidate portfolios, and the XML import/export that is
@@ -68,6 +69,7 @@ class CandidateController extends Controller implements HasMiddleware
 
         $name = $candidate->name;
         $candidate->delete();
+        Tag::pruneOrphans();
 
         return redirect()
             ->route('admin.elections.index')

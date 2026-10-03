@@ -2,6 +2,7 @@
 
 namespace Cultpantry\Elections\Models;
 
+use Cultpantry\Elections\Models\Concerns\HasTags;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -29,6 +30,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  */
 class Plank extends Model
 {
+    use HasTags;
+
     protected $table = 'elections_planks';
 
     /**

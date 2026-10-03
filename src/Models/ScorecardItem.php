@@ -2,6 +2,7 @@
 
 namespace Cultpantry\Elections\Models;
 
+use Cultpantry\Elections\Models\Concerns\HasTags;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -14,6 +15,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  */
 class ScorecardItem extends Model
 {
+    use HasTags;
+
     protected $table = 'elections_scorecard_items';
 
     protected $fillable = ['key', 'statement', 'position'];

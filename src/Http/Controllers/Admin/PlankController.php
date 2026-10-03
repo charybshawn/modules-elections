@@ -9,6 +9,7 @@ use Cultpantry\Elections\Models\Plank;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Support\Facades\DB;
+use Cultpantry\Elections\Models\Tag;
 
 /**
  * Planks only arrive by XML import; this is how a wrong one comes off a
@@ -27,6 +28,7 @@ class PlankController extends Controller implements HasMiddleware
             $plank->entries()->delete();
             $plank->delete();
         });
+        Tag::pruneOrphans();
 
         return redirect()
             ->route('admin.elections.candidates.show', ['candidate' => $candidate, 'tab' => 'platform'])

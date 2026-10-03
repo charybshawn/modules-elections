@@ -51,6 +51,7 @@
                 <span class="font-medium" :class="stanceStyle[item.stance]?.text">{{ stances[item.stance] ?? item.stance }}</span>
                 <template v-if="fieldLabel(item)"> · {{ fieldLabel(item) }}</template>
               </p>
+              <TagChips :tags="item.tags" class="mt-1" />
             </div>
           </li>
         </ul>
@@ -78,6 +79,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import AccountSection from '@/Components/Admin/Accounts/AccountSection.vue'
+import TagChips from './TagChips.vue'
 import { formatDate, hostOf, isHttpUrl } from './format'
 import type { Scorecard, ScorecardCategory, ScorecardItem } from './types'
 

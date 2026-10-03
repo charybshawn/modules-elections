@@ -13,6 +13,7 @@ use Illuminate\Http\Request;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Inertia\Inertia;
 use Inertia\Response;
+use Cultpantry\Elections\Models\Tag;
 
 /**
  * The Community Pulse page: our summary of what residents are discussing,
@@ -42,6 +43,7 @@ class CommunityPulseController extends Controller implements HasMiddleware
         $this->authorize('delete', $snapshot);
 
         $snapshot->delete();
+        Tag::pruneOrphans();
 
         return redirect()->route('admin.elections.pulse.index')->with('success', 'Pulse snapshot deleted.');
     }

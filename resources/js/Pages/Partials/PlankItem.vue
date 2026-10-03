@@ -11,12 +11,13 @@
 
         <!-- The signals behind the rank, so the order is never a black box. -->
         <ul class="mt-2 flex flex-wrap gap-1.5 text-xs">
-          <li class="rounded bg-gray-100 px-1.5 py-0.5 text-gray-700 dark:bg-gray-700 dark:text-gray-300">{{ topics[plank.topic] ?? plank.topic }}</li>
+          <li v-if="!plank.tags.length" class="rounded bg-gray-100 px-1.5 py-0.5 text-gray-700 dark:bg-gray-700 dark:text-gray-300">{{ topics[plank.topic] ?? plank.topic }}</li>
           <li v-if="plank.priority_position" class="rounded bg-indigo-50 px-1.5 py-0.5 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300">Their priority #{{ plank.priority_position }}</li>
           <li v-if="plank.has_commitment" class="rounded bg-indigo-50 px-1.5 py-0.5 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300">Specific commitment</li>
           <li class="rounded bg-gray-100 px-1.5 py-0.5 text-gray-700 dark:bg-gray-700 dark:text-gray-300">{{ plank.source_count }} source{{ plank.source_count === 1 ? '' : 's' }}</li>
           <li v-if="movement" :class="movement.up ? 'bg-green-50 text-green-700 dark:bg-green-900/40 dark:text-green-300' : 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300'" class="rounded px-1.5 py-0.5">{{ movement.label }}</li>
         </ul>
+        <TagChips :tags="plank.tags" class="mt-2" />
         <p v-if="plank.rationale" class="mt-2 text-sm text-gray-500 dark:text-gray-400"><span class="font-medium text-gray-700 dark:text-gray-300">Why it ranks here:</span> {{ plank.rationale }}</p>
 
         <details v-if="plank.history.length > 1" class="mt-2">
@@ -46,6 +47,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import EntryCard from './EntryCard.vue'
+import TagChips from './TagChips.vue'
 import { newPillClass } from './classes'
 import { formatDate } from './format'
 import type { Entry, Options, Plank } from './types'

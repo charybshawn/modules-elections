@@ -2,6 +2,7 @@
 
 namespace Cultpantry\Elections\Actions;
 
+use Cultpantry\Elections\Http\Resources\TagResource;
 use Cultpantry\Elections\Models\Plank;
 use Cultpantry\Elections\Models\PulseIssue;
 use Cultpantry\Elections\Models\PulseSnapshot;
@@ -26,13 +27,14 @@ class BuildCommunityPulse
             return ['snapshot' => null, 'snapshots' => $this->dates($snapshots)];
         }
 
-        $current->load(['issues', 'mentions.candidate']);
+        $current->load(['issues.tags', 'mentions.candidate']);
         $previous = PulseSnapshot::with(['issues', 'mentions'])
             ->whereDate('taken_on', '<', $current->taken_on)
             ->orderByDesc('taken_on')
             ->first();
 
-        $planksByTopic = Plank::with('candidate:id,name,slug')->get()->groupBy('topic');
+        $planks = Plank::with(['candidate:id,name,slug', 'tags:id'])->get();
+        $planksByTopic = $planks->groupBy('topic');
 
         return [
             'snapshot' => [
@@ -59,7 +61,15 @@ class BuildCommunityPulse
                     'summary' => $issue->summary,
                     'wants' => $issue->wants ?? [],
                     'questions' => $issue->questions ?? [],
-                    'coverage' => $issue->topic === 'other' ? null : $this->coverage($planksByTopic->get($issue->topic, collect())),
+                    'tags' => TagResource::collection($issue->tags)->resolve(),
+                    // Planks sharing a tag with the issue; without tags, the
+                    // broader topic match (and none for "other").
+                    'coverage' => match (true) {
+                        $issue->tags->isNotEmpty() => $this->coverage($planks->filter(fn (Plank $p) => $p->tags->pluck('id')->intersect($issue->tags->pluck('id'))->isNotEmpty())),
+                        $issue->topic === 'other' => null,
+                        default => $this->coverage($planksByTopic->get($issue->topic, collect())),
+                    },
+                    'coverage_by' => $issue->tags->isNotEmpty() ? 'tags' : 'topic',
                 ])->values()->all(),
                 'mentions' => $current->mentions->map(fn ($m) => [
                     'name' => $m->candidate->name,

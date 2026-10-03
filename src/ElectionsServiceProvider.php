@@ -8,9 +8,13 @@ use Cultpantry\Elections\Models\Candidate;
 use Cultpantry\Elections\Models\ElectionEvent;
 use Cultpantry\Elections\Models\Entry;
 use Cultpantry\Elections\Models\Plank;
+use Cultpantry\Elections\Models\PulseIssue;
 use Cultpantry\Elections\Models\PulseSnapshot;
+use Cultpantry\Elections\Models\ScorecardItem;
+use Cultpantry\Elections\Models\Tag;
 use Cultpantry\Elections\Policies\AdminWritePolicy;
 use Cultpantry\Elections\Policies\CandidatePolicy;
+use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
 
@@ -46,6 +50,18 @@ class ElectionsServiceProvider extends ServiceProvider
         Gate::policy(PulseSnapshot::class, AdminWritePolicy::class);
         Gate::policy(Article::class, AdminWritePolicy::class);
         Gate::policy(ElectionEvent::class, AdminWritePolicy::class);
+        Gate::policy(Tag::class, AdminWritePolicy::class);
+
+        // 4b. Short, stable names for tagged records in elections_taggables,
+        //     so stored rows don't depend on PHP class names. Prefixed so
+        //     they can't collide with the host's or another module's.
+        Relation::morphMap([
+            'elections_plank' => Plank::class,
+            'elections_entry' => Entry::class,
+            'elections_article' => Article::class,
+            'elections_pulse_issue' => PulseIssue::class,
+            'elections_scorecard_item' => ScorecardItem::class,
+        ]);
 
         // 5. Publish the Vue source into resources/js/Pages/Vendor/elections/.
         //    php artisan vendor:publish --tag=elections-pages

@@ -192,6 +192,7 @@
                 <span v-if="isNewArticle(article)" :class="newPillClass" class="ml-2 align-middle">New</span>
                 <div class="mt-0.5 text-xs text-gray-500 dark:text-gray-400">{{ [article.outlet, formatDate(article.published_on)].filter(Boolean).join(' · ') }}</div>
                 <p v-if="article.summary" class="mt-1 text-sm leading-relaxed text-gray-600 dark:text-gray-300">{{ article.summary }}</p>
+                <TagChips :tags="article.tags" class="mt-1.5" />
                 <button v-if="!readOnly" type="button" class="tap-target-touch mt-1 text-xs text-red-600 hover:text-red-800 dark:text-red-400" @click="deleteArticle(article)">Remove article</button>
               </li>
             </ul>
@@ -223,6 +224,7 @@ import EntryCard from '../Partials/EntryCard.vue'
 import FactList from '../Partials/FactList.vue'
 import PlankItem from '../Partials/PlankItem.vue'
 import ScorecardView from '../Partials/ScorecardView.vue'
+import TagChips from '../Partials/TagChips.vue'
 import { newPillClass } from '../Partials/classes'
 import { formatDate, hostOf, isHttpUrl, useReadOnly } from '../Partials/format'
 import { toUnix, useSeen } from '../Partials/seen'
