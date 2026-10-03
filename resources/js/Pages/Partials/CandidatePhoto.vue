@@ -26,7 +26,9 @@ const props = defineProps<{ name: string; url: string | null }>()
 const failed = ref(false)
 watch(() => props.url, () => (failed.value = false))
 
-const showPhoto = computed(() => isHttpUrl(props.url) && !failed.value)
+// A web address, or a file in the app itself (/images/...).
+const isLocal = (url: string | null) => !!url && /^\/[^/\s]/.test(url)
+const showPhoto = computed(() => (isHttpUrl(props.url) || isLocal(props.url)) && !failed.value)
 const initials = computed(() =>
   props.name.split(/\s+/).filter(Boolean).map((part) => part[0]).slice(0, 2).join('').toUpperCase(),
 )

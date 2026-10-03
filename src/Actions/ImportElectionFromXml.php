@@ -49,7 +49,7 @@ class ImportElectionFromXml
 {
     private const CANDIDATE_FIELDS = [
         'occupation', 'bio', 'bio_source_url', 'website', 'facebook_url',
-        'instagram_url', 'email', 'phone', 'photo_url', 'notes',
+        'instagram_url', 'email', 'phone', 'photo_url', 'photo_credit', 'notes',
     ];
 
     private const URL_FIELDS = ['bio_source_url', 'website', 'facebook_url', 'instagram_url', 'photo_url'];
@@ -205,7 +205,9 @@ class ImportElectionFromXml
             if ($value === null) {
                 continue;
             }
-            if (in_array($field, self::URL_FIELDS, true) && ! $this->isHttpUrl($value)) {
+            // A photo may also be a file in the app itself (/images/...).
+            $isLocalPhoto = $field === 'photo_url' && preg_match('#^/[^/\s][^\s]*$#', $value);
+            if (in_array($field, self::URL_FIELDS, true) && ! $this->isHttpUrl($value) && ! $isLocalPhoto) {
                 $this->problems[] = "{$name}: <{$field}> isn't an http(s) URL, left as it was.";
 
                 continue;

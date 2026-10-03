@@ -28,6 +28,7 @@ class CandidateResource extends JsonResource
             'email' => $this->email,
             'phone' => $this->phone,
             'photo_url' => $this->photo_url,
+            'photo_credit' => $this->photo_credit,
             // Research notes (doubts, conflicting sources, follow-ups) are
             // working material for admins, not for invited viewers.
             'notes' => $this->when((bool) $request->user()?->isAdmin(), $this->notes),

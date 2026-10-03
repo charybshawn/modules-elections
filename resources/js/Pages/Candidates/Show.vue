@@ -31,7 +31,10 @@
     <div class="space-y-8 md:mt-6">
       <!-- Identity and key facts (both breakpoints): photo above the facts on phones. -->
       <div class="flex flex-col sm:flex-row gap-5">
-        <CandidatePhoto :name="candidate.name" :url="candidate.photo_url" class="h-28 w-28 shrink-0 rounded-lg text-3xl" />
+        <figure class="shrink-0">
+          <CandidatePhoto :name="candidate.name" :url="candidate.photo_url" class="h-28 w-28 rounded-lg text-3xl" />
+          <figcaption v-if="candidate.photo_url && candidate.photo_credit" class="mt-1 text-[11px] text-gray-500 dark:text-gray-400">Photo: {{ candidate.photo_credit }}</figcaption>
+        </figure>
         <div class="min-w-0 flex-1">
           <div class="flex flex-wrap items-center gap-2">
             <span class="px-2 py-0.5 text-xs font-semibold rounded-full bg-amber-100 text-amber-800 dark:bg-amber-900/60 dark:text-amber-200">

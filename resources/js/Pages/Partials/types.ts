@@ -17,6 +17,8 @@ export interface Candidate {
   email: string | null
   phone: string | null
   photo_url: string | null
+  /** Who the photo belongs to, e.g. "Friday AM". */
+  photo_credit: string | null
   /** Admins only -- omitted for invited read-only viewers. */
   notes?: string | null
   entries_count?: number

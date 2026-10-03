@@ -332,3 +332,12 @@ For planks already on file, use `<plans>` with no need to repeat them:
 - A supplied `<plan>` replaces the plank's plan; leaving it out keeps what's on file.
 - Use the candidate's own words only. Don't infer steps they didn't state, and apply the same
   yardstick to everyone.
+
+## Candidate photos
+
+`<photo_url>` is either an http(s) link, or a path to a file in the app itself, such as
+`/images/elections/candidates/jane-example.jpg`. Those files live in the private app repo, never in
+this public module.
+
+`<photo_credit>` names whose photo it is (e.g. `Friday AM`). It's shown as "Photo: …" under the
+picture.

@@ -58,6 +58,7 @@ class Candidate extends Model
         'email',
         'phone',
         'photo_url',
+        'photo_credit',
         'notes',
     ];
 

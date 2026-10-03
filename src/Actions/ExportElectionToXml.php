@@ -22,7 +22,7 @@ class ExportElectionToXml
 {
     private const CANDIDATE_FIELDS = [
         'name', 'office', 'status', 'occupation', 'bio', 'bio_source_url', 'website',
-        'facebook_url', 'instagram_url', 'email', 'phone', 'photo_url', 'notes',
+        'facebook_url', 'instagram_url', 'email', 'phone', 'photo_url', 'photo_credit', 'notes',
     ];
 
     public function handle(): string

@@ -179,7 +179,13 @@ invited readers will rely on to decide how to vote. So:
 8. **Photos.** `photo_url` should link to the candidate's own published
    headshot, ideally from their website or a news story. Facebook and
    Instagram image URLs expire within days, so use them only as a last
-   resort and note it. Never download or re-host images.
+   resort and note it. Don't download or re-host images on your own
+   initiative. The user may choose to keep photos in the app instead (they
+   did for the Friday AM candidate profiles, Oct. 2026). Those live in the
+   private app repo at `public/images/elections/candidates/<slug>.jpg`, with
+   `photo_url` set to `/images/elections/candidates/<slug>.jpg` and
+   `<photo_credit>` naming whose photo it is. Never put photos in the public
+   module repo.
 
 9. **Write the XML and hand it off as a diff.** Save to
    `~/Documents/election-research/` (create it if needed) as
