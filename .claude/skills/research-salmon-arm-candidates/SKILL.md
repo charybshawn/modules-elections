@@ -1,6 +1,6 @@
 ---
 name: research-salmon-arm-candidates
-description: Research candidates in the Salmon Arm (BC) 2026 municipal election (mayor and council) and write a ready-to-import XML file for the cultpantry admin panel's Elections module (modules-elections). It covers who's running, bios, platform planks, statements, answers to questions from media, forums and Facebook, incumbents' council record, endorsements, campaign finance, election news coverage and election events (forums, voting days). Use this whenever the user asks to research, update, refresh or look into Salmon Arm election candidates, a specific candidate, their platform or promises, election coverage, or all-candidates forums, even if they don't mention XML, the import or this skill by name.
+description: Research the candidates already on file in the cultpantry admin panel's Elections module (modules-elections) for the Salmon Arm (BC) 2026 municipal election (mayor and council) and write a ready-to-import XML file. It covers bios, platform planks, statements, answers to questions from media, forums and Facebook, incumbents' council record, endorsements, campaign finance, election news coverage, withdrawals and election events (forums, voting days). Use this whenever the user asks to research, update, refresh or look into Salmon Arm election candidates, a specific candidate, their platform or promises, election coverage, or all-candidates forums, even if they don't mention XML, the import or this skill by name. Finding out who's running is find-salmon-arm-candidates, which must be run and imported first.
 ---
 
 # Research Salmon Arm candidates
@@ -11,6 +11,9 @@ the Elections module's **Import XML** button (`POST /admin/elections/import`,
 handled by `Cultpantry\Elections\Actions\ImportElectionFromXml`). This is a
 research aid, not an importer. It never writes to the database. The user
 reviews the file and imports it themselves.
+
+It researches only the candidates already on file. The roster (who's running)
+comes from `find-salmon-arm-candidates`, which the user runs and imports first.
 
 **Read `references/elections-xml-schema.md` before writing any output.** It
 has the field list, the controlled value lists, and exactly how the import
@@ -65,20 +68,22 @@ invited readers will rely on to decide how to vote. So:
 
    Note each candidate's exact `name` (the match key) and which entries'
    `source_url`s are already on file, so you don't spend time re-reading
-   sources you've already captured. On the first run it comes back empty.
+   sources you've already captured.
 
-3. **Official sources first.** Start from the City of Salmon Arm's 2026
-   election page (search "City of Salmon Arm 2026 general local election",
-   then open the city's own site at salmonarm.ca). It is the authority on:
-   - who is officially nominated (`status` = `nominated`; anyone announced
-     elsewhere but not on the list yet is `declared`; anyone listed as
-     withdrawn is `withdrawn`),
-   - voting days, advance voting days, times and places, and the nomination
-     deadline (each one becomes an `<event>`, `source_type`/URL from the
-     city page).
+   **If no candidates come back, stop.** Tell the user to run
+   `find-salmon-arm-candidates` and import its file first. This skill never
+   adds candidates. If you come across someone running who isn't on file,
+   don't write them into the file; list them in the summary under "Not on
+   file" so the user can re-run the roster skill.
 
-   Incumbency: check the city's current Mayor & Council page. Only someone
-   holding a seat now is `is_incumbent` = `true`.
+3. **Official sources first.** Check the City of Salmon Arm's 2026 election
+   page (salmonarm.ca) for:
+   - status changes among the candidates on file: anyone the City now lists
+     as withdrawn becomes `withdrawn`, and a `declared` candidate who now
+     appears on the official list becomes `nominated`;
+   - voting days, advance voting days, times and places, and any events not
+     already on file (each one becomes an `<event>` with the City page as its
+     URL).
 
 4. **News.** For each candidate, and for the race in general:
    - **Salmon Arm Observer** (`https://www.saobserver.net/`): the local
@@ -154,8 +159,9 @@ invited readers will rely on to decide how to vote. So:
    `~/Documents/election-research/` (create it if needed) as
    `salmon-arm-election-<YYYY-MM-DD>.xml`, or with the candidate's name in it
    for a targeted pass. Then summarize, structured around the baseline:
-   - **New candidates** and **status changes** (declared → nominated,
-     withdrawals), named.
+   - **Status changes** (declared → nominated, withdrawals), named.
+   - **Not on file**: anyone running whom you found but who isn't on file,
+     with the page where you saw them (re-run `find-salmon-arm-candidates`).
    - **New items per candidate**: counts by section, and the notable new
      planks or answers in one line each.
    - **New articles and events.**
@@ -172,8 +178,7 @@ invited readers will rely on to decide how to vote. So:
 
 ## Scale
 
-A full first pass over every candidate is large. If there are more than a
-handful of candidates, do the official sources and news for everyone first,
-write that file, then do the social-media passes per candidate (or a few at a
-time), each as its own file. Smaller reviewable files beat one giant
-unverified batch.
+A full pass over every candidate is large. Do the official sources and news
+for everyone first and write that file, then do the social-media passes one
+candidate (or a few) at a time, each as its own file. Smaller reviewable files
+beat one giant unverified batch.
