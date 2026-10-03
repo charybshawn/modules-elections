@@ -78,7 +78,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, shallowRef, watch } from 'vue'
 import { router } from '@inertiajs/vue3'
 
 interface SearchIndex {
@@ -101,7 +101,8 @@ const loading = ref(false)
 const failed = ref(false)
 const input = ref<HTMLInputElement | null>(null)
 const list = ref<HTMLElement | null>(null)
-let index: SearchIndex | null = null
+// shallowRef: the results recompute once the index arrives.
+const index = shallowRef<SearchIndex | null>(null)
 let returnFocus: HTMLElement | null = null
 
 const isMac = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent)
@@ -109,13 +110,13 @@ const shortcut = isMac ? '⌘K' : 'Ctrl K'
 
 // Loaded once, the first time the search opens.
 const loadIndex = async () => {
-  if (index || loading.value) return
+  if (index.value || loading.value) return
   loading.value = true
   failed.value = false
   try {
     const response = await fetch(route('admin.elections.search-index'), { headers: { Accept: 'application/json' }, credentials: 'same-origin' })
     if (!response.ok) throw new Error(String(response.status))
-    index = (await response.json()) as SearchIndex
+    index.value = (await response.json()) as SearchIndex
   } catch {
     failed.value = true
   } finally {
@@ -164,17 +165,18 @@ const ranked = <T,>(items: T[], text: (item: T) => string, title: (item: T) => s
 const tierLabel: Record<string, string> = { top: 'top priority', also: 'also stated', mentioned: 'mentioned' }
 
 const groups = computed(() => {
-  if (!index) return []
+  const data = index.value
+  if (!data) return []
   const words = query.value.toLowerCase().trim().split(/\s+/).filter(Boolean)
   let i = 0
   const row = (title: string, detail: string, href: string): Row => ({ index: i++, title, detail, href })
 
   // With nothing typed, offer the candidates to jump straight to.
   const candidates = words.length
-    ? ranked(index.candidates, (c) => `${c.name} ${c.occupation ?? ''}`, (c) => c.name, words, 6)
-    : index.candidates.filter((c) => c.status !== 'withdrawn').slice(0, 8)
-  const subjects = words.length ? ranked(index.subjects, (s) => `${s.name} ${s.heading}`, (s) => s.name, words, 6) : []
-  const planks = words.length ? ranked(index.planks, (p) => `${p.title} ${p.candidate}`, (p) => p.title, words, 8) : []
+    ? ranked(data.candidates, (c) => `${c.name} ${c.occupation ?? ''}`, (c) => c.name, words, 6)
+    : data.candidates.filter((c) => c.status !== 'withdrawn').slice(0, 8)
+  const subjects = words.length ? ranked(data.subjects, (s) => `${s.name} ${s.heading}`, (s) => s.name, words, 6) : []
+  const planks = words.length ? ranked(data.planks, (p) => `${p.title} ${p.candidate}`, (p) => p.title, words, 8) : []
 
   return [
     {

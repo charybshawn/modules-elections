@@ -17,11 +17,12 @@
     </template>
 
     <template #header>
-      <div class="flex items-center justify-between gap-3">
+      <!-- Search sits beside Back, clear of the sticky actions pill on the right. -->
+      <div class="flex items-center gap-4">
         <Link :href="route('admin.elections.index')" class="hidden md:inline-flex tap-target-touch items-center text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white text-sm">
           &larr; Back to Elections
         </Link>
-        <QuickSearch class="ml-auto" />
+        <QuickSearch />
       </div>
       <!-- pr-40 keeps a long name clear of the sticky actions pill. -->
       <h1 class="hidden md:block mt-2 pr-40 text-2xl font-semibold text-gray-900 dark:text-white">{{ candidate.name }}</h1>
