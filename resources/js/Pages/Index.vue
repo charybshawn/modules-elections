@@ -3,16 +3,13 @@
     <AdminMobileHeader title="Elections" />
 
     <div class="px-4 sm:px-0">
+      <ElectionsNav class="mb-6" />
       <div class="md:flex md:items-start md:justify-between gap-6 mb-6">
         <div>
           <h1 class="hidden md:block text-2xl font-semibold text-gray-900 dark:text-white">Salmon Arm Election 2026</h1>
           <p class="mt-1 text-sm text-gray-600 dark:text-gray-400">
             Mayor and six councillors. Every item on a candidate's page links to where it came from.
           </p>
-          <div class="mt-2 flex flex-wrap gap-x-5">
-            <Link :href="route('admin.elections.tags.index')" class="inline-flex tap-target-touch items-center text-sm font-medium text-indigo-600 hover:text-indigo-800 dark:text-indigo-400 dark:hover:text-indigo-300">Browse by subject &rarr;</Link>
-            <Link :href="route('admin.elections.pulse.index')" class="inline-flex tap-target-touch items-center text-sm font-medium text-indigo-600 hover:text-indigo-800 dark:text-indigo-400 dark:hover:text-indigo-300">Community Pulse: what residents are raising &rarr;</Link>
-          </div>
           <p v-if="votingDay" class="mt-2 text-sm font-medium text-amber-700 dark:text-amber-400">
             General voting day {{ formatDateTime(votingDay.starts_at) }}<template v-if="votingDayIn > 0"> · {{ votingDayIn }} day{{ votingDayIn === 1 ? '' : 's' }} away</template><template v-else-if="votingDayIn === 0"> · today</template>
           </p>
@@ -148,6 +145,7 @@
 </template>
 
 <script setup lang="ts">
+import ElectionsNav from './Partials/ElectionsNav.vue'
 import { computed, ref } from 'vue'
 import { Link, router, useForm } from '@inertiajs/vue3'
 import AdminLayout from '@/Layouts/AdminLayout.vue'

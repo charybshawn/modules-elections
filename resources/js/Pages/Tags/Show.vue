@@ -3,6 +3,7 @@
     <AdminMobileHeader :title="tag.name" :href="route('admin.elections.tags.index')" />
 
     <div class="px-4 sm:px-0 max-w-5xl mx-auto">
+      <ElectionsNav class="mb-6" />
       <Link :href="route('admin.elections.tags.index')" class="hidden md:inline-flex tap-target-touch items-center text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white text-sm">&larr; All subjects</Link>
       <p class="mt-2 text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">{{ tag.heading }}</p>
       <h1 class="hidden md:block text-2xl font-semibold text-gray-900 dark:text-white">{{ tag.name }}</h1>
@@ -89,6 +90,7 @@
 </template>
 
 <script setup lang="ts">
+import ElectionsNav from '../Partials/ElectionsNav.vue'
 import { Link } from '@inertiajs/vue3'
 import AdminLayout from '@/Layouts/AdminLayout.vue'
 import AdminMobileHeader from '@/Components/Admin/AdminMobileHeader.vue'

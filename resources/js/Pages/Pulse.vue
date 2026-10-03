@@ -3,10 +3,10 @@
     <AdminMobileHeader title="Community Pulse" :href="route('admin.elections.index')" />
 
     <div class="px-4 sm:px-0 max-w-5xl mx-auto">
+      <ElectionsNav class="mb-6" />
       <div class="md:flex md:items-start md:justify-between gap-6 mb-6">
         <div>
-          <Link :href="route('admin.elections.index')" class="hidden md:inline-flex tap-target-touch items-center text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white text-sm">&larr; Back to Elections</Link>
-          <h1 class="hidden md:block mt-2 text-2xl font-semibold text-gray-900 dark:text-white">Community Pulse</h1>
+          <h1 class="hidden md:block text-2xl font-semibold text-gray-900 dark:text-white">Community Pulse</h1>
           <p class="mt-1 text-sm text-gray-600 dark:text-gray-400">What residents are raising in local election discussion, summarized, and how it lines up with the candidates' platforms.</p>
         </div>
 
@@ -136,6 +136,7 @@
 </template>
 
 <script setup lang="ts">
+import ElectionsNav from './Partials/ElectionsNav.vue'
 import { computed } from 'vue'
 import { Link, router } from '@inertiajs/vue3'
 import AdminLayout from '@/Layouts/AdminLayout.vue'
