@@ -10,7 +10,7 @@ local election (voting day Saturday, October 17, 2026; mayor + six
 councillors) and writes it as an XML file for the Elections module's **Import
 XML** button. This is the preliminary step. It runs once, the user imports the
 file, and `research-salmon-arm-candidates` then researches each candidate on
-file. It never writes to the database.
+file. It writes an import file and loads it into the local database with `php artisan elections:import` (dry run first).
 
 **Read `../research-salmon-arm-candidates/references/elections-xml-schema.md`
 before writing any output.** It has the field list, the controlled value lists
@@ -98,6 +98,11 @@ and how the import matches on exact `<name>`.
       differences, withdrawals, acclamations, and anything you couldn't open.
     - Events added.
 
-    **Don't import the file yourself.** The user reviews it and imports it
-    through Admin → Elections → Import XML, then runs
-    `research-salmon-arm-candidates` for the deeper research.
+    **Importing (user's standing instruction, Oct. 3, 2026):** load the file yourself with the
+    artisan command instead of handing it over. From `/Users/shawn/Documents/code/cultpantry`:
+    1. Back up the local database: copy `database/database.sqlite` into the scratchpad.
+    2. `php artisan elections:import <file> --dry-run`, and fix every problem it reports.
+    3. `php artisan elections:import <file>`, then report the summary in the hand-off.
+    
+    This is for the local database only. Never import into staging or production unless the user
+    asks for that specifically.

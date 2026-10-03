@@ -187,5 +187,11 @@ Candidate photos are part of who they are, so this pass may fill gaps.
 - LinkedIn: used or not, and any warning seen.
 - Anything you couldn't open.
 
-**Don't import the file yourself.** The user reviews it and imports it
-through Admin → Elections → Import XML.
+**Importing (user's standing instruction, Oct. 3, 2026):** load the file yourself with the
+artisan command instead of handing it over. From `/Users/shawn/Documents/code/cultpantry`:
+1. Back up the local database: copy `database/database.sqlite` into the scratchpad.
+2. `php artisan elections:import <file> --dry-run`, and fix every problem it reports.
+3. `php artisan elections:import <file>`, then report the summary in the hand-off.
+
+This is for the local database only. Never import into staging or production unless the user
+asks for that specifically.

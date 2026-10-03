@@ -3,6 +3,7 @@
 namespace Cultpantry\Elections;
 
 use App\Support\AdminNav;
+use Cultpantry\Elections\Console\ImportElectionCommand;
 use Cultpantry\Elections\Models\Article;
 use Cultpantry\Elections\Models\Candidate;
 use Cultpantry\Elections\Models\ElectionEvent;
@@ -62,6 +63,12 @@ class ElectionsServiceProvider extends ServiceProvider
             'elections_pulse_issue' => PulseIssue::class,
             'elections_scorecard_item' => ScorecardItem::class,
         ]);
+
+        // 4c. `php artisan elections:import file.xml [--dry-run]`: the XML import
+        //     without the browser.
+        if ($this->app->runningInConsole()) {
+            $this->commands([ImportElectionCommand::class]);
+        }
 
         // 5. Publish the Vue source into resources/js/Pages/Vendor/elections/.
         //    php artisan vendor:publish --tag=elections-pages

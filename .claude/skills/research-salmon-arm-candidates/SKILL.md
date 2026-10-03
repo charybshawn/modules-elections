@@ -9,8 +9,8 @@ Researches the Salmon Arm 2026 general local election (voting day Saturday,
 October 17, 2026; mayor + six councillors) and writes an XML file shaped for
 the Elections module's **Import XML** button (`POST /admin/elections/import`,
 handled by `Cultpantry\Elections\Actions\ImportElectionFromXml`). This is a
-research aid, not an importer. It never writes to the database. The user
-reviews the file and imports it themselves.
+research aid that writes an import file, then loads it into the local database with
+`php artisan elections:import` (dry run first; see the hand-off step).
 
 It researches only the candidates already on file. The roster (who's running)
 comes from `find-salmon-arm-candidates`, which the user runs and imports first.
@@ -229,8 +229,14 @@ and statements, no Castanet or Friday AM entry, no council record for an incumbe
    - **Coverage balance** (rule 4): how much each candidate has on file and
      why it differs.
 
-   **Don't import the file yourself.** The user reviews it and imports it
-   through Admin → Elections → Import XML.
+   **Importing (user's standing instruction, Oct. 3, 2026):** load the file yourself with the
+   artisan command instead of handing it over. From `/Users/shawn/Documents/code/cultpantry`:
+   1. Back up the local database: copy `database/database.sqlite` into the scratchpad.
+   2. `php artisan elections:import <file> --dry-run`, and fix every problem it reports.
+   3. `php artisan elections:import <file>`, then report the summary in the hand-off.
+   
+   This is for the local database only. Never import into staging or production unless the user
+   asks for that specifically.
 
 ## Platform pass (planks)
 
