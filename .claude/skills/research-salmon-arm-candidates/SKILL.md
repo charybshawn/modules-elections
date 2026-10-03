@@ -120,8 +120,11 @@ invited readers will rely on to decide how to vote. So:
      question paraphrased and unnamed (rule 5). Use the post's or comment's own
      permalink as `source_url`. Get it from the post's timestamp link, not
      the page URL.
-   - **Facebook groups the user belongs to** (local community and election
-     discussion groups): use the group's own search box
+   - **Facebook groups the user belongs to** -- start with the **Salmon Arm
+     Rant and Rave** group (`https://www.facebook.com/groups/714619231920570`),
+     the user's priority group, then other local community and election
+     discussion groups. Not part of the platform pass, which uses only the
+     candidate's own material. Use the group's own search box
      (`.../groups/<id>/search/?q=<candidate name>`) for each candidate's name.
      Capture **only** the candidate's own posts and comments, with
      `source_type` `facebook_group` and the permalink as `source_url`. Note in
