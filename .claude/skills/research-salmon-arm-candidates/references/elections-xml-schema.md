@@ -296,3 +296,39 @@ tags:
 - Background facts aren't tagged. A plank's statements are reached through the plank.
 - Community Pulse matches an issue to candidates' planks by shared tags, so tag pulse issues with
   the same slugs that planks use.
+
+## Plans (`<plan>` on a plank, or `<plans>`)
+
+A plan records what the candidate has said about **how** they'd carry a plank out. It's shown
+beside the plank's statements on the Platform tab.
+
+```xml
+<plank>
+  …
+  <plan status="specific|partial|none">
+    <summary>One or two neutral sentences on what they'd actually do.</summary>
+    <detail aspect="how|funding|timeline|measure|partners|other" source_url="https://…">One concrete element they stated.</detail>
+  </plan>
+</plank>
+```
+
+For planks already on file, use `<plans>` with no need to repeat them:
+
+```xml
+<plans>
+  <plan candidate="Exact Name" key="plank-key" status="partial">…same children…</plan>
+</plans>
+```
+
+**Statuses** (about what has been conveyed, never whether the plan is good):
+- `specific`: a concrete action **and** at least one of funding, timing, a measurable target, or
+  named partners.
+- `partial`: at least one concrete action, step, target or funding source, but short of specific.
+- `none`: only goals or values; the page shows "No plan conveyed to date".
+
+**Rules:**
+- Every `<detail>` needs a `source_url`, which should be one of the plank's own statements.
+  Details with no http(s) source are dropped and reported.
+- A supplied `<plan>` replaces the plank's plan; leaving it out keeps what's on file.
+- Use the candidate's own words only. Don't infer steps they didn't state, and apply the same
+  yardstick to everyone.

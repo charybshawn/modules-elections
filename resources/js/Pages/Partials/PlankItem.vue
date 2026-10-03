@@ -13,6 +13,7 @@
         <ul class="mt-2 flex flex-wrap gap-1.5 text-xs">
           <li v-if="!plank.tags.length" class="rounded bg-gray-100 px-1.5 py-0.5 text-gray-700 dark:bg-gray-700 dark:text-gray-300">{{ topics[plank.topic] ?? plank.topic }}</li>
           <li v-if="plank.priority_position" class="rounded bg-indigo-50 px-1.5 py-0.5 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300">Their priority #{{ plank.priority_position }}</li>
+          <li v-if="plank.plan" :class="planStyle(plank.plan.status).chip" class="rounded px-1.5 py-0.5">{{ options.planStatuses[plank.plan.status] ?? plank.plan.status }}</li>
           <li v-if="plank.has_commitment" class="rounded bg-indigo-50 px-1.5 py-0.5 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300">Specific commitment</li>
           <li class="rounded bg-gray-100 px-1.5 py-0.5 text-gray-700 dark:bg-gray-700 dark:text-gray-300">{{ plank.source_count }} source{{ plank.source_count === 1 ? '' : 's' }}</li>
           <li v-if="movement" :class="movement.up ? 'bg-green-50 text-green-700 dark:bg-green-900/40 dark:text-green-300' : 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300'" class="rounded px-1.5 py-0.5">{{ movement.label }}</li>
@@ -27,16 +28,47 @@
           </ol>
         </details>
 
-        <details v-if="plank.sources.length" class="mt-3 group">
-          <summary class="tap-target-touch inline-flex cursor-pointer items-center text-sm font-medium text-indigo-600 hover:text-indigo-800 dark:text-indigo-400 dark:hover:text-indigo-300">
-            What they said ({{ plank.sources.length }})
-          </summary>
-          <ul class="mt-3 space-y-4 border-l-2 border-gray-200 pl-4 dark:border-gray-700">
-            <li v-for="entry in plank.sources" :key="entry.id">
-              <EntryCard :entry="entry" :options="options" :editable="editable" :is-new="isNewEntry(entry)" @delete="$emit('delete-entry', entry)" />
-            </li>
-          </ul>
-        </details>
+        <!-- Two columns on desktop: their words on the left, their plan on the
+             right. On phones the plan comes first and the words fold away. -->
+        <div class="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-6">
+          <section v-if="plank.sources.length" class="min-w-0">
+            <h4 class="hidden text-xs font-semibold uppercase tracking-wide text-gray-500 md:block dark:text-gray-400">What they said ({{ plank.sources.length }})</h4>
+            <button
+              type="button"
+              :aria-expanded="wordsOpen"
+              class="tap-target-touch inline-flex items-center gap-1 text-sm font-medium text-indigo-600 hover:text-indigo-800 md:hidden dark:text-indigo-400 dark:hover:text-indigo-300"
+              @click="wordsOpen = !wordsOpen"
+            >
+              What they said ({{ plank.sources.length }})
+              <svg :class="wordsOpen ? 'rotate-180' : ''" class="h-4 w-4 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
+            </button>
+            <ul :class="wordsOpen ? 'block' : 'hidden'" class="mt-3 space-y-4 border-l-2 border-gray-200 pl-4 md:mt-2 md:block dark:border-gray-700">
+              <li v-for="entry in plank.sources" :key="entry.id">
+                <EntryCard :entry="entry" :options="options" :editable="editable" :is-new="isNewEntry(entry)" @delete="$emit('delete-entry', entry)" />
+              </li>
+            </ul>
+          </section>
+
+          <section :class="[planStyle(plank.plan?.status).panel, plank.sources.length ? '' : 'md:col-span-2']" class="order-first min-w-0 self-start rounded-lg border p-4 md:order-none">
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <h4 class="text-xs font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-300">Their plan</h4>
+              <span v-if="plank.plan" :class="planStyle(plank.plan.status).chip" class="rounded-full px-2 py-0.5 text-xs font-medium">{{ options.planStatuses[plank.plan.status] ?? plank.plan.status }}</span>
+            </div>
+            <template v-if="plank.plan">
+              <p v-if="plank.plan.summary" class="mt-2 text-sm leading-relaxed text-gray-800 dark:text-gray-200">{{ plank.plan.summary }}</p>
+              <dl v-if="plank.plan.details.length" class="mt-3 space-y-3">
+                <div v-for="group in planGroups" :key="group.aspect">
+                  <dt class="text-xs font-medium text-gray-500 dark:text-gray-400">{{ options.planAspects[group.aspect] ?? group.aspect }}</dt>
+                  <dd v-for="(d, i) in group.details" :key="i" class="mt-0.5 text-sm text-gray-900 dark:text-gray-100">
+                    {{ d.text }}
+                    <a v-if="isHttpUrl(d.source_url)" :href="d.source_url" target="_blank" rel="noopener noreferrer" class="ml-1 whitespace-nowrap text-xs text-gray-500 underline decoration-gray-300 underline-offset-2 hover:text-gray-900 dark:text-gray-400 dark:decoration-gray-600 dark:hover:text-white">{{ hostOf(d.source_url) }}</a>
+                  </dd>
+                </div>
+              </dl>
+            </template>
+            <p v-else class="mt-2 text-sm text-gray-500 dark:text-gray-400">Not assessed yet -- the next research pass will say what they've conveyed about carrying this out.</p>
+          </section>
+        </div>
 
         <button v-if="editable" type="button" class="tap-target-touch mt-2 text-xs text-red-600 hover:text-red-800 dark:text-red-400" @click="$emit('delete', plank)">Delete plank</button>
       </div>
@@ -45,11 +77,11 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import EntryCard from './EntryCard.vue'
 import TagChips from './TagChips.vue'
 import { newPillClass } from './classes'
-import { formatDate } from './format'
+import { formatDate, hostOf, isHttpUrl } from './format'
 import type { Entry, Options, Plank } from './types'
 
 const props = defineProps<{
@@ -68,6 +100,24 @@ const props = defineProps<{
 defineEmits<{ delete: [plank: Plank]; 'delete-entry': [entry: Entry]; tag: [slug: string | null] }>()
 
 const tiers = computed(() => props.options.plankTiers)
+
+/** Phones only: "What they said" starts folded under the plan. */
+const wordsOpen = ref(false)
+
+/** Plan details grouped by aspect, in the server's aspect order. */
+const planGroups = computed(() => {
+  const details = props.plank.plan?.details ?? []
+  return Object.keys(props.options.planAspects)
+    .map((aspect) => ({ aspect, details: details.filter((d) => d.aspect === aspect) }))
+    .filter((g) => g.details.length)
+})
+
+const planStyle = (status: string | undefined) =>
+  ({
+    specific: { panel: 'border-green-200 bg-green-50/60 dark:border-green-500/30 dark:bg-green-500/5', chip: 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-200' },
+    partial: { panel: 'border-amber-200 bg-amber-50/60 dark:border-amber-500/30 dark:bg-amber-500/5', chip: 'bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-200' },
+    none: { panel: 'border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-800/60', chip: 'bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-300' },
+  })[status ?? ''] ?? { panel: 'border-dashed border-gray-300 dark:border-gray-600', chip: 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300' }
 
 // Compared with where it stood before its latest change: rank first, then
 // tier (a plank can change tier while keeping its number).

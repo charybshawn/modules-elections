@@ -23,6 +23,12 @@ class PlankResource extends JsonResource
             'rationale' => $this->rationale,
             'priority_position' => $this->priority_position,
             'has_commitment' => $this->has_commitment,
+            // Null until the plan has been assessed.
+            'plan' => $this->plan_status === null ? null : [
+                'status' => $this->plan_status,
+                'summary' => $this->plan_summary,
+                'details' => $this->plan_details ?? [],
+            ],
             // Distinct places the candidate said it -- one of the signals.
             'source_count' => $this->entries->pluck('source_url')->unique()->count(),
             'sources' => EntryResource::collection($this->entries)->resolve(),

@@ -27,6 +27,8 @@ class Options
             'backgroundTopics' => Entry::BACKGROUND_TOPICS,
             'sourceTypes' => Entry::SOURCE_TYPES,
             'plankTiers' => Plank::TIERS,
+            'planStatuses' => Plank::PLAN_STATUSES,
+            'planAspects' => Plank::PLAN_ASPECTS,
             'scorecardStances' => ScorecardAnswer::STANCES,
             'eventKinds' => ElectionEvent::KINDS,
         ];

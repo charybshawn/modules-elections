@@ -272,6 +272,16 @@ very little, rank what there is and say in the hand-off that the order is
 a rough guide (the page shows "Limited sources" when there are fewer than
 two).
 
+**Assess the plan for every plank.** Add a `<plan>` saying what they have conveyed about *how*
+they'd do it:
+- **status:** specific, partial or none.
+- **summary:** a neutral one- or two-sentence summary.
+- **details:** each concrete element they stated (how, funding, timeline, measure, partners),
+  with its source.
+
+"No plan conveyed to date" (`none`) is a finding, not a criticism. Re-assess the plan whenever a
+plank gains new statements; a later Q&A often adds the how. See the schema doc's "Plans" section.
+
 **Hand-off** (in addition to the usual summary): per candidate, the planks
 in rank order with tier and source count, which sources were used, and any
 statements left out because they weren't the candidate's own words.

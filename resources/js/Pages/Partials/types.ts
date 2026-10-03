@@ -94,12 +94,23 @@ export interface Options {
   sourceTypes: Record<string, string>
   plankTiers: Record<string, string>
   scorecardStances: Record<string, string>
+  planStatuses: Record<string, string>
+  planAspects: Record<string, string>
   eventKinds: Record<string, string>
+}
+
+export interface PlanDetail {
+  /** Options.planAspects key. */
+  aspect: string
+  text: string
+  source_url: string
 }
 
 export interface Plank {
   id: number
   tags: TagRef[]
+  /** What they've conveyed about carrying it out; null until assessed. */
+  plan: { status: string; summary: string | null; details: PlanDetail[] } | null
   key: string
   title: string
   topic: string

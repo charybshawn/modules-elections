@@ -53,9 +53,35 @@ class Plank extends Model
         'rationale',
         'priority_position',
         'has_commitment',
+        'plan_status',
+        'plan_summary',
+        'plan_details',
+    ];
+
+    /**
+     * How much of a plan the candidate has conveyed -- about what's been
+     * said publicly, not whether the plan is any good.
+     */
+    public const PLAN_STATUSES = [
+        'specific' => 'Specific plan',
+        'partial' => 'Some specifics',
+        'none' => 'No plan conveyed to date',
+    ];
+
+    /**
+     * What a plan detail is about, in the order the page lists them.
+     */
+    public const PLAN_ASPECTS = [
+        'how' => 'How',
+        'funding' => 'Paying for it',
+        'timeline' => 'When',
+        'measure' => 'How we\'d know',
+        'partners' => 'Who with',
+        'other' => 'Other details',
     ];
 
     protected $casts = [
+        'plan_details' => 'array',
         'rank' => 'integer',
         'priority_position' => 'integer',
         'has_commitment' => 'boolean',

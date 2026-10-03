@@ -96,6 +96,7 @@ class ImportElectionFromXml
             'responses' => $counts(),
             'tags' => $counts(),
             'tagged' => $counts(),
+            'plans' => $counts(),
         ];
 
         DB::transaction(function () use ($xml, &$result) {
@@ -121,6 +122,9 @@ class ImportElectionFromXml
             foreach ($xml->tagging ?? [] as $node) {
                 $this->importTagging($node, $result);
             }
+            foreach ($xml->plans->plan ?? [] as $node) {
+                $this->importPlan($node, $result);
+            }
         });
 
         Tag::pruneOrphans();
@@ -136,7 +140,7 @@ class ImportElectionFromXml
     public function summarize(array $result): string
     {
         $parts = [];
-        foreach (['tags', 'candidates', 'entries', 'planks', 'articles', 'events', 'pulse', 'scorecards', 'responses', 'tagged'] as $type) {
+        foreach (['tags', 'candidates', 'entries', 'planks', 'articles', 'events', 'pulse', 'scorecards', 'responses', 'tagged', 'plans'] as $type) {
             ['created' => $created, 'updated' => $updated, 'unchanged' => $unchanged] = $result[$type];
             if ($created + $updated + $unchanged === 0) {
                 continue;
@@ -267,6 +271,10 @@ class ImportElectionFromXml
 
         if ($plank->rationale === null) {
             $this->problems[] = "{$label}: plank \"{$title}\" has no <rationale> -- say why it ranks where it does.";
+        }
+
+        if (isset($node->plan)) {
+            $this->applyPlan($plank, $node->plan, "{$label}: plank \"{$title}\"");
         }
 
         $this->tally($plank, $result['planks']);
@@ -796,6 +804,69 @@ class ImportElectionFromXml
             }
             $this->syncTags($model, $ref, $label, $result);
         }
+    }
+
+    /**
+     * <plan status="specific|partial|none"><summary/><detail aspect="how"
+     * source_url="https://…">text</detail>…</plan> -- replaces the plank's
+     * plan as a whole. A detail without an http(s) source is dropped: every
+     * plan detail has to point at where it was said.
+     */
+    private function applyPlan(Plank $plank, SimpleXMLElement $node, string $label): void
+    {
+        $status = trim((string) $node['status']);
+        if (! array_key_exists($status, Plank::PLAN_STATUSES)) {
+            $this->problems[] = "{$label}: plan has unknown status \"{$status}\" -- plan left as it was.";
+
+            return;
+        }
+
+        $details = [];
+        foreach ($node->detail ?? [] as $d) {
+            $text = trim((string) $d);
+            $aspect = trim((string) $d['aspect']) ?: 'other';
+            $source = trim((string) $d['source_url']);
+            if ($text === '') {
+                continue;
+            }
+            if (! $this->isHttpUrl($source)) {
+                $this->problems[] = "{$label}: plan detail \"".mb_strimwidth($text, 0, 50, '…').'" has no http(s) source_url -- dropped.';
+
+                continue;
+            }
+            if (! array_key_exists($aspect, Plank::PLAN_ASPECTS)) {
+                $this->problems[] = "{$label}: plan detail aspect \"{$aspect}\" unknown, filed under \"other\".";
+                $aspect = 'other';
+            }
+            $details[] = ['aspect' => $aspect, 'text' => $text, 'source_url' => $source];
+        }
+
+        if ($status !== 'none' && $details === []) {
+            $this->problems[] = "{$label}: plan marked \"{$status}\" but has no sourced details.";
+        }
+
+        $plank->plan_status = $status;
+        $plank->plan_summary = $this->text($node, 'summary');
+        $plank->plan_details = $details === [] ? null : $details;
+    }
+
+    /**
+     * Plans for planks already on file: <plans><plan candidate="Name"
+     * key="plank-key" status="…">…</plan></plans>.
+     */
+    private function importPlan(SimpleXMLElement $node, array &$result): void
+    {
+        $name = trim((string) $node['candidate']);
+        $key = trim((string) $node['key']);
+        $plank = Plank::whereHas('candidate', fn ($q) => $q->where('name', $name))->where('key', $key)->first();
+        if ($plank === null) {
+            $this->problems[] = "<plans>: no plank \"{$key}\" for \"{$name}\" on file -- skipped.";
+
+            return;
+        }
+
+        $this->applyPlan($plank, $node, "{$name}: plank \"{$plank->title}\"");
+        $this->tally($plank, $result['plans']);
     }
 
     private function list(?SimpleXMLElement $parent, string $child): array
