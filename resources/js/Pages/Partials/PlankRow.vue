@@ -16,8 +16,8 @@
           <span v-if="isNew" :class="newPillClass" class="ml-1 align-middle">New</span>
         </span>
         <span class="mt-1 flex flex-wrap items-center gap-1.5 text-xs">
-          <span :class="planStyle(plank.plan?.status).chip" class="inline-flex items-center gap-1 rounded px-1.5 py-0.5" :title="plan ? planLabel : 'Plan not assessed yet'">
-            <span aria-hidden="true">{{ planStyle(plank.plan?.status).icon }}</span>{{ planLabel }}
+          <span :class="checkChipClass" class="inline-flex items-center gap-1 rounded px-1.5 py-0.5" :title="plan ? `${statedCount} of ${CORE_ASPECTS.length} plan questions answered on record` : 'Plan not checked yet'">
+            {{ plan ? `Plan ${statedCount}/${CORE_ASPECTS.length}` : 'Plan not checked' }}
           </span>
           <span v-if="plank.analysis" class="rounded bg-violet-100 px-1.5 py-0.5 text-violet-800 dark:bg-violet-500/20 dark:text-violet-200">AI analysis</span>
           <span v-if="movement" :class="movement.up ? 'bg-green-50 text-green-700 dark:bg-green-900/40 dark:text-green-300' : 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300'" class="rounded px-1.5 py-0.5">{{ movement.label }}</span>
@@ -44,22 +44,34 @@
       <TagChips :tags="plank.tags" :as-filter="activeTag !== undefined" :active="activeTag ?? null" class="mt-2 sm:hidden" @select="$emit('tag', $event)" />
 
       <div class="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-5 lg:gap-6">
-        <!-- Their plan: what voters most want to know, so it leads. -->
-        <section :class="planStyle(plank.plan?.status).panel" class="min-w-0 self-start rounded-lg border p-4 lg:col-span-3">
-          <h4 class="text-xs font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-300">Their plan</h4>
+        <!-- Plan check: the same five questions for every plank, answered from
+             the record or marked "Not stated" -- the gaps are the point. -->
+        <section class="min-w-0 self-start rounded-lg border border-gray-200 bg-gray-50/60 p-4 lg:col-span-3 dark:border-gray-700 dark:bg-gray-800/40">
+          <div class="flex flex-wrap items-baseline justify-between gap-2">
+            <h4 class="text-xs font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-300">Plan check</h4>
+            <span v-if="plan" :class="checkChipClass" class="rounded-full px-2 py-0.5 text-xs font-medium">{{ statedCount }} of {{ CORE_ASPECTS.length }} answered</span>
+          </div>
           <template v-if="plan">
-            <p v-if="plan.summary" class="mt-1.5 text-sm leading-relaxed text-gray-800 dark:text-gray-200">{{ plan.summary }}</p>
-            <dl v-if="plan.details.length" class="mt-3 space-y-2.5">
-              <div v-for="group in planGroups" :key="group.aspect">
-                <dt class="text-xs font-medium text-gray-500 dark:text-gray-400">{{ options.planAspects[group.aspect] ?? group.aspect }}</dt>
-                <dd v-for="(d, i) in group.details" :key="i" class="mt-0.5 text-sm text-gray-900 dark:text-gray-100">
-                  {{ d.text }}
-                  <a v-if="isHttpUrl(d.source_url)" :href="d.source_url" target="_blank" rel="noopener noreferrer" class="ml-1 whitespace-nowrap text-xs text-gray-500 underline decoration-gray-300 underline-offset-2 hover:text-gray-900 dark:text-gray-400 dark:decoration-gray-600 dark:hover:text-white">{{ hostOf(d.source_url) }}</a>
+            <dl class="mt-3 divide-y divide-gray-200/70 dark:divide-gray-700/70">
+              <div v-for="aspect in CORE_ASPECTS" :key="aspect" class="grid grid-cols-[7.5rem_minmax(0,1fr)] gap-3 py-2 first:pt-0 last:pb-0">
+                <dt class="flex items-start gap-1.5 text-xs font-medium text-gray-600 dark:text-gray-300">
+                  <span :class="detailsFor(aspect).length ? 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-200' : 'bg-gray-200 text-gray-500 dark:bg-gray-700 dark:text-gray-400'" class="mt-px inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-full text-[10px]" aria-hidden="true">{{ detailsFor(aspect).length ? '✓' : '–' }}</span>
+                  {{ options.planAspects[aspect] ?? aspect }}
+                </dt>
+                <dd v-if="detailsFor(aspect).length" class="space-y-1 text-sm text-gray-900 dark:text-gray-100">
+                  <p v-for="(d, i) in detailsFor(aspect)" :key="i">
+                    {{ d.text }}
+                    <a v-if="isHttpUrl(d.source_url)" :href="d.source_url" target="_blank" rel="noopener noreferrer" class="ml-1 whitespace-nowrap text-xs text-gray-500 underline decoration-gray-300 underline-offset-2 hover:text-gray-900 dark:text-gray-400 dark:decoration-gray-600 dark:hover:text-white">{{ hostOf(d.source_url) }}</a>
+                  </p>
                 </dd>
+                <dd v-else class="text-sm italic text-gray-400 dark:text-gray-500">Not stated</dd>
               </div>
             </dl>
+            <p v-if="detailsFor('other').length" class="mt-2 text-xs text-gray-600 dark:text-gray-300">
+              <span class="font-medium">Also:</span> {{ detailsFor('other').map((d) => d.text).join(' · ') }}
+            </p>
           </template>
-          <p v-else class="mt-1.5 text-sm text-gray-500 dark:text-gray-400">Not assessed yet.</p>
+          <p v-else class="mt-1.5 text-sm text-gray-500 dark:text-gray-400">Not checked yet.</p>
         </section>
 
         <!-- What they said: compact quotes, each opening to the full statement. -->
@@ -110,25 +122,23 @@ const props = defineProps<{
 defineEmits<{ toggle: []; delete: [plank: Plank]; 'delete-entry': [entry: Entry]; tag: [slug: string | null] }>()
 
 const plan = computed(() => props.plank.plan)
-const planLabel = computed(() => (plan.value ? (props.options.planStatuses[plan.value.status] ?? plan.value.status) : 'Plan not assessed'))
+
+/** The five questions every plan is checked against ('other' details show separately). */
+const CORE_ASPECTS = ['how', 'funding', 'timeline', 'measure', 'partners'] as const
+const detailsFor = (aspect: string) => (plan.value?.details ?? []).filter((d) => d.aspect === aspect)
+const statedCount = computed(() => CORE_ASPECTS.filter((a) => detailsFor(a).length > 0).length)
+const checkChipClass = computed(() =>
+  !plan.value
+    ? 'bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400'
+    : statedCount.value >= 3
+      ? 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-200'
+      : statedCount.value >= 1
+        ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-200'
+        : 'bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-300',
+)
 const showHistory = ref(false)
 const allSources = ref(false)
 const shownSources = computed(() => (allSources.value ? props.plank.sources : props.plank.sources.slice(0, SOURCES_SHOWN)))
-
-/** Plan details grouped by aspect, in the server's aspect order. */
-const planGroups = computed(() => {
-  const details = plan.value?.details ?? []
-  return Object.keys(props.options.planAspects)
-    .map((aspect) => ({ aspect, details: details.filter((d) => d.aspect === aspect) }))
-    .filter((g) => g.details.length)
-})
-
-const planStyle = (status: string | undefined) =>
-  ({
-    specific: { icon: '✓', panel: 'border-green-200 bg-green-50/60 dark:border-green-500/30 dark:bg-green-500/5', chip: 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-200' },
-    partial: { icon: '~', panel: 'border-amber-200 bg-amber-50/60 dark:border-amber-500/30 dark:bg-amber-500/5', chip: 'bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-200' },
-    none: { icon: '–', panel: 'border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-800/60', chip: 'bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-300' },
-  })[status ?? ''] ?? { icon: '?', panel: 'border-dashed border-gray-300 dark:border-gray-600', chip: 'bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400' }
 
 // Compared with where it stood before its latest change: rank first, then tier.
 const movement = computed(() => {

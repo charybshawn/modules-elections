@@ -63,8 +63,12 @@ invited readers will rely on to decide how to vote. So:
 So you know what each piece is for:
 - **Candidate page tabs:**
   - About: bio and background.
-  - Platform: planks by tier. Each plank card shows "What they said" beside "Their plan", then
-    a collapsible "AI analysis" panel on pillars, with subject chips that filter in place.
+  - Platform: a ranked, expandable list of planks by tier. Each open plank shows a **Plan
+    check** beside "What they said", then a collapsible "AI analysis" panel on pillars.
+    - The plan check asks every plank the same five questions: how, paying for it, when, how
+      we'd know, who with. Each shows the sourced detail, or "Not stated".
+    - The row chip scores it (e.g. "Plan 2/5"), so plan `<detail>` aspects matter.
+    - Tag `<detail>`s with the right aspect; `other` shows only as an "Also" line.
   - Then the scorecard tab (e.g. Vote4Tomorrow), the other statement tabs, In the news, and
     Research notes (admins only).
 - **Elections dashboard:** a ranked "What's being talked about" list (subject heat from dated
