@@ -5,11 +5,26 @@
     <div class="px-4 sm:px-0 max-w-5xl mx-auto">
       <ElectionsNav class="mb-6" />
       <h1 class="hidden md:block text-2xl font-semibold text-gray-900 dark:text-white">Browse by subject</h1>
-      <p class="mt-1 text-sm text-gray-600 dark:text-gray-400">Every subject the election research files things under. Open one to see where each candidate stands on it, what residents are raising and the coverage.</p>
+      <div class="mt-1 flex flex-wrap items-end justify-between gap-3">
+        <p class="max-w-2xl text-sm text-gray-600 dark:text-gray-400">Every subject the election research files things under, and who campaigns on what. Open a subject to see where each candidate stands, what residents are raising and the coverage.</p>
+        <div v-if="headings.length" class="inline-flex shrink-0 rounded-lg bg-gray-100 p-0.5 dark:bg-gray-700" role="group" aria-label="View">
+          <button
+            v-for="v in (['matrix', 'list'] as const)"
+            :key="v"
+            type="button"
+            :aria-pressed="view.mode === v"
+            :class="view.mode === v ? 'bg-white text-gray-900 shadow-sm dark:bg-gray-900 dark:text-white' : 'text-gray-600 hover:text-gray-900 dark:text-gray-300'"
+            class="tap-target-touch rounded-md px-3 py-1 text-sm font-medium transition"
+            @click="view.mode = v"
+          >{{ v === 'matrix' ? 'Who campaigns on what' : 'All subjects' }}</button>
+        </div>
+      </div>
 
       <p v-if="!headings.length" class="mt-6 rounded-lg bg-white dark:bg-gray-800 shadow-sm p-6 text-sm text-gray-500 dark:text-gray-400">
         No subjects yet. The tag vocabulary arrives with a research import (Elections → Import XML).
       </p>
+
+      <SubjectMatrix v-else-if="view.mode === 'matrix'" :candidates="candidates" :coverage="coverage" class="mt-6" />
 
       <template v-else>
         <section v-if="mostCovered.length" class="mt-8">
@@ -47,10 +62,13 @@
 
 <script setup lang="ts">
 import ElectionsNav from '../Partials/ElectionsNav.vue'
-import { Link } from '@inertiajs/vue3'
+import { Link, useRemember } from '@inertiajs/vue3'
 import AdminLayout from '@/Layouts/AdminLayout.vue'
 import AdminMobileHeader from '@/Components/Admin/AdminMobileHeader.vue'
+import SubjectMatrix from '../Partials/SubjectMatrix.vue'
 import { sectionHeadingClass } from '../Partials/classes'
+import type { SubjectCoverage } from '../Partials/coverage'
+import type { Candidate, Options } from '../Partials/types'
 
 defineOptions({ layout: (h, page) => h(AdminLayout, { wide: true, hideBreadcrumbOnMobile: true }, () => page) })
 
@@ -67,5 +85,11 @@ interface TagRow {
 defineProps<{
   headings: { topic: string; title: string; tags: TagRow[] }[]
   mostCovered: TagRow[]
+  coverage: SubjectCoverage
+  candidates: Candidate[]
+  options: Options
 }>()
+
+// useRemember hands back a reactive object for object state.
+const view = useRemember<{ mode: 'matrix' | 'list' }>({ mode: 'matrix' }, 'elections-subjects-view') as { mode: 'matrix' | 'list' }
 </script>

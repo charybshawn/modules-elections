@@ -29,7 +29,7 @@ export interface TagHeat {
   headings: {
     topic: string
     title: string
-    tags: { slug: string; name: string; heat: number; level: number; mentions: number; recent: number }[]
+    tags: { slug: string; name: string; heat: number; level: number; level_all: number; mentions: number; recent: number }[]
   }[]
   /** Biggest rise this week over last week. */
   heatingUp: { slug: string; name: string }[]

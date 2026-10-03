@@ -39,6 +39,7 @@ class BuildElectionDashboard
             )->resolve(),
             'activity' => $this->activity(),
             'heat' => app(BuildTagHeat::class)->handle(),
+            'coverage' => app(BuildSubjectCoverage::class)->handle(),
             // The server's clock, so "seen" marks and comparisons never mix
             // in the browser's.
             'now' => now()->getTimestamp(),

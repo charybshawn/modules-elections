@@ -67,12 +67,15 @@ class BuildTagHeat
             ->each(fn (PulseIssue $i) => $add($i->tags->pluck('id'), $i->snapshot->taken_on, 1 + $i->voices / 10));
 
         $max = max($score ?: [0]);
+        $maxMentions = max($mentions ?: [0]);
         $row = fn (Tag $tag) => [
             'slug' => $tag->slug,
             'name' => $tag->name,
             // 0-1 relative to the hottest tag, then five bands for the page.
             'heat' => $max > 0 ? round(($score[$tag->id] ?? 0) / $max, 3) : 0,
             'level' => $max > 0 ? (int) min(4, floor(4.999 * (($score[$tag->id] ?? 0) / $max) ** 0.6)) : 0,
+            // The same five bands by raw mention count, for the all-time view.
+            'level_all' => $maxMentions > 0 ? (int) min(4, floor(4.999 * (($mentions[$tag->id] ?? 0) / $maxMentions) ** 0.6)) : 0,
             'mentions' => $mentions[$tag->id] ?? 0,
             'recent' => $recent[$tag->id] ?? 0,
         ];

@@ -3,9 +3,12 @@
 namespace Cultpantry\Elections\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use Cultpantry\Elections\Actions\BuildSubjectCoverage;
 use Cultpantry\Elections\Actions\BuildTagDirectory;
 use Cultpantry\Elections\Actions\BuildTagPage;
 use Cultpantry\Elections\Http\Controllers\Admin\Concerns\ElectionsAdminMiddleware;
+use Cultpantry\Elections\Http\Resources\CandidateResource;
+use Cultpantry\Elections\Models\Candidate;
 use Cultpantry\Elections\Models\Tag;
 use Cultpantry\Elections\Support\Options;
 use Illuminate\Routing\Controllers\HasMiddleware;
@@ -21,12 +24,20 @@ class TagController extends Controller implements HasMiddleware
 {
     use ElectionsAdminMiddleware;
 
-    public function index(BuildTagDirectory $buildTagDirectory): Response
+    public function index(BuildTagDirectory $buildTagDirectory, BuildSubjectCoverage $buildSubjectCoverage): Response
     {
         $this->authorize('viewAny', Tag::class);
 
+        $candidates = Candidate::where('status', '!=', 'withdrawn')
+            ->orderByRaw("case office when 'mayor' then 0 else 1 end")
+            ->orderBy('name')
+            ->get();
+
         return Inertia::render('Vendor/elections/Tags/Index', [
             ...$buildTagDirectory->handle(),
+            'coverage' => $buildSubjectCoverage->handle(),
+            'candidates' => CandidateResource::collection($candidates)->resolve(),
+            'options' => Options::all(),
         ]);
     }
 
