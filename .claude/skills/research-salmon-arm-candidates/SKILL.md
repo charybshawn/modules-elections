@@ -123,8 +123,8 @@ invited readers will rely on to decide how to vote. So:
    - **Facebook groups the user belongs to** -- start with the **Salmon Arm
      Rant and Rave** group (`https://www.facebook.com/groups/714619231920570`),
      the user's priority group, then other local community and election
-     discussion groups. Not part of the platform pass, which uses only the
-     candidate's own material. Use the group's own search box
+     discussion groups. The candidate's own answers there also feed the
+     platform pass. Use the group's own search box
      (`.../groups/<id>/search/?q=<candidate name>`) for each candidate's name.
      Capture **only** the candidate's own posts and comments, with
      `source_type` `facebook_group` and the permalink as `source_url`. Note in
@@ -194,8 +194,13 @@ what someone is running on.
 **Sources: only the candidate's own material.**
 - Their campaign website: platform/priorities pages first, then the home
   and about pages and their own posts.
-- Their campaign Facebook page and Instagram: posts they made on their own
-  page (not replies in groups or to residents -- that comes later).
+- Their campaign Facebook page and Instagram: their own posts, **and their
+  own replies in those posts' comment sections** -- often where a position
+  gets spelled out. Paraphrase the resident's question, never name them.
+- Their own posts and replies in the **Salmon Arm Rant and Rave** group
+  (`https://www.facebook.com/groups/714619231920570`) and other local groups
+  the user belongs to: search the group for the candidate's name and keep
+  only what the candidate wrote (`source_type` `facebook_group`).
 - Their own words in the news: their Observer introduction, their
   Castanet Q&A answers, and direct quotes in announcement stories. A
   reporter's paraphrase without a quote doesn't count unless the
