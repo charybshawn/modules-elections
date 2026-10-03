@@ -344,38 +344,37 @@ picture.
 
 ## Analyses (`<analysis>` on a plank, or `<analyses>`)
 
-An AI analysis of a plank, shown on the plank card as "AI analysis" with numbered footnotes.
+An AI analysis of a **pillar** (a top-tier plank), shown as a collapsible "AI analysis" panel with
+numbered footnotes on the plank card and on subject pages.
 
 ```xml
 <plank>
   …
   <analysis on="2026-10-03">
-    <impact>
-      <point source_url="https://…">What it would change.</point>
-    </impact>
-    <challenges>
-      <point source_url="https://…" source_url-2="https://…">What makes it hard.</point>
-    </challenges>
-    <risks>
-      <point>A reasoning point with no source of its own.</point>
-    </risks>
+    <meaning><point source_url="https://…">The proposal in plain language.</point></meaning>
+    <works><point source_url="https://…">Why it could work.</point></works>
+    <fails><point source_url="https://…" source_url-2="https://…">Why it might not.</point></fails>
+    <details><point source_url="https://…">A concise conclusion.</point></details>
   </analysis>
 </plank>
 ```
 
-For planks already on file:
+For planks already on file, or to take an analysis off a plank:
 
 ```xml
 <analyses>
   <analysis candidate="Exact Name" key="plank-key" on="2026-10-03">…same children…</analysis>
+  <analysis candidate="Exact Name" key="other-plank" remove="true"/>
 </analyses>
 ```
 
-- **Sources:** a point may carry several sources: `source_url`, `source_url-2`, `source_url-3`,
-  and so on. They become footnotes numbered in order of first citation across the panel.
-- **Replacement:** a supplied analysis replaces the plank's analysis. Leaving it out keeps what's
-  on file.
+- **Sources:** a point may carry several sources: `source_url`, `source_url-2`, and so on.
+  They're numbered as footnotes in order of first citation.
+- **Replacement:** a supplied analysis replaces the plank's analysis; leaving it out keeps it, and
+  `remove="true"` clears it.
 - **Rejected or dropped:**
   - An analysis with no points, or one that cites no sources at all, is rejected and reported.
   - Non-http(s) sources are dropped and reported.
-- **Date:** `on` is the date it was written (YYYY-MM-DD); if it's missing, the import uses today.
+- **Date:** `on` is the date it was written; if it's missing, the import uses today.
+- **Retired shape:** analyses in the earlier impact/challenges/risks format are hidden on the
+  page.

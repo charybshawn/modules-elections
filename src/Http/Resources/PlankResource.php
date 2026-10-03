@@ -2,6 +2,7 @@
 
 namespace Cultpantry\Elections\Http\Resources;
 
+use Cultpantry\Elections\Models\Plank;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -23,8 +24,9 @@ class PlankResource extends JsonResource
             'rationale' => $this->rationale,
             'priority_position' => $this->priority_position,
             'has_commitment' => $this->has_commitment,
-            // AI analysis: {impact, challenges, risks} => [{text, sources}]; null until written.
-            'analysis' => $this->analysis ? [
+            // AI analysis: {meaning, works, fails, details} => [{text, sources}];
+            // null until written (or still in the retired three-part shape).
+            'analysis' => $this->analysis && array_intersect_key($this->analysis, Plank::ANALYSIS_PARTS) ? [
                 'on' => $this->analysis_on?->toDateString(),
                 'parts' => $this->analysis,
             ] : null,

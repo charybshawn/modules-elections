@@ -1,6 +1,6 @@
 ---
 name: research-salmon-arm-candidates
-description: Research the candidates already on file in the cultpantry admin panel's Elections module (modules-elections) for the Salmon Arm (BC) 2026 municipal election (mayor and council) and write a ready-to-import XML file. It covers platform planks (ranked by the candidate's own emphasis), each plank's plan (how they'd do it, mined from new sources) and AI analysis (impact, challenges, risks, with footnoted sources), statements and Q&A answers from media, forums and Facebook, incumbents' council record, endorsements, campaign finance, election news coverage, subject tags, third-party scorecards such as Vote4Tomorrow, withdrawals and election events. Use this whenever the user asks to research, update, refresh, backfill or look into Salmon Arm election candidates, a specific candidate, their platform, plans or promises, election coverage, or all-candidates forums, even if they don't mention XML, the import or this skill by name. Finding out who's running is find-salmon-arm-candidates, which must be run and imported first; candidates' backgrounds and bios are backfill-salmon-arm-backgrounds.
+description: Research the candidates already on file in the cultpantry admin panel's Elections module (modules-elections) for the Salmon Arm (BC) 2026 municipal election (mayor and council) and write a ready-to-import XML file. It covers platform planks (ranked by the candidate's own emphasis), each plank's plan (how they'd do it, mined from new sources) and AI analysis of each pillar (what it means, why it could work, why it might not, the devil in the details; footnoted), statements and Q&A answers from media, forums and Facebook, incumbents' council record, endorsements, campaign finance, election news coverage, subject tags, third-party scorecards such as Vote4Tomorrow, withdrawals and election events. Use this whenever the user asks to research, update, refresh, backfill or look into Salmon Arm election candidates, a specific candidate, their platform, plans or promises, election coverage, or all-candidates forums, even if they don't mention XML, the import or this skill by name. Finding out who's running is find-salmon-arm-candidates, which must be run and imported first; candidates' backgrounds and bios are backfill-salmon-arm-backgrounds.
 ---
 
 # Research Salmon Arm candidates
@@ -64,7 +64,7 @@ So you know what each piece is for:
 - **Candidate page tabs:**
   - About: bio and background.
   - Platform: planks by tier. Each plank card shows "What they said" beside "Their plan", then
-    an "AI analysis" panel, with subject chips that filter in place.
+    a collapsible "AI analysis" panel on pillars, with subject chips that filter in place.
   - Then the scorecard tab (e.g. Vote4Tomorrow), the other statement tabs, In the news, and
     Research notes (admins only).
 - **Elections dashboard:** a ranked "What's being talked about" list (subject heat from dated
@@ -322,33 +322,41 @@ statements left out because they weren't the candidate's own words.
 
 ## AI analysis pass
 
-Each plank can carry an **AI analysis** (the page labels it exactly that) answering the same three
-questions for every candidate:
-- **impact:** what it would change if done
-- **challenges:** what makes it hard (the City's powers versus the Province or others, cost,
-  legal limits, capacity)
-- **risks:** how it could fall short
+**Pillars only.** Write an AI analysis for a candidate's **pillars**: their top-tier planks (named,
+front-and-centre priorities). Skip planks they only "also" campaign on or mention. The code allows
+an analysis on any plank, so a plank that becomes a pillar later can get one. If a plank drops out
+of the top tier, remove its analysis (`<analysis … remove="true"/>`).
+
+Each analysis (the page labels it "AI analysis") has four parts, the same for every pillar:
+1. **meaning: What this means.** The proposal in plain language, in one or two sentences, from
+   the candidate's full proposal. Collapsed panels show only this.
+2. **works: Why it could work.** Two or three points.
+3. **fails: Why it might not.** Two to four points. Who has the power (City, Province or
+   others), cost, legal limits, capacity.
+4. **details: The devil is in the details.** A concise conclusion in one or two sentences:
+   what it really hinges on, and what the candidate hasn't said.
 
 See the schema doc's "Analyses" section for the XML.
 
 **Rules:**
-- **Same treatment for everyone.** Every plank of every candidate gets the same questions and
-  depth. Usually 2 or 3 points per part, each one or two sentences.
-- **Balanced and conditional.** Upsides and challenges for every plank; never a verdict ("bad
-  idea"), and never a judgement of the candidate.
+- **Same treatment for everyone.** Every pillar of every candidate gets the same four parts and
+  depth.
+- **Balanced, never a verdict.** No "bad idea", and never a judgement of the candidate.
 - **Facts are footnoted.** Every factual claim (a law, a number, a court ruling, an existing City
-  plan or budget) needs a `source_url` you opened; the page shows these as numbered footnotes.
-- **Reasoning points stay rare.** A point that reasons from footnoted facts may go without a
-  source, but sparingly.
-- **Ground it in Salmon Arm.** Use the City's powers under the Community Charter, its budgets,
-  plans and reports, BC law and court rulings, and local coverage. Build up and reuse a small
-  library of sourced local facts, so the same fact gets the same citation across candidates.
-- **Use the candidate's full proposal.** Read their own page for it first, not just the quote on
-  file, so the analysis addresses what they actually proposed.
+  plan, budget or contract) needs a `source_url` you opened; the page shows these as numbered
+  footnotes. A pure reasoning point may go without one, but keep those rare.
+- **Ground it in Salmon Arm.** Use the City's powers, plans, budgets and reports, BC law and court
+  rulings, and local coverage. Reuse the same sourced facts across candidates so the same fact
+  gets the same citation.
+- **Use the candidate's full proposal.** Read their own page, not just the quote on file.
 
-**Status (Oct. 3, 2026):** three samples are in
-`~/Documents/election-research/salmon-arm-analysis-SAMPLES-2026-10-03.xml` (Bardy, Cannon,
-Desautels). Run the full pass only after the user approves the tone and depth.
+**Where it shows:** a collapsible panel on the plank card (Platform tab) and under the plank on
+every subject page it's tagged with.
+
+**Status (Oct. 3, 2026):** pillar samples are in
+`~/Documents/election-research/salmon-arm-analysis-PILLAR-SAMPLES-2026-10-03.xml` (Bardy water,
+Cannon wastewater, Desautels growth). Run the full pass, about 60 pillars, only after the user
+approves them.
 
 ## Working with subagents
 

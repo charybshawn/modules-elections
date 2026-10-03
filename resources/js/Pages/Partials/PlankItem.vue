@@ -70,31 +70,8 @@
           </section>
         </div>
 
-        <!-- AI analysis: the same three questions for every plank. -->
-        <section v-if="plank.analysis" class="mt-4 rounded-lg border border-violet-200 bg-violet-50/50 p-4 dark:border-violet-500/30 dark:bg-violet-500/5">
-          <div class="flex flex-wrap items-baseline justify-between gap-2">
-            <h4 class="text-xs font-semibold uppercase tracking-wide text-violet-800 dark:text-violet-300">AI analysis</h4>
-            <span v-if="plank.analysis.on" class="text-xs text-gray-500 dark:text-gray-400">{{ formatDate(plank.analysis.on) }}</span>
-          </div>
-          <div class="mt-3 grid grid-cols-1 gap-4 md:grid-cols-3">
-            <div v-for="(label, part) in options.analysisParts" :key="part" class="min-w-0">
-              <h5 class="text-xs font-medium text-gray-600 dark:text-gray-300">{{ label }}</h5>
-              <ul v-if="plank.analysis.parts[part]?.length" class="mt-1 list-disc space-y-1.5 pl-4 text-sm text-gray-800 marker:text-violet-400 dark:text-gray-200">
-                <li v-for="(point, i) in plank.analysis.parts[part]" :key="i">
-                  {{ point.text }}<sup v-if="point.sources.length" class="ml-0.5 text-[10px] font-medium text-violet-700 dark:text-violet-300"><template v-for="(url, j) in point.sources" :key="url"><a :href="`#${footnoteId(url)}`" class="hover:underline">{{ footnoteNumber(url) }}</a><template v-if="j < point.sources.length - 1">,</template></template></sup>
-                </li>
-              </ul>
-              <p v-else class="mt-1 text-sm text-gray-500 dark:text-gray-400">Nothing noted.</p>
-            </div>
-          </div>
-          <!-- Numbered sources, in order of first citation. -->
-          <ol v-if="footnotes.length" class="mt-4 space-y-0.5 border-t border-violet-200 pt-2 text-xs text-gray-500 dark:border-violet-500/30 dark:text-gray-400">
-            <li v-for="(url, i) in footnotes" :id="footnoteId(url)" :key="url" class="flex gap-1.5">
-              <span class="w-4 shrink-0 text-right tabular-nums">{{ i + 1 }}.</span>
-              <a :href="url" target="_blank" rel="noopener noreferrer" class="min-w-0 break-all underline decoration-gray-300 underline-offset-2 hover:text-gray-900 dark:decoration-gray-600 dark:hover:text-white">{{ footnoteLabel(url) }}</a>
-            </li>
-          </ol>
-        </section>
+        <!-- AI analysis (pillars only): collapsed to its plain-language meaning until opened. -->
+        <AnalysisPanel v-if="plank.analysis" :analysis="plank.analysis" :labels="options.analysisParts" :id-prefix="plank.key" class="mt-4" />
 
         <button v-if="editable" type="button" class="tap-target-touch mt-2 text-xs text-red-600 hover:text-red-800 dark:text-red-400" @click="$emit('delete', plank)">Delete plank</button>
       </div>
@@ -105,6 +82,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import EntryCard from './EntryCard.vue'
+import AnalysisPanel from './AnalysisPanel.vue'
 import TagChips from './TagChips.vue'
 import { newPillClass } from './classes'
 import { formatDate, hostOf, isHttpUrl } from './format'
@@ -126,29 +104,6 @@ const props = defineProps<{
 defineEmits<{ delete: [plank: Plank]; 'delete-entry': [entry: Entry]; tag: [slug: string | null] }>()
 
 const tiers = computed(() => props.options.plankTiers)
-
-// ---- AI analysis footnotes: one number per source, in order of first citation ----
-const footnotes = computed(() => {
-  const seen: string[] = []
-  for (const part of Object.keys(props.options.analysisParts)) {
-    for (const point of props.plank.analysis?.parts[part] ?? []) {
-      for (const url of point.sources) if (!seen.includes(url)) seen.push(url)
-    }
-  }
-  return seen
-})
-const footnoteNumber = (url: string) => footnotes.value.indexOf(url) + 1
-const footnoteId = (url: string) => `fn-${props.plank.key}-${footnoteNumber(url)}`
-/** Host plus a readable path, e.g. "castanet.net › New data shows increased number…". */
-const footnoteLabel = (url: string) => {
-  try {
-    const u = new URL(url)
-    const slug = decodeURIComponent(u.pathname.split('/').filter(Boolean).pop() ?? '').replace(/[-_]+/g, ' ').replace(/\.(html?|pdf)$/i, '')
-    return slug ? `${u.hostname.replace(/^www\./, '')} › ${slug.length > 70 ? `${slug.slice(0, 70)}…` : slug}` : u.hostname
-  } catch {
-    return url
-  }
-}
 
 /** Phones only: "What they said" starts folded under the plan. */
 const wordsOpen = ref(false)

@@ -33,6 +33,7 @@
                 <span :class="tierClass(plank.tier)" class="mr-1.5 rounded px-1.5 py-0.5 text-xs font-medium">{{ options.plankTiers[plank.tier] ?? plank.tier }}</span>
                 <span class="font-medium text-gray-900 dark:text-gray-100">{{ plank.title }}</span>
                 <p v-if="plank.summary" class="mt-0.5 text-gray-600 dark:text-gray-300">{{ plank.summary }}</p>
+                <AnalysisPanel v-if="plank.analysis" :analysis="plank.analysis" :labels="options.analysisParts" :id-prefix="`${p.slug}-${plank.key}`" class="mt-2" />
               </li>
             </ul>
             <ul v-if="Object.keys(p.stances).length" class="mt-2 space-y-1 text-sm">
@@ -96,7 +97,8 @@ import AdminLayout from '@/Layouts/AdminLayout.vue'
 import AdminMobileHeader from '@/Components/Admin/AdminMobileHeader.vue'
 import { sectionHeadingClass } from '../Partials/classes'
 import { formatDate, isHttpUrl } from '../Partials/format'
-import type { Article, Options } from '../Partials/types'
+import AnalysisPanel from '../Partials/AnalysisPanel.vue'
+import type { Article, Options, PlankAnalysis } from '../Partials/types'
 
 defineOptions({ layout: (h, page) => h(AdminLayout, { wide: true, hideBreadcrumbOnMobile: true }, () => page) })
 
@@ -104,7 +106,7 @@ interface Position {
   name: string
   slug: string
   office: string
-  planks: { key: string; title: string; summary: string | null; tier: string; rank: number }[]
+  planks: { key: string; title: string; summary: string | null; tier: string; rank: number; analysis: PlankAnalysis | null }[]
   /** Scorecard item id ("scorecard/item") -> stance. */
   stances: Record<string, string>
 }

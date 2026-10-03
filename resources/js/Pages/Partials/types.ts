@@ -102,6 +102,12 @@ export interface Options {
   eventKinds: Record<string, string>
 }
 
+/** AI analysis of a pillar: Options.analysisParts key -> points, each with its footnoted sources. */
+export interface PlankAnalysis {
+  on: string | null
+  parts: Record<string, { text: string; sources: string[] }[]>
+}
+
 export interface PlanDetail {
   /** Options.planAspects key. */
   aspect: string
@@ -112,8 +118,8 @@ export interface PlanDetail {
 export interface Plank {
   id: number
   tags: TagRef[]
-  /** AI analysis -- impact, challenges, risks -- each point with its sources; null until written. */
-  analysis: { on: string | null; parts: Record<string, { text: string; sources: string[] }[]> } | null
+  /** AI analysis (pillars only); null until written. */
+  analysis: PlankAnalysis | null
   /** What they've conveyed about carrying it out; null until assessed. */
   plan: { status: string; summary: string | null; details: PlanDetail[] } | null
   key: string

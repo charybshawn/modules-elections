@@ -8,11 +8,12 @@ return new class extends Migration
 {
     public function up(): void
     {
-        // AI analysis of a plank: its likely impact, what makes it hard to
-        // carry out, and how it could fall short -- the same three questions
-        // for every plank, with sources for the facts it rests on.
+        // AI analysis of a plank: what it means in plain terms, why it could
+        // work, why it might not, and a short conclusion -- the same four parts
+        // for every plank, with sources for the facts it rests on
+        // (Plank::ANALYSIS_PARTS).
         Schema::table('elections_planks', function (Blueprint $table) {
-            // {impact: [{text, sources: [url]}], challenges: [...], risks: [...]}
+            // {meaning: [{text, sources: [url]}], works: [...], fails: [...], details: [...]}
             $table->json('analysis')->nullable()->after('plan_details');
             $table->date('analysis_on')->nullable()->after('analysis');
         });

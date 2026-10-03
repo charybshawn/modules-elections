@@ -3,6 +3,7 @@
 namespace Cultpantry\Elections\Actions;
 
 use Cultpantry\Elections\Http\Resources\ArticleResource;
+use Cultpantry\Elections\Http\Resources\PlankResource;
 use Cultpantry\Elections\Models\Candidate;
 use Cultpantry\Elections\Models\Entry;
 use Cultpantry\Elections\Models\Plank;
@@ -22,7 +23,7 @@ class BuildTagPage
 {
     public function handle(Tag $tag): array
     {
-        $planks = $tag->planks()->with('candidate')->get();
+        $planks = $tag->planks()->with(['candidate', 'entries'])->get();
         $items = $tag->scorecardItems()->with('category.scorecard')->get();
 
         $answers = ScorecardAnswer::with('response')
@@ -44,6 +45,7 @@ class BuildTagPage
                     'summary' => $p->summary,
                     'tier' => $p->tier,
                     'rank' => $p->rank,
+                    'analysis' => PlankResource::make($p)->resolve()['analysis'],
                 ])->values()->all();
             $stances = ($answers->get($candidate->id) ?? collect())
                 ->mapWithKeys(fn (ScorecardAnswer $a) => [$itemKey($itemById[$a->item_id]) => $a->stance])

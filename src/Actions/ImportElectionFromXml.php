@@ -860,8 +860,8 @@ class ImportElectionFromXml
     }
 
     /**
-     * <analysis on="YYYY-MM-DD"><impact><point source_url="…">text</point>…
-     * </impact><challenges>…</challenges><risks>…</risks></analysis> --
+     * <analysis on="YYYY-MM-DD"><meaning><point source_url="…">text</point>…
+     * </meaning><works>…</works><fails>…</fails><details>…</details></analysis> --
      * replaces the plank's analysis. A point may carry several
      * source_url-N attributes; points without any source are kept (they
      * reason from the sourced ones) but the analysis must cite at least
@@ -869,6 +869,14 @@ class ImportElectionFromXml
      */
     private function applyAnalysis(Plank $plank, SimpleXMLElement $node, string $label): void
     {
+        // <analysis remove="true"/> takes an analysis off a plank.
+        if (filter_var((string) $node['remove'], FILTER_VALIDATE_BOOLEAN)) {
+            $plank->analysis = null;
+            $plank->analysis_on = null;
+
+            return;
+        }
+
         $analysis = [];
         $cited = 0;
         foreach (array_keys(Plank::ANALYSIS_PARTS) as $part) {

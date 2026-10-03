@@ -61,12 +61,15 @@ class Plank extends Model
     ];
 
     /**
-     * The AI analysis's three questions, in the order the page shows them.
+     * The AI analysis's four parts, in the order the page shows them: the
+     * plain-language meaning, the case for, the case against, and a short
+     * conclusion.
      */
     public const ANALYSIS_PARTS = [
-        'impact' => 'Likely impact',
-        'challenges' => 'What makes it hard',
-        'risks' => 'How it could fall short',
+        'meaning' => 'What this means',
+        'works' => 'Why it could work',
+        'fails' => 'Why it might not',
+        'details' => 'The devil is in the details',
     ];
 
     /**
