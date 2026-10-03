@@ -70,7 +70,35 @@ export interface Options {
   topics: Record<string, string>
   backgroundTopics: Record<string, string>
   sourceTypes: Record<string, string>
+  plankTiers: Record<string, string>
   eventKinds: Record<string, string>
+}
+
+export interface Plank {
+  id: number
+  key: string
+  title: string
+  topic: string
+  summary: string | null
+  tier: string
+  rank: number
+  /** Why it ranks where it does, in the candidate's own emphasis. */
+  rationale: string | null
+  /** Their own position for it when they number or list their priorities. */
+  priority_position: number | null
+  has_commitment: boolean
+  source_count: number
+  sources: Entry[]
+  /** When it went on file (ISO). */
+  added_at: string | null
+}
+
+export interface Platform {
+  tiers: { tier: string; title: string; planks: Plank[] }[]
+  /** Plank statements not yet tied to a plank. */
+  unranked: Entry[]
+  source_count: number
+  limited_sources: boolean
 }
 
 export interface EntryGroup {
@@ -88,6 +116,8 @@ export interface Portfolio {
   candidate: Candidate
   /** Background facts for the About section, grouped by Options.backgroundTopics. */
   background: EntryGroup[]
+  /** The Platform tab; null until anything is on file. */
+  platform: Platform | null
   sections: PortfolioSection[]
   articles: Article[]
   entryCount: number

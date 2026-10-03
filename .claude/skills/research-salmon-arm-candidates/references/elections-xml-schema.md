@@ -40,6 +40,22 @@ invent new values.
           <published_on>2026-09-21</published_on>
         </entry>
       </entries>
+      <planks>                                  <!-- the Platform tab; see "Planks" below -->
+        <plank>
+          <key>downtown-parking</key>           <!-- required; stable kebab-case; the match key per candidate -->
+          <title>Fix downtown parking</title>   <!-- required; their framing, neutral, a few words -->
+          <topic>downtown_development</topic>
+          <summary>One or two neutral sentences.</summary>
+          <tier>top</tier>                      <!-- top | also | mentioned -->
+          <rank>1</rank>                        <!-- 1 = most emphasized, across the whole platform -->
+          <priority_position>1</priority_position> <!-- only when THEY number/list their priorities -->
+          <has_commitment>true</has_commitment>
+          <rationale>Listed first of her four priorities; repeated in the Castanet Q&amp;A.</rationale>
+          <entries>                             <!-- the statements it rests on; imported as kind plank -->
+            <entry>...</entry>
+          </entries>
+        </plank>
+      </planks>
     </candidate>
   </candidates>
 
@@ -83,6 +99,7 @@ inside an element doesn't matter. Write `&amp;` for `&` in URLs.
 | `topic` (every kind except `background`) | `housing`, `taxes_budget`, `infrastructure`, `downtown_development`, `transportation`, `environment`, `public_safety`, `recreation_parks`, `economy_business`, `social_services`, `governance_transparency`, `other` |
 | `topic` (`background` entries) | `career` (jobs, profession, employers), `business` (businesses they own or run), `education` (schooling, degrees, credentials), `community` (boards, volunteering, clubs, coaching), `public_service` (elected or appointed office, City committees, past runs for office), `local_roots` (how long in Salmon Arm/the Shuswap and what brought them), `other` |
 | `source_type` | `candidate_site` (their campaign site), `personal_site` (their own non-campaign website or blog), `linkedin`, `instagram`, `facebook_page`, `facebook_group`, `news`, `forum`, `organization` (a business's, board's or club's own website), `city`, `elections_bc`, `other` |
+| plank `tier` | `top` (front and centre: a named priority, or a position they return to across their own material), `also` (clearly stated, less emphasis), `mentioned` (raised once or in passing) |
 | event `kind` | `forum`, `deadline`, `advance_voting`, `general_voting`, `other` |
 
 ## Import behaviour (what to rely on)
@@ -122,3 +139,21 @@ inside an element doesn't matter. Write `&amp;` for `&` in URLs.
   this is reported back after the import, so check the message.
 - `bio` without `bio_source_url` imports but is reported as a problem — always
   give the bio's source.
+
+## Planks
+
+- **Planks match on (candidate, `<key>`).** Reuse a plank's key from the
+  baseline on a repeat run, or the import makes a second plank. Changing
+  its title, tier, rank or rationale under the same key updates it in place.
+- **A plank's `<entries>` are its sources** and import as `plank` entries
+  linked to it, whatever `<kind>` they say. A statement already on file
+  (same source URL + quote/summary) is linked, not duplicated -- so a plank
+  can point at a statement imported earlier as a loose `plank` entry.
+- **Tier then rank orders the tab**: all `top` planks, then `also`, then
+  `mentioned`, each by `rank`. Give every plank a distinct rank across the
+  candidate's whole platform.
+- **Every plank needs a `<rationale>` and at least one source**; the import
+  reports any that don't. Unknown tiers file as `mentioned`, unknown topics
+  as `other`.
+- Planks are never deleted by an import; a wrong one is deleted by hand on
+  the Platform tab (which removes its statements too).

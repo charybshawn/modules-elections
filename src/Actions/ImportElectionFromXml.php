@@ -6,6 +6,7 @@ use Cultpantry\Elections\Models\Article;
 use Cultpantry\Elections\Models\Candidate;
 use Cultpantry\Elections\Models\ElectionEvent;
 use Cultpantry\Elections\Models\Entry;
+use Cultpantry\Elections\Models\Plank;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -18,8 +19,8 @@ use SimpleXMLElement;
  * references/elections-xml-schema.md) and ExportElectionToXml produces.
  *
  * Match keys: candidates on name, entries on (candidate, source URL + quote
- * or summary), articles on URL, events on (title, starts_at). Re-importing
- * the same file is a no-op.
+ * or summary), planks on (candidate, key), articles on URL, events on
+ * (title, starts_at). Re-importing the same file is a no-op.
  *
  * Unlike the market import, a candidate field left out of the file is left
  * alone rather than cleared: research passes are incremental (one finds the
@@ -45,7 +46,7 @@ class ImportElectionFromXml
     private array $problems = [];
 
     /**
-     * @return array{candidates: array{created: int, updated: int, unchanged: int}, entries: array{created: int, updated: int, unchanged: int}, articles: array{created: int, updated: int, unchanged: int}, events: array{created: int, updated: int, unchanged: int}, problems: array<int, string>}
+     * @return array{candidates: array{created: int, updated: int, unchanged: int}, entries: array{created: int, updated: int, unchanged: int}, planks: array{created: int, updated: int, unchanged: int}, articles: array{created: int, updated: int, unchanged: int}, events: array{created: int, updated: int, unchanged: int}, problems: array<int, string>}
      */
     public function handle(UploadedFile $file): array
     {
@@ -53,7 +54,7 @@ class ImportElectionFromXml
     }
 
     /**
-     * @return array{candidates: array{created: int, updated: int, unchanged: int}, entries: array{created: int, updated: int, unchanged: int}, articles: array{created: int, updated: int, unchanged: int}, events: array{created: int, updated: int, unchanged: int}, problems: array<int, string>}
+     * @return array{candidates: array{created: int, updated: int, unchanged: int}, entries: array{created: int, updated: int, unchanged: int}, planks: array{created: int, updated: int, unchanged: int}, articles: array{created: int, updated: int, unchanged: int}, events: array{created: int, updated: int, unchanged: int}, problems: array<int, string>}
      */
     public function handleString(string $contents): array
     {
@@ -75,6 +76,7 @@ class ImportElectionFromXml
         $result = [
             'candidates' => $counts(),
             'entries' => $counts(),
+            'planks' => $counts(),
             'articles' => $counts(),
             'events' => $counts(),
         ];
@@ -102,7 +104,7 @@ class ImportElectionFromXml
     public function summarize(array $result): string
     {
         $parts = [];
-        foreach (['candidates', 'entries', 'articles', 'events'] as $type) {
+        foreach (['candidates', 'entries', 'planks', 'articles', 'events'] as $type) {
             ['created' => $created, 'updated' => $updated, 'unchanged' => $unchanged] = $result[$type];
             if ($created + $updated + $unchanged === 0) {
                 continue;
@@ -184,9 +186,72 @@ class ImportElectionFromXml
         foreach ($node->entries->entry ?? [] as $entryNode) {
             $this->importEntry($candidate, $entryNode, $result);
         }
+
+        foreach ($node->planks->plank ?? [] as $plankNode) {
+            $this->importPlank($candidate, $plankNode, $result);
+        }
     }
 
-    private function importEntry(Candidate $candidate, SimpleXMLElement $node, array &$result): void
+    /**
+     * A plank and the statements it rests on. Its <entries> are imported as
+     * plank-kind entries linked to it (whatever <kind> they give), so a
+     * statement already on file just gets linked rather than duplicated.
+     */
+    private function importPlank(Candidate $candidate, SimpleXMLElement $node, array &$result): void
+    {
+        $label = $candidate->name;
+        $key = $this->text($node, 'key');
+        $title = $this->text($node, 'title');
+
+        if ($key === null || $title === null) {
+            $this->problems[] = "{$label}: skipped a plank missing a <key> or <title>.";
+
+            return;
+        }
+
+        $topic = $this->text($node, 'topic') ?? 'other';
+        if (! array_key_exists($topic, Entry::TOPICS)) {
+            $this->problems[] = "{$label}: plank \"{$title}\" has unknown topic \"{$topic}\", filed under \"other\".";
+            $topic = 'other';
+        }
+
+        $tier = $this->text($node, 'tier') ?? 'mentioned';
+        if (! array_key_exists($tier, Plank::TIERS)) {
+            $this->problems[] = "{$label}: plank \"{$title}\" has unknown tier \"{$tier}\", filed as \"mentioned\".";
+            $tier = 'mentioned';
+        }
+
+        $plank = $candidate->planks()->where('key', $key)->first() ?? $candidate->planks()->make(['key' => $key]);
+        $plank->fill([
+            'title' => $title,
+            'topic' => $topic,
+            'summary' => $this->text($node, 'summary'),
+            'tier' => $tier,
+            'rank' => $this->positiveInt($node, 'rank') ?? 999,
+            'rationale' => $this->text($node, 'rationale'),
+            'priority_position' => $this->positiveInt($node, 'priority_position'),
+            'has_commitment' => (bool) $this->bool($node, 'has_commitment'),
+        ]);
+
+        if ($plank->rationale === null) {
+            $this->problems[] = "{$label}: plank \"{$title}\" has no <rationale> -- say why it ranks where it does.";
+        }
+
+        $this->tally($plank, $result['planks']);
+
+        $sources = 0;
+        foreach ($node->entries->entry ?? [] as $entryNode) {
+            $sources += (int) $this->importEntry($candidate, $entryNode, $result, $plank);
+        }
+        if ($sources === 0 && $plank->entries()->doesntExist()) {
+            $this->problems[] = "{$label}: plank \"{$title}\" has no sourced statement behind it.";
+        }
+    }
+
+    /**
+     * @return bool whether the entry was imported (not skipped)
+     */
+    private function importEntry(Candidate $candidate, SimpleXMLElement $node, array &$result, ?Plank $plank = null): bool
     {
         $label = $candidate->name;
         $summary = $this->text($node, 'summary');
@@ -195,19 +260,20 @@ class ImportElectionFromXml
         if ($summary === null) {
             $this->problems[] = "{$label}: skipped an entry with no <summary>.";
 
-            return;
+            return false;
         }
         if ($sourceUrl === null || ! $this->isHttpUrl($sourceUrl)) {
             $this->problems[] = "{$label}: skipped \"".mb_strimwidth($summary, 0, 60, '…').'" -- no http(s) <source_url>.';
 
-            return;
+            return false;
         }
 
-        $kind = $this->text($node, 'kind');
+        // A plank's statements are plank entries whatever the file says.
+        $kind = $plank !== null ? 'plank' : $this->text($node, 'kind');
         if (! array_key_exists((string) $kind, Entry::KINDS)) {
             $this->problems[] = "{$label}: skipped an entry with unknown kind \"{$kind}\".";
 
-            return;
+            return false;
         }
 
         $sourceType = $this->text($node, 'source_type');
@@ -237,8 +303,13 @@ class ImportElectionFromXml
             'source_name' => $this->text($node, 'source_name'),
             'published_on' => $this->date($node, 'published_on', $label),
         ]);
+        if ($plank !== null) {
+            $entry->plank_id = $plank->id;
+        }
 
         $this->tally($entry, $result['entries']);
+
+        return true;
     }
 
     private function importArticle(SimpleXMLElement $node, array &$result): void
@@ -353,6 +424,13 @@ class ImportElectionFromXml
         $value = trim((string) $node->{$child});
 
         return $value === '' ? null : $value;
+    }
+
+    private function positiveInt(SimpleXMLElement $node, string $child): ?int
+    {
+        $value = filter_var($this->text($node, $child), FILTER_VALIDATE_INT, ['options' => ['min_range' => 1, 'max_range' => 255]]);
+
+        return $value === false ? null : $value;
     }
 
     private function bool(SimpleXMLElement $node, string $child): ?bool

@@ -117,7 +117,46 @@
           </p>
         </div>
 
-        <!-- Platform, In their own words, Prior record, Endorsements, Campaign finance -->
+        <!-- Platform: what the candidate themselves put out, ranked by their
+             own emphasis into tiers, each plank with the statements behind it. -->
+        <div v-else-if="activeTab === 'platform' && portfolio.platform" class="divide-y divide-gray-200 dark:divide-gray-700">
+          <p v-if="portfolio.platform.limited_sources" class="py-4 text-sm text-amber-800 dark:text-amber-300">
+            Limited sources: this platform rests on {{ portfolio.platform.source_count === 1 ? 'a single source' : 'very little published material' }}, so its order is a rough guide.
+          </p>
+
+          <AccountSection
+            v-for="group in portfolio.platform.tiers"
+            :key="group.tier"
+            :title="group.title"
+            :description="tierDescriptions[group.tier]"
+          >
+            <ol class="space-y-6">
+              <li v-for="plank in group.planks" :key="plank.id">
+                <PlankItem
+                  :plank="plank"
+                  :position="plankPosition(plank)"
+                  :topics="options.topics"
+                  :options="options"
+                  :editable="!readOnly"
+                  :is-new="isNewPlank(plank)"
+                  :is-new-entry="isNewEntry"
+                  @delete="deletePlank"
+                  @delete-entry="deleteEntry"
+                />
+              </li>
+            </ol>
+          </AccountSection>
+
+          <AccountSection v-if="portfolio.platform.unranked.length" title="Not yet ranked" description="Statements on file that the research hasn't grouped into a plank yet.">
+            <ul class="space-y-5">
+              <li v-for="entry in portfolio.platform.unranked" :key="entry.id">
+                <EntryCard :entry="entry" :options="options" :editable="!readOnly" :is-new="isNewEntry(entry)" @delete="deleteEntry" />
+              </li>
+            </ul>
+          </AccountSection>
+        </div>
+
+        <!-- In their own words, Prior record, Endorsements, Campaign finance -->
         <div v-else-if="activeSection" class="divide-y divide-gray-200 dark:divide-gray-700">
           <AccountSection
             v-for="group in activeSection.groups"
@@ -177,10 +216,11 @@ import { useConfirmDialog } from '@/composables/useConfirmDialog'
 import CandidatePhoto from '../Partials/CandidatePhoto.vue'
 import EntryCard from '../Partials/EntryCard.vue'
 import FactList from '../Partials/FactList.vue'
+import PlankItem from '../Partials/PlankItem.vue'
 import { newPillClass } from '../Partials/classes'
 import { formatDate, hostOf, isHttpUrl, useReadOnly } from '../Partials/format'
 import { toUnix, useSeen } from '../Partials/seen'
-import type { Article, Entry, Options, Portfolio } from '../Partials/types'
+import type { Article, Entry, Options, Plank, Portfolio } from '../Partials/types'
 
 defineOptions({ layout: (h, page) => h(AdminLayout, { hideBreadcrumbOnMobile: true }, () => page) })
 
@@ -239,11 +279,24 @@ const isNewEntry = (entry: Entry) => isNewer(entry.added_at)
 const isNewArticle = (article: Article) => isNewer(article.linked_at)
 
 const backgroundEntries = computed(() => props.portfolio.background.flatMap((g) => g.entries))
+
+// ---- Platform ----
+const tierDescriptions: Record<string, string> = {
+  top: 'What they put front and centre: named priorities and positions they return to across their own material.',
+  also: 'Positions they state clearly, but with less emphasis.',
+  mentioned: 'Raised once or in passing.',
+}
+
+const allPlanks = computed(() => props.portfolio.platform?.tiers.flatMap((t) => t.planks) ?? [])
+const plankEntries = computed(() => [...allPlanks.value.flatMap((p) => p.sources), ...(props.portfolio.platform?.unranked ?? [])])
+/** 1-based position across the whole platform, top tier first. */
+const plankPosition = (plank: Plank) => allPlanks.value.findIndex((p) => p.id === plank.id) + 1
+const isNewPlank = (plank: Plank) => isNewer(plank.added_at) || plank.sources.some(isNewEntry)
 const sectionEntries = (key: string) => props.portfolio.sections.find((s) => s.key === key)?.groups.flatMap((g) => g.entries) ?? []
 
 const newSummary = computed(() => {
   if (lastVisit.value === null) return ''
-  const entries = [...backgroundEntries.value, ...props.portfolio.sections.flatMap((s) => s.groups.flatMap((g) => g.entries))]
+  const entries = [...backgroundEntries.value, ...plankEntries.value, ...props.portfolio.sections.flatMap((s) => s.groups.flatMap((g) => g.entries))]
   const count = entries.filter(isNewEntry).length + props.portfolio.articles.filter(isNewArticle).length
   if (count > 0) return `${count} new item${count === 1 ? '' : 's'} since your last visit -- look for the dot on a tab and the "New" tag on the item.`
   return isNewer(candidate.value.updated_at) ? 'Profile details updated since your last visit.' : ''
@@ -252,6 +305,9 @@ const newSummary = computed(() => {
 // ---- Tabs ----
 const tabs = computed(() => [
   { id: 'about', title: 'About', count: backgroundEntries.value.length, hasNew: backgroundEntries.value.some(isNewEntry) },
+  ...(props.portfolio.platform
+    ? [{ id: 'platform', title: 'Platform', count: allPlanks.value.length, hasNew: allPlanks.value.some(isNewPlank) || plankEntries.value.some(isNewEntry) }]
+    : []),
   ...props.portfolio.sections.map((s) => {
     const entries = sectionEntries(s.key)
     return { id: s.key, title: s.title, count: entries.length, hasNew: entries.some(isNewEntry) }
@@ -284,6 +340,18 @@ const deleteEntry = async (entry: Entry) => {
   })
   if (confirmed) {
     router.delete(route('admin.elections.entries.destroy', [candidate.value.slug, entry.id]), { preserveScroll: true, preserveState: true })
+  }
+}
+
+const deletePlank = async (plank: Plank) => {
+  const confirmed = await confirmDialog({
+    title: 'Delete plank',
+    message: `Delete "${plank.title}" and the ${plank.sources.length} statement(s) filed under it? A later import would bring it back if the research file still has it.`,
+    confirmLabel: 'Delete',
+    variant: 'danger',
+  })
+  if (confirmed) {
+    router.delete(route('admin.elections.planks.destroy', [candidate.value.slug, plank.id]), { preserveScroll: true, preserveState: true })
   }
 }
 

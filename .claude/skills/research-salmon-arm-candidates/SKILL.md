@@ -66,7 +66,7 @@ invited readers will rely on to decide how to vote. So:
    produces a diff instead of re-reporting everything:
 
    ```
-   cd /Users/shawn/Documents/code/cultpantry && php artisan tinker --execute="echo json_encode(['candidates' => \Cultpantry\Elections\Models\Candidate::with('entries')->get(), 'articles' => \Cultpantry\Elections\Models\Article::with('candidates:id,name')->get(), 'events' => \Cultpantry\Elections\Models\ElectionEvent::all()]);"
+   cd /Users/shawn/Documents/code/cultpantry && php artisan tinker --execute="echo json_encode(['candidates' => \Cultpantry\Elections\Models\Candidate::with(['entries', 'planks'])->get(), 'articles' => \Cultpantry\Elections\Models\Article::with('candidates:id,name')->get(), 'events' => \Cultpantry\Elections\Models\ElectionEvent::all()]);"
    ```
 
    Note each candidate's exact `name` (the match key) and which entries'
@@ -178,6 +178,67 @@ invited readers will rely on to decide how to vote. So:
 
    **Don't import the file yourself.** The user reviews it and imports it
    through Admin → Elections → Import XML.
+
+## Platform pass (planks)
+
+A platform pass fills the **Platform** tab: each candidate's planks, ranked
+by **how much the candidate themselves emphasizes them**. It is what the
+candidate is putting out there, not what anyone else says about them, and
+never a judgment of whether a position is good. Run it for a candidate (or
+a batch of about five) when the user asks about platforms, priorities or
+what someone is running on.
+
+**Sources: only the candidate's own material.**
+- Their campaign website: platform/priorities pages first, then the home
+  and about pages and their own posts.
+- Their campaign Facebook page and Instagram: posts they made on their own
+  page (not replies in groups or to residents -- that comes later).
+- Their own words in the news: their Observer introduction, their
+  Castanet Q&A answers, and direct quotes in announcement stories. A
+  reporter's paraphrase without a quote doesn't count unless the
+  candidate's own material says the same thing.
+- What they said at a forum, where there's a recording or a direct quote.
+
+**Build the planks.**
+1. Collect every statement of a position with its source (summary, verbatim
+   `<quote>` where there is one, `source_url`, date).
+2. Group statements that make the same position into one plank, across
+   sources. Split two different positions within a topic ("more housing
+   density" vs "protect farmland") into two planks.
+3. Title each plank in the candidate's own framing, neutrally, in a few
+   words ("Restart the downtown parking commission"), with a one- or
+   two-sentence neutral `<summary>`. No adjectives about the position.
+4. Give it a stable kebab-case `<key>`; on a repeat run reuse the key from
+   the baseline.
+
+**Rank them by the candidate's emphasis.** Judge each plank on:
+- **Named priority**: they list or number it as a priority, pillar or
+  "my focus". Record their own position in `<priority_position>` only when
+  they number or order the list themselves.
+- **Repetition**: how many of their own, independent sources state it.
+- **Placement and space**: whether they lead with it, and how much they say.
+- **Specificity**: a specific, checkable commitment (a named project, a
+  number, a timeline, "I will...") sets `<has_commitment>`; a value
+  statement ("I support a vibrant downtown") doesn't.
+
+Then put each plank in a tier and give it a rank across the whole platform
+(1 = most emphasized, no ties):
+- `top`: named priorities and positions they return to across their own
+  material. Usually two to four.
+- `also`: clearly stated positions with less emphasis.
+- `mentioned`: raised once or in passing.
+
+Write a one-sentence `<rationale>` for every plank that cites only these
+signals ("Listed first of her four priorities on her site; repeated in her
+Castanet Q&A and Observer introduction."). Never evaluate the position, and
+apply the same yardstick to every candidate. If a candidate has published
+very little, rank what there is and say in the hand-off that the order is
+a rough guide (the page shows "Limited sources" when there are fewer than
+two).
+
+**Hand-off** (in addition to the usual summary): per candidate, the planks
+in rank order with tier and source count, which sources were used, and any
+statements left out because they weren't the candidate's own words.
 
 ## Scale
 

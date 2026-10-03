@@ -100,6 +100,17 @@ class Candidate extends Model
             ->orderBy('id');
     }
 
+    /**
+     * Their platform, most emphasized first (tier, then rank).
+     */
+    public function planks(): HasMany
+    {
+        return $this->hasMany(Plank::class)
+            ->orderByRaw("case tier when 'top' then 0 when 'also' then 1 else 2 end")
+            ->orderBy('rank')
+            ->orderBy('id');
+    }
+
     public function articles(): BelongsToMany
     {
         return $this->belongsToMany(Article::class, 'elections_article_candidate')

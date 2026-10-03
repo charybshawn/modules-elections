@@ -6,6 +6,7 @@ use Cultpantry\Elections\Models\Article;
 use Cultpantry\Elections\Models\Candidate;
 use Cultpantry\Elections\Models\ElectionEvent;
 use Cultpantry\Elections\Models\Entry;
+use Cultpantry\Elections\Models\Plank;
 use SimpleXMLElement;
 
 /**
@@ -26,17 +27,26 @@ class ExportElectionToXml
         $xml = new SimpleXMLElement('<?xml version="1.0" encoding="UTF-8"?><election></election>');
 
         $candidatesNode = $xml->addChild('candidates');
-        foreach (Candidate::with('entries')->orderBy('name')->get() as $candidate) {
+        foreach (Candidate::with(['entries', 'planks.entries'])->orderBy('name')->get() as $candidate) {
             $node = $candidatesNode->addChild('candidate');
             foreach (self::CANDIDATE_FIELDS as $field) {
                 $this->addChild($node, $field, $candidate->{$field});
             }
             $this->addChild($node, 'is_incumbent', $candidate->is_incumbent ? 'true' : 'false');
 
-            if ($candidate->entries->isNotEmpty()) {
+            // A plank's statements are written inside it, not here.
+            $loose = $candidate->entries->whereNull('plank_id');
+            if ($loose->isNotEmpty()) {
                 $entriesNode = $node->addChild('entries');
-                foreach ($candidate->entries as $entry) {
+                foreach ($loose as $entry) {
                     $this->appendEntry($entriesNode, $entry);
+                }
+            }
+
+            if ($candidate->planks->isNotEmpty()) {
+                $planksNode = $node->addChild('planks');
+                foreach ($candidate->planks as $plank) {
+                    $this->appendPlank($planksNode, $plank);
                 }
             }
         }
@@ -73,6 +83,27 @@ class ExportElectionToXml
         $dom->formatOutput = true;
 
         return $dom->saveXML();
+    }
+
+    private function appendPlank(SimpleXMLElement $planksNode, Plank $plank): void
+    {
+        $node = $planksNode->addChild('plank');
+        $this->addChild($node, 'key', $plank->key);
+        $this->addChild($node, 'title', $plank->title);
+        $this->addChild($node, 'topic', $plank->topic);
+        $this->addChild($node, 'summary', $plank->summary);
+        $this->addChild($node, 'tier', $plank->tier);
+        $this->addChild($node, 'rank', (string) $plank->rank);
+        $this->addChild($node, 'rationale', $plank->rationale);
+        $this->addChild($node, 'priority_position', $plank->priority_position === null ? null : (string) $plank->priority_position);
+        $this->addChild($node, 'has_commitment', $plank->has_commitment ? 'true' : 'false');
+
+        if ($plank->entries->isNotEmpty()) {
+            $entriesNode = $node->addChild('entries');
+            foreach ($plank->entries as $entry) {
+                $this->appendEntry($entriesNode, $entry);
+            }
+        }
     }
 
     private function appendEntry(SimpleXMLElement $entriesNode, Entry $entry): void

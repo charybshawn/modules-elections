@@ -14,6 +14,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  *
  * @property int $id
  * @property int $candidate_id
+ * @property int|null $plank_id
  * @property string $kind one of Entry::KINDS
  * @property string $topic one of Entry::topicsFor($kind): BACKGROUND_TOPICS
  *                         for background entries, TOPICS for everything else
@@ -137,5 +138,13 @@ class Entry extends Model
     public function candidate(): BelongsTo
     {
         return $this->belongsTo(Candidate::class);
+    }
+
+    /**
+     * For plank-kind entries: the plank this statement is a source for.
+     */
+    public function plank(): BelongsTo
+    {
+        return $this->belongsTo(Plank::class);
     }
 }

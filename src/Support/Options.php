@@ -5,6 +5,7 @@ namespace Cultpantry\Elections\Support;
 use Cultpantry\Elections\Models\Candidate;
 use Cultpantry\Elections\Models\ElectionEvent;
 use Cultpantry\Elections\Models\Entry;
+use Cultpantry\Elections\Models\Plank;
 
 /**
  * Every controlled value list the pages need for labels and selects, in one
@@ -24,6 +25,7 @@ class Options
             'topics' => Entry::TOPICS,
             'backgroundTopics' => Entry::BACKGROUND_TOPICS,
             'sourceTypes' => Entry::SOURCE_TYPES,
+            'plankTiers' => Plank::TIERS,
             'eventKinds' => ElectionEvent::KINDS,
         ];
     }
