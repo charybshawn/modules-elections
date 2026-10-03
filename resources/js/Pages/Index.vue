@@ -46,6 +46,8 @@
         </div>
       </dl>
 
+      <TagHeatMap :heat="heat" class="mb-8" />
+
       <div class="grid gap-8 lg:grid-cols-3">
         <div class="lg:col-span-2 space-y-8">
           <p v-if="newCandidateCount" class="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-amber-800 dark:text-amber-300">
@@ -145,6 +147,7 @@
 </template>
 
 <script setup lang="ts">
+import TagHeatMap from './Partials/TagHeatMap.vue'
 import ElectionsNav from './Partials/ElectionsNav.vue'
 import { computed, ref } from 'vue'
 import { Link, router, useForm } from '@inertiajs/vue3'
@@ -157,7 +160,7 @@ import EventItem from './Partials/EventItem.vue'
 import { secondaryButtonClass, sectionHeadingClass } from './Partials/classes'
 import { daysUntil, formatDate, formatDateTime, isHttpUrl, useReadOnly } from './Partials/format'
 import { toUnix, useSeen } from './Partials/seen'
-import type { Article, Candidate, ElectionEvent, Options } from './Partials/types'
+import type { Article, Candidate, ElectionEvent, Options, TagHeat } from './Partials/types'
 
 defineOptions({ layout: (h, page) => h(AdminLayout, { wide: true, hideBreadcrumbOnMobile: true }, () => page) })
 
@@ -169,6 +172,8 @@ const props = defineProps<{
   stats: { candidates: number; entries: number; articles: number }
   /** Unix times each candidate's entries were added and articles linked, keyed by candidate id. */
   activity: Record<number, number[]>
+  /** The subject heat map. */
+  heat: TagHeat
   /** Server time (Unix seconds). */
   now: number
   options: Options

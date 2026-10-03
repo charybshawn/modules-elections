@@ -38,6 +38,7 @@ class BuildElectionDashboard
                 Article::with('candidates')->orderByRaw('published_on is null')->orderByDesc('published_on')->limit(8)->get()
             )->resolve(),
             'activity' => $this->activity(),
+            'heat' => app(BuildTagHeat::class)->handle(),
             // The server's clock, so "seen" marks and comparisons never mix
             // in the browser's.
             'now' => now()->getTimestamp(),

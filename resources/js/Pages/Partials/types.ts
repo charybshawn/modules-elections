@@ -24,6 +24,18 @@ export interface Candidate {
   updated_at: string | null
 }
 
+export interface TagHeat {
+  /** Headings hottest first, each with its tags hottest first. */
+  headings: {
+    topic: string
+    title: string
+    tags: { slug: string; name: string; heat: number; level: number; mentions: number; recent: number }[]
+  }[]
+  /** Biggest rise this week over last week. */
+  heatingUp: { slug: string; name: string }[]
+  halfLifeDays?: number
+}
+
 export interface TagRef {
   slug: string
   name: string
