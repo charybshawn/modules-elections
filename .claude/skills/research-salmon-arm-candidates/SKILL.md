@@ -22,6 +22,8 @@ to it.
 has the field list, the controlled value lists, and exactly how the import
 matches and merges, which decides how you write a repeat run.
 
+**Blocked pages:** when curl or WebFetch is blocked (a 403, a Cloudflare challenge, or a page that's empty without JavaScript), read the page in the Chrome extension instead. Never fall back on a search-result summary.
+
 ## The rules that matter most
 
 This is a file of claims about real people running for public office, which

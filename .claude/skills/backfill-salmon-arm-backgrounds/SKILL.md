@@ -15,6 +15,8 @@ writes to the database; the user reviews the file and imports it.
 before writing any output**, especially the `background` topic list and the
 `source_type` list.
 
+**Blocked pages:** when curl or WebFetch is blocked (a 403, a Cloudflare challenge, or a page that's empty without JavaScript), read the page in the Chrome extension instead. Never fall back on a search-result summary.
+
 ## Rules
 
 1. **Every fact has a source you actually opened.** Open the page and confirm

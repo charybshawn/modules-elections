@@ -16,6 +16,8 @@ file. It never writes to the database.
 before writing any output.** It has the field list, the controlled value lists
 and how the import matches on exact `<name>`.
 
+**Blocked pages:** when curl or WebFetch is blocked (a 403, a Cloudflare challenge, or a page that's empty without JavaScript), read the page in the Chrome extension instead. Never fall back on a search-result summary.
+
 ## Rules
 
 1. **Every name comes from a page you actually opened.** Search results only
