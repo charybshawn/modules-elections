@@ -254,3 +254,36 @@ export interface PulseSnapshot {
   issues: PulseIssue[]
   mentions: { name: string; slug: string; mentions: number; commenters: number; mentions_change: number | 'new' | null }[]
 }
+
+/** One row of the dashboard's Latest updates: a candidate's day of additions, or a news story. */
+export interface CandidateUpdate {
+  type: 'candidate'
+  id: string
+  /** When it went on file (ISO). */
+  at: string
+  name: string
+  slug: string
+  photo_url: string | null
+  total: number
+  /** e.g. "12 statements", "3 council-record items". */
+  counts: string[]
+  /** The first new plank title that day (the rest are counted in more_planks). */
+  planks: string[]
+  more_planks: number
+  /** Candidate tab to open, or null for the default. */
+  tab: string | null
+}
+
+export interface ArticleUpdate {
+  type: 'article'
+  id: string
+  at: string
+  title: string
+  url: string
+  outlet: string | null
+  published_on: string | null
+  /** How many candidates it covers. */
+  candidates: number
+}
+
+export type LatestUpdate = CandidateUpdate | ArticleUpdate

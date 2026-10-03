@@ -191,6 +191,8 @@
         </div>
 
         <aside class="space-y-6 lg:col-start-3 lg:row-start-2">
+          <LatestUpdates :updates="latestUpdates" :now="now" />
+
           <section>
             <h2 :class="sectionHeadingClass">Upcoming</h2>
             <p v-if="upcomingEvents.length === 0" class="mt-3 text-sm text-gray-500 dark:text-gray-400">No upcoming events on file.</p>
@@ -248,6 +250,7 @@
 
 <script setup lang="ts">
 import TagHeatList from './Partials/TagHeatList.vue'
+import LatestUpdates from './Partials/LatestUpdates.vue'
 import { cellOf, tierBadgeClass, tierShortLabel, tierWeight, type SubjectCoverage } from './Partials/coverage'
 import ElectionsNav from './Partials/ElectionsNav.vue'
 import { computed, nextTick, ref, reactive } from 'vue'
@@ -261,7 +264,7 @@ import EventItem from './Partials/EventItem.vue'
 import { secondaryButtonClass, sectionHeadingClass } from './Partials/classes'
 import { daysUntil, formatDate, formatDateTime, isHttpUrl, useReadOnly } from './Partials/format'
 import { toUnix, useSeen } from './Partials/seen'
-import type { Article, Candidate, ElectionEvent, Options, TagHeat } from './Partials/types'
+import type { Article, Candidate, ElectionEvent, Options, TagHeat, LatestUpdate } from './Partials/types'
 
 defineOptions({ layout: (h, page) => h(AdminLayout, { wide: true, hideBreadcrumbOnMobile: true }, () => page) })
 
@@ -277,6 +280,8 @@ const props = defineProps<{
   heat: TagHeat
   /** Who campaigns on which subject. */
   coverage: SubjectCoverage
+  /** Newest additions, grouped per candidate per day, plus news stories. */
+  latestUpdates: LatestUpdate[]
   /** Server time (Unix seconds). */
   now: number
   options: Options
