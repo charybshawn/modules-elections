@@ -103,6 +103,10 @@ For each candidate:
    plus earlier announcement stories. Castanet blocks automated fetching, so
    read it in Chrome (below).
 
+   The Friday AM newsletter's election PDF (`https://friam.ca/`, linked
+   from `https://timlavery.ca/candidates-qas/`) asked every candidate for
+   their background and positions held: a good second source.
+
 5. **Personal websites and blogs** (`personal_site`) -- only ones tied to the
    candidate under rule 2. Background facts only; their opinions are for the
    research skill.

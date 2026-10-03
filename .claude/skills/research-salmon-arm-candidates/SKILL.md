@@ -100,6 +100,24 @@ invited readers will rely on to decide how to vote. So:
    - **Local radio** (`myshuswapnow.com` and similar): election stories and
      candidate interviews.
 
+   - **Community questionnaires**, start from **Aim High Salmon Arm**'s
+     hub (`https://timlavery.ca/candidates-qas/`, a former councillor's
+     site), which links every local Q&A. Each is the candidates' own words:
+     - Aim High's own three rounds for mayor and council
+       (`timlavery.ca/category/qas/`): governance commitments (full term,
+       schedule, eligibility; leadership style for mayor).
+     - **Friday AM** (`https://friam.ca/`): its election-extra PDF asked
+       every candidate for background and to "identify three issues
+       important to you and how you would approach them", the strongest
+       named-priority signal for the platform pass.
+     - **Vote4Tomorrow** (Shuswap Climate Action Society,
+       `https://vote4tomorrow.ca/election-2026/salmon-arm/`).
+     - Castanet's election hub (`https://www.castanet.net/salmon-arm-votes-2026/`)
+       and its six-question profile series.
+     - Voice of the Shuswap interviews
+       (`https://voiceoftheshuswap.ca/podcast-library/#civicelect4`). These
+       are audio, so only usable if a transcript or written summary exists.
+
    Every story about the race becomes an `<article>` linked to each candidate
    it covers. Its substantive content about a candidate (a stated position,
    a quote) also becomes an `<entry>` with `source_type` `news`. The article
@@ -203,8 +221,11 @@ what someone is running on.
   (`https://www.facebook.com/groups/714619231920570`) and other local groups
   the user belongs to: search the group for the candidate's name and keep
   only what the candidate wrote (`source_type` `facebook_group`).
-- Their own words in the news: their Observer introduction, their
-  Castanet Q&A answers, and direct quotes in announcement stories. A
+- Their own words in the news and community questionnaires: their
+  Observer introduction, Castanet Q&A, the Friday AM "three issues" answers,
+  Vote4Tomorrow and Aim High Salmon Arm responses (all linked from
+  `https://timlavery.ca/candidates-qas/`), and direct quotes in
+  announcement stories. A
   reporter's paraphrase without a quote doesn't count unless the
   candidate's own material says the same thing.
 - What they said at a forum, where there's a recording or a direct quote.
