@@ -147,6 +147,8 @@ export interface ScorecardItem {
   stance: string
   /** How everyone who answered split on it, by stance. */
   field: Record<string, number>
+  /** Every other respondent's answer, for the field strip. */
+  others: { name: string; slug: string; stance: string }[]
 }
 
 export interface ScorecardCategory {

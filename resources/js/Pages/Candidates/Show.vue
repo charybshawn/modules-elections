@@ -17,9 +17,12 @@
     </template>
 
     <template #header>
-      <Link :href="route('admin.elections.index')" class="hidden md:inline-flex tap-target-touch items-center text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white text-sm">
-        &larr; Back to Elections
-      </Link>
+      <div class="flex items-center justify-between gap-3">
+        <Link :href="route('admin.elections.index')" class="hidden md:inline-flex tap-target-touch items-center text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white text-sm">
+          &larr; Back to Elections
+        </Link>
+        <QuickSearch class="ml-auto" />
+      </div>
       <!-- pr-40 keeps a long name clear of the sticky actions pill. -->
       <h1 class="hidden md:block mt-2 pr-40 text-2xl font-semibold text-gray-900 dark:text-white">{{ candidate.name }}</h1>
     </template>
@@ -120,17 +123,44 @@
         <!-- Platform: what the candidate themselves put out, ranked by their
              own emphasis into tiers, each plank with the statements behind it. -->
         <div v-else-if="activeTab === 'platform' && portfolio.platform" class="divide-y divide-gray-200 dark:divide-gray-700">
+          <!-- Filter by subject, in place: the chips here and on each plank. -->
+          <div v-if="platformSubjects.length > 1" class="py-4">
+            <div class="-mx-4 flex gap-1.5 overflow-x-auto px-4 pb-1 scrollbar-hide sm:mx-0 sm:flex-wrap sm:px-0" role="group" aria-label="Filter planks by subject">
+              <button
+                type="button"
+                :aria-pressed="platformFilter.tag === null"
+                :class="platformFilter.tag === null ? 'bg-gray-900 text-white dark:bg-white dark:text-gray-900' : 'bg-white text-gray-700 ring-1 ring-gray-300 hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-300 dark:ring-gray-600'"
+                class="tap-target-touch shrink-0 rounded-full px-3 py-1 text-sm font-medium"
+                @click="platformFilter.tag = null"
+              >All {{ allPlanks.length }}</button>
+              <button
+                v-for="s in platformSubjects"
+                :key="s.slug"
+                type="button"
+                :aria-pressed="platformFilter.tag === s.slug"
+                :class="platformFilter.tag === s.slug ? 'bg-indigo-600 text-white' : 'bg-white text-gray-700 ring-1 ring-gray-300 hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-300 dark:ring-gray-600'"
+                class="tap-target-touch shrink-0 rounded-full px-3 py-1 text-sm font-medium"
+                @click="platformFilter.tag = platformFilter.tag === s.slug ? null : s.slug"
+              >{{ s.name }} <span class="opacity-70">{{ s.count }}</span></button>
+            </div>
+            <p v-if="activeSubject" class="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-gray-600 dark:text-gray-300">
+              <span>{{ filteredPlankCount }} of {{ allPlanks.length }} planks on <span class="font-semibold text-gray-900 dark:text-white">{{ activeSubject.name }}</span></span>
+              <Link :href="route('admin.elections.tags.show', activeSubject.slug)" class="tap-target-touch inline-flex items-center font-medium text-indigo-600 underline underline-offset-2 dark:text-indigo-400">Everyone on this</Link>
+              <button type="button" class="tap-target-touch inline-flex items-center font-medium underline underline-offset-2" @click="platformFilter.tag = null">Show all</button>
+            </p>
+          </div>
+
           <p v-if="portfolio.platform.limited_sources" class="py-4 text-sm text-amber-800 dark:text-amber-300">
             Limited sources: this platform rests on {{ portfolio.platform.source_count === 1 ? 'a single source' : 'very little published material' }}, so its order is a rough guide.
           </p>
 
           <AccountSection
-            v-for="group in portfolio.platform.tiers"
+            v-for="group in filteredTiers"
             :key="group.tier"
             :title="group.title"
             :description="tierDescriptions[group.tier]"
           >
-            <ol class="space-y-6">
+            <TransitionGroup tag="ol" class="space-y-6" enter-from-class="opacity-0 -translate-y-1" enter-active-class="transition duration-200">
               <li v-for="plank in group.planks" :key="plank.id">
                 <PlankItem
                   :plank="plank"
@@ -140,14 +170,16 @@
                   :editable="!readOnly"
                   :is-new="isNewPlank(plank)"
                   :is-new-entry="isNewEntry"
+                  :active-tag="platformFilter.tag"
                   @delete="deletePlank"
                   @delete-entry="deleteEntry"
+                  @tag="platformFilter.tag = $event"
                 />
               </li>
-            </ol>
+            </TransitionGroup>
           </AccountSection>
 
-          <AccountSection v-if="portfolio.platform.unranked.length" title="Not yet ranked" description="Statements on file that the research hasn't grouped into a plank yet.">
+          <AccountSection v-if="portfolio.platform.unranked.length && !activeSubject" title="Not yet ranked" description="Statements on file that the research hasn't grouped into a plank yet.">
             <ul class="space-y-5">
               <li v-for="entry in portfolio.platform.unranked" :key="entry.id">
                 <EntryCard :entry="entry" :options="options" :editable="!readOnly" :is-new="isNewEntry(entry)" @delete="deleteEntry" />
@@ -211,8 +243,8 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
-import { Link, router } from '@inertiajs/vue3'
+import { computed, onMounted, reactive, ref } from 'vue'
+import { Link, router, useRemember } from '@inertiajs/vue3'
 import AdminLayout from '@/Layouts/AdminLayout.vue'
 import AdminMobileHeader from '@/Components/Admin/AdminMobileHeader.vue'
 import AdminShowShell from '@/Components/Admin/AdminShowShell.vue'
@@ -223,6 +255,7 @@ import CandidatePhoto from '../Partials/CandidatePhoto.vue'
 import EntryCard from '../Partials/EntryCard.vue'
 import FactList from '../Partials/FactList.vue'
 import PlankItem from '../Partials/PlankItem.vue'
+import QuickSearch from '../Partials/QuickSearch.vue'
 import ScorecardView from '../Partials/ScorecardView.vue'
 import TagChips from '../Partials/TagChips.vue'
 import { newPillClass } from '../Partials/classes'
@@ -299,6 +332,28 @@ const allPlanks = computed(() => props.portfolio.platform?.tiers.flatMap((t) => 
 const plankEntries = computed(() => [...allPlanks.value.flatMap((p) => p.sources), ...(props.portfolio.platform?.unranked ?? [])])
 /** 1-based position across the whole platform, top tier first. */
 const plankPosition = (plank: Plank) => allPlanks.value.findIndex((p) => p.id === plank.id) + 1
+// ---- Platform: filter by subject in place (remembered so Back keeps it) ----
+const platformFilter = useRemember(reactive({ tag: null as string | null }), 'elections-platform-filter') as { tag: string | null }
+const platformSubjects = computed(() => {
+  const counts = new Map<string, { slug: string; name: string; count: number }>()
+  for (const plank of allPlanks.value) {
+    for (const tag of plank.tags) {
+      const row = counts.get(tag.slug) ?? { slug: tag.slug, name: tag.name, count: 0 }
+      row.count++
+      counts.set(tag.slug, row)
+    }
+  }
+  return [...counts.values()].sort((a, b) => b.count - a.count || a.name.localeCompare(b.name))
+})
+const activeSubject = computed(() => platformSubjects.value.find((s) => s.slug === platformFilter.tag) ?? null)
+const filteredTiers = computed(() =>
+  (props.portfolio.platform?.tiers ?? [])
+    // A remembered subject this candidate doesn't have filters nothing.
+    .map((group) => ({ ...group, planks: activeSubject.value ? group.planks.filter((p) => p.tags.some((t) => t.slug === activeSubject.value!.slug)) : group.planks }))
+    .filter((group) => group.planks.length > 0),
+)
+const filteredPlankCount = computed(() => filteredTiers.value.reduce((n, g) => n + g.planks.length, 0))
+
 const isNewPlank = (plank: Plank) => isNewer(plank.added_at) || plank.sources.some(isNewEntry)
 const sectionEntries = (key: string) => props.portfolio.sections.find((s) => s.key === key)?.groups.flatMap((g) => g.entries) ?? []
 

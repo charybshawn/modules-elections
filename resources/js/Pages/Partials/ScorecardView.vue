@@ -51,6 +51,23 @@
                 <span class="font-medium" :class="stanceStyle[item.stance]?.text">{{ stances[item.stance] ?? item.stance }}</span>
                 <template v-if="fieldLabel(item)"> · {{ fieldLabel(item) }}</template>
               </p>
+              <!-- Where they sit in the field: one dot per respondent, this candidate ringed. -->
+              <div v-if="scorecard.responded && item.others.length" class="mt-1.5">
+                <div class="flex flex-wrap items-center gap-1" role="img" :aria-label="fieldStripLabel(item)">
+                  <span :class="stanceStyle[item.stance]?.bar" class="h-3 w-3 rounded-full ring-2 ring-gray-900 ring-offset-1 dark:ring-white dark:ring-offset-gray-800" :title="`${candidateName}: ${stances[item.stance] ?? item.stance}`" />
+                  <span class="mx-0.5 h-3 w-px bg-gray-300 dark:bg-gray-600" />
+                  <span v-for="o in sortedOthers(item)" :key="o.slug" :class="stanceStyle[o.stance]?.bar" class="h-2.5 w-2.5 rounded-full" :title="`${o.name}: ${stances[o.stance] ?? o.stance}`" />
+                </div>
+                <details class="group mt-1">
+                  <summary class="tap-target-touch inline-flex cursor-pointer items-center text-xs font-medium text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200">Who answered what</summary>
+                  <dl class="mt-1 space-y-0.5 text-xs">
+                    <div v-for="group in othersByStance(item)" :key="group.stance" class="flex gap-2">
+                      <dt :class="stanceStyle[group.stance]?.text" class="w-20 shrink-0 font-medium">{{ stances[group.stance] ?? group.stance }}</dt>
+                      <dd class="text-gray-700 dark:text-gray-300">{{ group.names.join(', ') }}</dd>
+                    </div>
+                  </dl>
+                </details>
+              </div>
               <TagChips :tags="item.tags" class="mt-1" />
             </div>
           </li>
@@ -122,6 +139,17 @@ const categoryLabel = (category: ScorecardCategory) => {
   for (const item of category.items) counts[item.stance] = (counts[item.stance] ?? 0) + 1
   return splitLabel(counts, category.items.length)
 }
+
+const stanceRank: Record<string, number> = { supportive: 0, neutral: 1, opposed: 2, no_response: 3 }
+const sortedOthers = (item: ScorecardItem) =>
+  [...item.others].sort((a, b) => (stanceRank[a.stance] ?? 9) - (stanceRank[b.stance] ?? 9) || a.name.localeCompare(b.name))
+const othersByStance = (item: ScorecardItem) =>
+  stanceOrder
+    .map((stance) => ({ stance, names: item.others.filter((o) => o.stance === stance).map((o) => o.name) }))
+    .filter((g) => g.names.length)
+const fieldStripLabel = (item: ScorecardItem) =>
+  `${props.candidateName}: ${props.stances[item.stance] ?? item.stance}. Others: ` +
+  othersByStance(item).map((g) => `${g.names.length} ${props.stances[g.stance]?.toLowerCase() ?? g.stance}`).join(', ')
 
 /** How everyone who answered split on this statement, e.g. "Field: 9 supportive, 2 neutral, 1 opposed of 12". */
 const fieldLabel = (item: ScorecardItem) => {

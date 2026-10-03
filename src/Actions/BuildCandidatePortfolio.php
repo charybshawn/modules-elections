@@ -137,9 +137,22 @@ class BuildCandidatePortfolio
                 ->map(fn ($rows) => $rows->pluck('total', 'stance')->map(fn ($n) => (int) $n)->all());
             $respondents = ScorecardResponse::where('scorecard_id', $scorecard->id)->where('responded', true)->count();
 
+            // Every other respondent's answer per statement, for the "where
+            // this candidate sits in the field" strip.
+            $others = ScorecardAnswer::query()
+                ->with('response.candidate:id,name,slug')
+                ->whereHas('response', fn ($q) => $q->where('scorecard_id', $scorecard->id)->where('responded', true)->where('candidate_id', '!=', $response->candidate_id))
+                ->get()
+                ->groupBy('item_id')
+                ->map(fn ($answers) => $answers
+                    ->map(fn (ScorecardAnswer $a) => ['name' => $a->response->candidate->name, 'slug' => $a->response->candidate->slug, 'stance' => $a->stance])
+                    ->sortBy('name')
+                    ->values()
+                    ->all());
+
             $totals = array_fill_keys(array_keys(ScorecardAnswer::STANCES), 0);
-            $categories = $scorecard->categories->map(function ($category) use ($response, $stances, $takeaways, $field, &$totals) {
-                $items = $category->items->map(function ($item) use ($response, $stances, $field, &$totals) {
+            $categories = $scorecard->categories->map(function ($category) use ($response, $stances, $takeaways, $field, $others, &$totals) {
+                $items = $category->items->map(function ($item) use ($response, $stances, $field, $others, &$totals) {
                     $stance = $response->responded ? ($stances[$item->id] ?? 'no_response') : 'no_response';
                     $totals[$stance]++;
 
@@ -149,6 +162,7 @@ class BuildCandidatePortfolio
                         'tags' => TagResource::collection($item->tags)->resolve(),
                         'stance' => $stance,
                         'field' => $field[$item->id] ?? [],
+                        'others' => $others[$item->id] ?? [],
                     ];
                 })->values()->all();
 

@@ -2,7 +2,8 @@
   <!-- The module's own sections. They share the one Elections sidebar entry
        (and its viewer permission), so they're tabs here rather than sidebar
        items. -->
-  <nav class="flex gap-6 overflow-x-auto scrollbar-hide border-b border-gray-200 dark:border-gray-700" aria-label="Elections sections">
+  <div class="flex items-center gap-3 border-b border-gray-200 dark:border-gray-700">
+  <nav class="flex min-w-0 flex-1 gap-6 overflow-x-auto scrollbar-hide" aria-label="Elections sections">
     <Link
       v-for="section in sections"
       :key="section.name"
@@ -16,11 +17,14 @@
       ]"
     >{{ section.title }}</Link>
   </nav>
+  <QuickSearch />
+  </div>
 </template>
 
 <script setup lang="ts">
 import { computed } from 'vue'
 import { Link } from '@inertiajs/vue3'
+import QuickSearch from './QuickSearch.vue'
 
 const sections = computed(() => [
   { name: 'admin.elections.index', title: 'Candidates', active: route().current('admin.elections.index') || route().current('admin.elections.candidates.*') || route().current('admin.elections.compare') },

@@ -1,5 +1,5 @@
 <template>
-  <article>
+  <article :id="`plank-${plank.key}`" class="scroll-mt-32">
     <div class="flex items-start gap-3">
       <span class="mt-0.5 inline-flex h-6 min-w-6 shrink-0 items-center justify-center rounded-full bg-amber-100 px-1.5 text-xs font-semibold text-amber-800 dark:bg-amber-900/60 dark:text-amber-200" :aria-label="`Ranked ${position}`">{{ position }}</span>
       <div class="min-w-0 flex-1">
@@ -17,7 +17,7 @@
           <li class="rounded bg-gray-100 px-1.5 py-0.5 text-gray-700 dark:bg-gray-700 dark:text-gray-300">{{ plank.source_count }} source{{ plank.source_count === 1 ? '' : 's' }}</li>
           <li v-if="movement" :class="movement.up ? 'bg-green-50 text-green-700 dark:bg-green-900/40 dark:text-green-300' : 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300'" class="rounded px-1.5 py-0.5">{{ movement.label }}</li>
         </ul>
-        <TagChips :tags="plank.tags" class="mt-2" />
+        <TagChips :tags="plank.tags" :as-filter="activeTag !== undefined" :active="activeTag ?? null" class="mt-2" @select="$emit('tag', $event)" />
         <p v-if="plank.rationale" class="mt-2 text-sm text-gray-500 dark:text-gray-400"><span class="font-medium text-gray-700 dark:text-gray-300">Why it ranks here:</span> {{ plank.rationale }}</p>
 
         <details v-if="plank.history.length > 1" class="mt-2">
@@ -61,9 +61,11 @@ const props = defineProps<{
   editable?: boolean
   isNew?: boolean
   isNewEntry: (entry: Entry) => boolean
+  /** When set (even to null), tag chips filter the platform in place instead of linking out. */
+  activeTag?: string | null
 }>()
 
-defineEmits<{ delete: [plank: Plank]; 'delete-entry': [entry: Entry] }>()
+defineEmits<{ delete: [plank: Plank]; 'delete-entry': [entry: Entry]; tag: [slug: string | null] }>()
 
 const tiers = computed(() => props.options.plankTiers)
 
