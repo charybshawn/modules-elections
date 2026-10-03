@@ -23,6 +23,11 @@ class PlankResource extends JsonResource
             'rationale' => $this->rationale,
             'priority_position' => $this->priority_position,
             'has_commitment' => $this->has_commitment,
+            // AI analysis: {impact, challenges, risks} => [{text, sources}]; null until written.
+            'analysis' => $this->analysis ? [
+                'on' => $this->analysis_on?->toDateString(),
+                'parts' => $this->analysis,
+            ] : null,
             // Null until the plan has been assessed.
             'plan' => $this->plan_status === null ? null : [
                 'status' => $this->plan_status,

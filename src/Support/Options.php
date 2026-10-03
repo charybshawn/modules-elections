@@ -29,6 +29,7 @@ class Options
             'plankTiers' => Plank::TIERS,
             'planStatuses' => Plank::PLAN_STATUSES,
             'planAspects' => Plank::PLAN_ASPECTS,
+            'analysisParts' => Plank::ANALYSIS_PARTS,
             'scorecardStances' => ScorecardAnswer::STANCES,
             'eventKinds' => ElectionEvent::KINDS,
         ];

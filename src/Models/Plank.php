@@ -56,6 +56,17 @@ class Plank extends Model
         'plan_status',
         'plan_summary',
         'plan_details',
+        'analysis',
+        'analysis_on',
+    ];
+
+    /**
+     * The AI analysis's three questions, in the order the page shows them.
+     */
+    public const ANALYSIS_PARTS = [
+        'impact' => 'Likely impact',
+        'challenges' => 'What makes it hard',
+        'risks' => 'How it could fall short',
     ];
 
     /**
@@ -82,6 +93,8 @@ class Plank extends Model
 
     protected $casts = [
         'plan_details' => 'array',
+        'analysis' => 'array',
+        'analysis_on' => 'date',
         'rank' => 'integer',
         'priority_position' => 'integer',
         'has_commitment' => 'boolean',

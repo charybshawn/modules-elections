@@ -97,6 +97,7 @@ class ImportElectionFromXml
             'tags' => $counts(),
             'tagged' => $counts(),
             'plans' => $counts(),
+            'analyses' => $counts(),
         ];
 
         DB::transaction(function () use ($xml, &$result) {
@@ -125,6 +126,9 @@ class ImportElectionFromXml
             foreach ($xml->plans->plan ?? [] as $node) {
                 $this->importPlan($node, $result);
             }
+            foreach ($xml->analyses->analysis ?? [] as $node) {
+                $this->importAnalysis($node, $result);
+            }
         });
 
         Tag::pruneOrphans();
@@ -140,7 +144,7 @@ class ImportElectionFromXml
     public function summarize(array $result): string
     {
         $parts = [];
-        foreach (['tags', 'candidates', 'entries', 'planks', 'articles', 'events', 'pulse', 'scorecards', 'responses', 'tagged', 'plans'] as $type) {
+        foreach (['tags', 'candidates', 'entries', 'planks', 'articles', 'events', 'pulse', 'scorecards', 'responses', 'tagged', 'plans', 'analyses'] as $type) {
             ['created' => $created, 'updated' => $updated, 'unchanged' => $unchanged] = $result[$type];
             if ($created + $updated + $unchanged === 0) {
                 continue;
@@ -277,6 +281,9 @@ class ImportElectionFromXml
 
         if (isset($node->plan)) {
             $this->applyPlan($plank, $node->plan, "{$label}: plank \"{$title}\"");
+        }
+        if (isset($node->analysis)) {
+            $this->applyAnalysis($plank, $node->analysis, "{$label}: plank \"{$title}\"");
         }
 
         $this->tally($plank, $result['planks']);
@@ -850,6 +857,83 @@ class ImportElectionFromXml
         $plank->plan_status = $status;
         $plank->plan_summary = $this->text($node, 'summary');
         $plank->plan_details = $details === [] ? null : $details;
+    }
+
+    /**
+     * <analysis on="YYYY-MM-DD"><impact><point source_url="…">text</point>…
+     * </impact><challenges>…</challenges><risks>…</risks></analysis> --
+     * replaces the plank's analysis. A point may carry several
+     * source_url-N attributes; points without any source are kept (they
+     * reason from the sourced ones) but the analysis must cite at least
+     * one source overall.
+     */
+    private function applyAnalysis(Plank $plank, SimpleXMLElement $node, string $label): void
+    {
+        $analysis = [];
+        $cited = 0;
+        foreach (array_keys(Plank::ANALYSIS_PARTS) as $part) {
+            $points = [];
+            foreach ($node->{$part}->point ?? [] as $p) {
+                $text = trim((string) $p);
+                if ($text === '') {
+                    continue;
+                }
+                $sources = [];
+                foreach ($p->attributes() as $name => $value) {
+                    $value = trim((string) $value);
+                    if (str_starts_with((string) $name, 'source_url') && $value !== '') {
+                        if ($this->isHttpUrl($value)) {
+                            $sources[] = $value;
+                        } else {
+                            $this->problems[] = "{$label}: analysis source \"{$value}\" isn't an http(s) URL -- dropped.";
+                        }
+                    }
+                }
+                $cited += count($sources);
+                $points[] = ['text' => $text, 'sources' => $sources];
+            }
+            $analysis[$part] = $points;
+        }
+
+        if (array_sum(array_map('count', $analysis)) === 0) {
+            $this->problems[] = "{$label}: <analysis> has no points -- left as it was.";
+
+            return;
+        }
+        if ($cited === 0) {
+            $this->problems[] = "{$label}: <analysis> cites no sources -- left as it was.";
+
+            return;
+        }
+
+        $on = trim((string) $node['on']);
+        $date = \DateTimeImmutable::createFromFormat('!Y-m-d', $on);
+        if ($on !== '' && ($date === false || $date->format('Y-m-d') !== $on)) {
+            $this->problems[] = "{$label}: analysis date \"{$on}\" isn't YYYY-MM-DD -- using today.";
+            $on = '';
+        }
+
+        $plank->analysis = $analysis;
+        $plank->analysis_on = $on !== '' ? $on : now()->toDateString();
+    }
+
+    /**
+     * Analyses for planks already on file: <analyses><analysis
+     * candidate="Name" key="plank-key" on="YYYY-MM-DD">…</analysis></analyses>.
+     */
+    private function importAnalysis(SimpleXMLElement $node, array &$result): void
+    {
+        $name = trim((string) $node['candidate']);
+        $key = trim((string) $node['key']);
+        $plank = Plank::whereHas('candidate', fn ($q) => $q->where('name', $name))->where('key', $key)->first();
+        if ($plank === null) {
+            $this->problems[] = "<analyses>: no plank \"{$key}\" for \"{$name}\" on file -- skipped.";
+
+            return;
+        }
+
+        $this->applyAnalysis($plank, $node, "{$name}: plank \"{$plank->title}\"");
+        $this->tally($plank, $result['analyses']);
     }
 
     /**

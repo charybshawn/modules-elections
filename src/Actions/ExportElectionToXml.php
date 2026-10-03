@@ -222,6 +222,20 @@ class ExportElectionToXml
         $this->addChild($node, 'rationale', $plank->rationale);
         $this->addChild($node, 'priority_position', $plank->priority_position === null ? null : (string) $plank->priority_position);
         $this->addChild($node, 'has_commitment', $plank->has_commitment ? 'true' : 'false');
+        if ($plank->analysis) {
+            $analysis = $node->addChild('analysis');
+            $analysis['on'] = $plank->analysis_on?->toDateString() ?? '';
+            foreach ($plank->analysis as $part => $points) {
+                $partNode = $analysis->addChild($part);
+                foreach ($points as $point) {
+                    $this->addChild($partNode, 'point', $point['text']);
+                    $last = $partNode->point[count($partNode->point) - 1];
+                    foreach (array_values($point['sources'] ?? []) as $i => $url) {
+                        $last[$i === 0 ? 'source_url' : 'source_url-'.($i + 1)] = $url;
+                    }
+                }
+            }
+        }
         if ($plank->plan_status !== null) {
             $plan = $node->addChild('plan');
             $plan['status'] = $plank->plan_status;

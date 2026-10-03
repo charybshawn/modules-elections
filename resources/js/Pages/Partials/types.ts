@@ -98,6 +98,7 @@ export interface Options {
   scorecardStances: Record<string, string>
   planStatuses: Record<string, string>
   planAspects: Record<string, string>
+  analysisParts: Record<string, string>
   eventKinds: Record<string, string>
 }
 
@@ -111,6 +112,8 @@ export interface PlanDetail {
 export interface Plank {
   id: number
   tags: TagRef[]
+  /** AI analysis -- impact, challenges, risks -- each point with its sources; null until written. */
+  analysis: { on: string | null; parts: Record<string, { text: string; sources: string[] }[]> } | null
   /** What they've conveyed about carrying it out; null until assessed. */
   plan: { status: string; summary: string | null; details: PlanDetail[] } | null
   key: string
