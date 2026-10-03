@@ -7,6 +7,8 @@ use Cultpantry\Elections\Models\Candidate;
 use Cultpantry\Elections\Models\ElectionEvent;
 use Cultpantry\Elections\Models\Entry;
 use Cultpantry\Elections\Models\Plank;
+use Cultpantry\Elections\Models\PulseIssue;
+use Cultpantry\Elections\Models\PulseSnapshot;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -20,7 +22,9 @@ use SimpleXMLElement;
  *
  * Match keys: candidates on name, entries on (candidate, source URL + quote
  * or summary), planks on (candidate, key), articles on URL, events on
- * (title, starts_at). Re-importing the same file is a no-op.
+ * (title, starts_at), Community Pulse snapshots on taken_on. Re-importing
+ * the same file is a no-op -- except that a pulse snapshot is replaced as a
+ * whole (its issues and mentions) each time its date is imported.
  *
  * Unlike the market import, a candidate field left out of the file is left
  * alone rather than cleared: research passes are incremental (one finds the
@@ -79,6 +83,7 @@ class ImportElectionFromXml
             'planks' => $counts(),
             'articles' => $counts(),
             'events' => $counts(),
+            'pulse' => $counts(),
         ];
 
         DB::transaction(function () use ($xml, &$result) {
@@ -90,6 +95,9 @@ class ImportElectionFromXml
             }
             foreach ($xml->events->event ?? [] as $node) {
                 $this->importEvent($node, $result);
+            }
+            foreach ($xml->pulse ?? [] as $node) {
+                $this->importPulse($node, $result);
             }
         });
 
@@ -104,7 +112,7 @@ class ImportElectionFromXml
     public function summarize(array $result): string
     {
         $parts = [];
-        foreach (['candidates', 'entries', 'planks', 'articles', 'events'] as $type) {
+        foreach (['candidates', 'entries', 'planks', 'articles', 'events', 'pulse'] as $type) {
             ['created' => $created, 'updated' => $updated, 'unchanged' => $unchanged] = $result[$type];
             if ($created + $updated + $unchanged === 0) {
                 continue;
@@ -395,6 +403,116 @@ class ImportElectionFromXml
         ]);
 
         $this->tally($event, $result['events']);
+    }
+
+    /**
+     * A Community Pulse snapshot. It's one summary of one reading pass, so a
+     * re-import of the same date replaces its issues and mentions wholesale
+     * rather than merging -- a later pass that drops an issue should drop it.
+     */
+    private function importPulse(SimpleXMLElement $node, array &$result): void
+    {
+        $takenOn = $this->date($node, 'taken_on', 'Pulse snapshot');
+        if ($takenOn === null) {
+            $this->problems[] = 'Skipped a <pulse> snapshot with no valid <taken_on> (YYYY-MM-DD).';
+
+            return;
+        }
+
+        $snapshot = PulseSnapshot::whereDate('taken_on', $takenOn)->first();
+        $isNew = $snapshot === null;
+        $snapshot ??= new PulseSnapshot(['taken_on' => $takenOn]);
+
+        $conclusions = [];
+        foreach ($node->conclusions->conclusion ?? [] as $c) {
+            $text = trim((string) $c);
+            if ($text !== '') {
+                $conclusions[] = ['text' => $text, 'issue' => ((string) $c['issue']) ?: null];
+            }
+        }
+
+        $snapshot->fill([
+            'period_from' => $this->date($node, 'period_from', 'Pulse snapshot'),
+            'period_to' => $this->date($node, 'period_to', 'Pulse snapshot'),
+            'threads_read' => (int) $this->text($node, 'threads_read'),
+            'commenters' => (int) $this->text($node, 'commenters'),
+            'sources' => $this->text($node, 'sources'),
+            'method_note' => $this->text($node, 'method_note'),
+            'conclusions' => $conclusions,
+        ]);
+        $snapshot->save();
+
+        $snapshot->issues()->delete();
+        $snapshot->mentions()->delete();
+
+        $keys = [];
+        foreach ($node->issues->issue ?? [] as $i) {
+            $key = $this->text($i, 'key');
+            $title = $this->text($i, 'title');
+            if ($key === null || $title === null || isset($keys[$key])) {
+                $this->problems[] = 'Pulse '.$takenOn.': skipped an issue with no <key>/<title> or a repeated key.';
+
+                continue;
+            }
+            $keys[$key] = true;
+
+            $topic = $this->text($i, 'topic') ?? 'other';
+            if (! array_key_exists($topic, Entry::TOPICS)) {
+                $this->problems[] = "Pulse {$takenOn}: issue \"{$title}\" has unknown topic \"{$topic}\", filed under \"other\".";
+                $topic = 'other';
+            }
+            $heat = $this->text($i, 'heat') ?? 'medium';
+            if (! array_key_exists($heat, PulseIssue::HEAT)) {
+                $heat = 'medium';
+            }
+            $pct = fn (string $child) => ($v = $this->text($i, $child)) === null ? null : max(0, min(100, (int) $v));
+
+            $snapshot->issues()->create([
+                'key' => $key,
+                'title' => $title,
+                'topic' => $topic,
+                'voices' => (int) $this->text($i, 'voices'),
+                'support_pct' => $pct('support_pct'),
+                'oppose_pct' => $pct('oppose_pct'),
+                'mixed_pct' => $pct('mixed_pct'),
+                'heat' => $heat,
+                'summary' => $this->text($i, 'summary'),
+                'wants' => $this->list($i->wants, 'want'),
+                'questions' => $this->list($i->questions, 'question'),
+            ]);
+        }
+
+        foreach ($node->mentions->mention ?? [] as $m) {
+            $name = $this->text($m, 'candidate');
+            $candidateId = $name === null ? null : Candidate::where('name', $name)->value('id');
+            if ($candidateId === null) {
+                $this->problems[] = "Pulse {$takenOn}: mention of \"{$name}\", who isn't on file -- skipped.";
+
+                continue;
+            }
+            $snapshot->mentions()->updateOrCreate(['candidate_id' => $candidateId], [
+                'mentions' => (int) $this->text($m, 'mentions'),
+                'commenters' => (int) $this->text($m, 'commenters'),
+            ]);
+        }
+
+        $result['pulse'][$isNew ? 'created' : 'updated']++;
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private function list(?SimpleXMLElement $parent, string $child): array
+    {
+        $items = [];
+        foreach ($parent?->{$child} ?? [] as $item) {
+            $text = trim((string) $item);
+            if ($text !== '') {
+                $items[] = $text;
+            }
+        }
+
+        return $items;
     }
 
     /**

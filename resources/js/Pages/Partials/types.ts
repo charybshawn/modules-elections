@@ -126,3 +126,37 @@ export interface Portfolio {
   /** Server time (Unix seconds). */
   now: number
 }
+
+export interface PulseIssue {
+  key: string
+  title: string
+  topic: string
+  /** Distinct people who raised it. */
+  voices: number
+  /** Change since the previous snapshot: a difference, 'new', or null when there's no previous snapshot. */
+  voices_change: number | 'new' | null
+  support_pct: number | null
+  oppose_pct: number | null
+  mixed_pct: number | null
+  heat: string
+  summary: string | null
+  wants: string[]
+  questions: string[]
+  /** Candidates with a plank on this topic, by plank tier; null for the "other" topic. */
+  coverage: Record<string, { name: string; slug: string; plank: string }[]> | null
+}
+
+export interface PulseSnapshot {
+  id: number
+  taken_on: string
+  period_from: string | null
+  period_to: string | null
+  threads_read: number
+  commenters: number
+  sources: string | null
+  method_note: string | null
+  conclusions: { text: string; issue: string | null }[]
+  previous_taken_on: string | null
+  issues: PulseIssue[]
+  mentions: { name: string; slug: string; mentions: number; commenters: number; mentions_change: number | 'new' | null }[]
+}

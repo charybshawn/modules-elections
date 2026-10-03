@@ -7,6 +7,7 @@ use Cultpantry\Elections\Models\Candidate;
 use Cultpantry\Elections\Models\ElectionEvent;
 use Cultpantry\Elections\Models\Entry;
 use Cultpantry\Elections\Models\Plank;
+use Cultpantry\Elections\Models\PulseSnapshot;
 use SimpleXMLElement;
 
 /**
@@ -77,6 +78,51 @@ class ExportElectionToXml
             $this->addChild($node, 'location', $event->location);
             $this->addChild($node, 'url', $event->url);
             $this->addChild($node, 'description', $event->description);
+        }
+
+        foreach (PulseSnapshot::with(['issues', 'mentions.candidate'])->orderBy('taken_on')->get() as $snapshot) {
+            $node = $xml->addChild('pulse');
+            $this->addChild($node, 'taken_on', $snapshot->taken_on->toDateString());
+            $this->addChild($node, 'period_from', $snapshot->period_from?->toDateString());
+            $this->addChild($node, 'period_to', $snapshot->period_to?->toDateString());
+            $this->addChild($node, 'threads_read', (string) $snapshot->threads_read);
+            $this->addChild($node, 'commenters', (string) $snapshot->commenters);
+            $this->addChild($node, 'sources', $snapshot->sources);
+            $this->addChild($node, 'method_note', $snapshot->method_note);
+            if ($snapshot->conclusions) {
+                $list = $node->addChild('conclusions');
+                foreach ($snapshot->conclusions as $conclusion) {
+                    $this->addChild($list, 'conclusion', $conclusion['text']);
+                    if ($conclusion['issue'] ?? null) {
+                        $list->conclusion[count($list->conclusion) - 1]['issue'] = $conclusion['issue'];
+                    }
+                }
+            }
+            $issues = $node->addChild('issues');
+            foreach ($snapshot->issues as $issue) {
+                $i = $issues->addChild('issue');
+                foreach (['key', 'title', 'topic', 'heat', 'summary'] as $field) {
+                    $this->addChild($i, $field, $issue->{$field});
+                }
+                foreach (['voices', 'support_pct', 'oppose_pct', 'mixed_pct'] as $field) {
+                    $this->addChild($i, $field, $issue->{$field} === null ? null : (string) $issue->{$field});
+                }
+                foreach (['wants' => 'want', 'questions' => 'question'] as $field => $child) {
+                    if ($issue->{$field}) {
+                        $list = $i->addChild($field);
+                        foreach ($issue->{$field} as $item) {
+                            $this->addChild($list, $child, $item);
+                        }
+                    }
+                }
+            }
+            $mentions = $node->addChild('mentions');
+            foreach ($snapshot->mentions as $mention) {
+                $m = $mentions->addChild('mention');
+                $this->addChild($m, 'candidate', $mention->candidate->name);
+                $this->addChild($m, 'mentions', (string) $mention->mentions);
+                $this->addChild($m, 'commenters', (string) $mention->commenters);
+            }
         }
 
         $dom = dom_import_simplexml($xml)->ownerDocument;

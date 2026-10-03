@@ -2,6 +2,7 @@
 
 use Cultpantry\Elections\Http\Controllers\Admin\ArticleController;
 use Cultpantry\Elections\Http\Controllers\Admin\CandidateController;
+use Cultpantry\Elections\Http\Controllers\Admin\CommunityPulseController;
 use Cultpantry\Elections\Http\Controllers\Admin\ElectionEventController;
 use Cultpantry\Elections\Http\Controllers\Admin\EntryController;
 use Cultpantry\Elections\Http\Controllers\Admin\PlankController;
@@ -33,6 +34,9 @@ Route::prefix('admin')->name('admin.')->middleware(['web', 'auth', 'admin'])->gr
         Route::delete('candidates/{candidate}/planks/{plank}', [PlankController::class, 'destroy'])->name('planks.destroy');
 
         Route::delete('events/{event}', [ElectionEventController::class, 'destroy'])->name('events.destroy');
+
+        Route::get('pulse', [CommunityPulseController::class, 'index'])->name('pulse.index');
+        Route::delete('pulse/{snapshot}', [CommunityPulseController::class, 'destroy'])->name('pulse.destroy');
         Route::delete('articles/{article}', [ArticleController::class, 'destroy'])->name('articles.destroy');
     });
 });

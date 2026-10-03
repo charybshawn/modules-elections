@@ -9,6 +9,7 @@
           <p class="mt-1 text-sm text-gray-600 dark:text-gray-400">
             Mayor and six councillors. Every item on a candidate's page links to where it came from.
           </p>
+          <Link :href="route('admin.elections.pulse.index')" class="mt-2 inline-flex tap-target-touch items-center text-sm font-medium text-indigo-600 hover:text-indigo-800 dark:text-indigo-400 dark:hover:text-indigo-300">Community Pulse: what residents are raising &rarr;</Link>
           <p v-if="votingDay" class="mt-2 text-sm font-medium text-amber-700 dark:text-amber-400">
             General voting day {{ formatDateTime(votingDay.starts_at) }}<template v-if="votingDayIn > 0"> · {{ votingDayIn }} day{{ votingDayIn === 1 ? '' : 's' }} away</template><template v-else-if="votingDayIn === 0"> · today</template>
           </p>

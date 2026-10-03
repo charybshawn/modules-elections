@@ -157,3 +157,44 @@ inside an element doesn't matter. Write `&amp;` for `&` in URLs.
   as `other`.
 - Planks are never deleted by an import; a wrong one is deleted by hand on
   the Platform tab (which removes its statements too).
+
+## Community Pulse (`<pulse>`)
+
+Written by `community-pulse-salmon-arm`. Sits beside `<candidates>`, `<articles>` and `<events>`:
+
+```xml
+<pulse>
+  <taken_on>2026-10-03</taken_on>            <!-- required; the match key -->
+  <period_from>2026-09-20</period_from>      <!-- oldest thread read -->
+  <period_to>2026-10-03</period_to>
+  <threads_read>12</threads_read>
+  <commenters>184</commenters>               <!-- distinct people across all threads -->
+  <sources>the Salmon Arm Rant and Rave Facebook group</sources>
+  <method_note>Anything readers should know about how it was read.</method_note>
+  <conclusions>
+    <conclusion issue="homelessness">One-sentence takeaway, tied to an issue key.</conclusion>
+  </conclusions>
+  <issues>
+    <issue>
+      <key>homelessness</key>                <!-- stable across snapshots, for change over time -->
+      <title>Homelessness and downtown encampments</title>
+      <topic>social_services</topic>         <!-- Entry::TOPICS; matches candidates' planks -->
+      <voices>48</voices>                    <!-- distinct people who raised it -->
+      <support_pct>20</support_pct>          <!-- rough split of those voices; optional -->
+      <oppose_pct>55</oppose_pct>
+      <mixed_pct>25</mixed_pct>
+      <heat>high</heat>                      <!-- low | medium | high -->
+      <summary>Neutral two-sentence paraphrase.</summary>
+      <wants><want>Paraphrased want</want></wants>
+      <questions><question>Paraphrased recurring question</question></questions>
+    </issue>
+  </issues>
+  <mentions>
+    <mention><candidate>Exact name on file</candidate><mentions>7</mentions><commenters>5</commenters></mention>
+  </mentions>
+</pulse>
+```
+
+- **Re-importing a `taken_on` replaces that snapshot's issues and mentions** (unlike everything else, which merges). A new pass gets a new date.
+- Keep issue `<key>`s stable between snapshots so the page can show "+12 people since last time".
+- No resident names, quotes or identifying detail anywhere in a pulse.

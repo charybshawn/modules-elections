@@ -8,6 +8,7 @@ use Cultpantry\Elections\Models\Candidate;
 use Cultpantry\Elections\Models\ElectionEvent;
 use Cultpantry\Elections\Models\Entry;
 use Cultpantry\Elections\Models\Plank;
+use Cultpantry\Elections\Models\PulseSnapshot;
 use Cultpantry\Elections\Policies\AdminWritePolicy;
 use Cultpantry\Elections\Policies\CandidatePolicy;
 use Illuminate\Support\Facades\Gate;
@@ -42,6 +43,7 @@ class ElectionsServiceProvider extends ServiceProvider
         Gate::policy(Candidate::class, CandidatePolicy::class);
         Gate::policy(Entry::class, AdminWritePolicy::class);
         Gate::policy(Plank::class, AdminWritePolicy::class);
+        Gate::policy(PulseSnapshot::class, AdminWritePolicy::class);
         Gate::policy(Article::class, AdminWritePolicy::class);
         Gate::policy(ElectionEvent::class, AdminWritePolicy::class);
 

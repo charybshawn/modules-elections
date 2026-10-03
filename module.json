@@ -6,6 +6,9 @@
     "provider": "Cultpantry\\Elections\\ElectionsServiceProvider",
     "tables": [
         "elections_article_candidate",
+        "elections_pulse_mentions",
+        "elections_pulse_issues",
+        "elections_pulse_snapshots",
         "elections_entries",
         "elections_plank_ranks",
         "elections_planks",
