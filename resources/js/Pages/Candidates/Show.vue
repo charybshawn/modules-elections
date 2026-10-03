@@ -264,7 +264,11 @@ const tabs = computed(() => [
 
 const activeSection = computed(() => props.portfolio.sections.find((s) => s.key === props.activeTab) ?? null)
 
-const tabHref = (id: string) => route('admin.elections.candidates.show', id === 'about' ? candidate.value.slug : { candidate: candidate.value.slug, tab: id })
+const tabHref = (id: string): string => {
+  const params: Record<string, string> = { candidate: candidate.value.slug }
+  if (id !== 'about') params.tab = id
+  return route('admin.elections.candidates.show', params)
+}
 
 const switchTab = (id: string) => {
   if (id !== props.activeTab) router.get(tabHref(id), {}, { preserveState: true, preserveScroll: true })
