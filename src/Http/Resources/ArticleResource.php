@@ -19,6 +19,9 @@ class ArticleResource extends JsonResource
             'outlet' => $this->outlet,
             'published_on' => $this->published_on?->toDateString(),
             'summary' => $this->summary,
+            // When it was linked to the candidate whose page this is (only
+            // present when loaded through Candidate::articles).
+            'linked_at' => $this->whenPivotLoaded('elections_article_candidate', fn () => $this->pivot->created_at?->toIso8601String()),
             'candidates' => $this->whenLoaded('candidates', fn () => $this->candidates
                 ->map(fn ($c) => ['name' => $c->name, 'slug' => $c->slug])
                 ->values()

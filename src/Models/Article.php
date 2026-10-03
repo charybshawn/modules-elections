@@ -47,6 +47,6 @@ class Article extends Model
 
     public function candidates(): BelongsToMany
     {
-        return $this->belongsToMany(Candidate::class, 'elections_article_candidate')->orderBy('name');
+        return $this->belongsToMany(Candidate::class, 'elections_article_candidate')->withTimestamps()->orderBy('name');
     }
 }

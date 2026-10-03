@@ -103,6 +103,7 @@ class Candidate extends Model
     public function articles(): BelongsToMany
     {
         return $this->belongsToMany(Article::class, 'elections_article_candidate')
+            ->withTimestamps()
             ->orderByDesc('published_on');
     }
 }

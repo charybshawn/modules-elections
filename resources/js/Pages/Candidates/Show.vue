@@ -44,6 +44,8 @@
         </header>
 
         <div class="p-4 sm:p-6 space-y-10">
+          <p v-if="newSummary" class="text-sm font-medium text-amber-800 dark:text-amber-300">{{ newSummary }}</p>
+
           <div v-if="!readOnly && candidate.notes" class="rounded-md bg-amber-50 p-4 text-sm text-amber-900 dark:bg-amber-500/10 dark:text-amber-200">
             <div class="font-medium">Research notes <span class="font-normal text-amber-700 dark:text-amber-300/70">(admins only)</span></div>
             <p class="mt-1 whitespace-pre-line">{{ candidate.notes }}</p>
@@ -65,7 +67,7 @@
                 <h3 class="text-sm font-semibold text-gray-900 dark:text-white">{{ options.backgroundTopics[group.topic ?? ''] ?? group.topic }}</h3>
                 <ul class="mt-3 space-y-5">
                   <li v-for="entry in group.entries" :key="entry.id">
-                    <EntryCard :entry="entry" :options="options" :editable="!readOnly" @delete="deleteEntry" />
+                    <EntryCard :entry="entry" :options="options" :editable="!readOnly" :is-new="isNewEntry(entry)" @delete="deleteEntry" />
                   </li>
                 </ul>
               </div>
@@ -85,6 +87,7 @@
                       :options="options"
                       :editable="!readOnly"
                       :show-kind="section.key === 'words'"
+                      :is-new="isNewEntry(entry)"
                       @delete="deleteEntry"
                     />
                   </li>
@@ -102,6 +105,7 @@
             <h2 :class="headingClass">In the news</h2>
             <ul class="mt-4 space-y-4">
               <li v-for="article in portfolio.articles" :key="article.id">
+                <span v-if="isNewArticle(article)" class="mr-2 rounded-full bg-amber-100 px-1.5 py-0.5 text-xs font-medium text-amber-800 dark:bg-amber-500/20 dark:text-amber-300">New</span>
                 <a v-if="isHttpUrl(article.url)" :href="article.url" target="_blank" rel="noopener noreferrer" class="font-medium text-gray-900 hover:underline dark:text-white">{{ article.title }}</a>
                 <div class="text-xs text-gray-500 dark:text-gray-400">{{ [article.outlet, formatDate(article.published_on)].filter(Boolean).join(' · ') }}</div>
                 <p v-if="article.summary" class="mt-1 text-sm text-gray-600 dark:text-gray-300">{{ article.summary }}</p>
@@ -116,7 +120,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { Link, router } from '@inertiajs/vue3'
 import AdminLayout from '@/Layouts/AdminLayout.vue'
 import AdminMobileHeader from '@/Components/Admin/AdminMobileHeader.vue'
@@ -125,6 +129,7 @@ import CandidatePhoto from '../Partials/CandidatePhoto.vue'
 import EntryCard from '../Partials/EntryCard.vue'
 import { secondaryButtonClass } from '../Partials/classes'
 import { formatDate, hostOf, isHttpUrl, useReadOnly } from '../Partials/format'
+import { toUnix, useSeen } from '../Partials/seen'
 import type { Article, Entry, Options, Portfolio } from '../Partials/types'
 
 defineOptions({ layout: (h, page) => h(AdminLayout, { hideBreadcrumbOnMobile: true }, () => page) })
@@ -157,6 +162,29 @@ const toc = computed(() => [
   ...props.portfolio.sections.map((s) => ({ id: s.key, title: s.title })),
   ...(props.portfolio.articles.length ? [{ id: 'news', title: 'In the news' }] : []),
 ])
+
+// ---- New since last visit (per-viewer cookie) ----
+// Snapshot when the viewer last opened this candidate, then mark it seen:
+// items newer than the snapshot stay tagged "New" for this visit. useSeen
+// reads the cookie in its own onMounted, registered (so run) before this one.
+const seen = useSeen(() => props.portfolio.now)
+const lastVisit = ref<number | null>(null)
+onMounted(() => {
+  lastVisit.value = seen.seenAt(candidate.value.slug)
+  seen.markSeen(candidate.value.slug)
+})
+
+const isNewer = (iso: string | null | undefined) => lastVisit.value !== null && (toUnix(iso) ?? 0) > lastVisit.value
+const isNewEntry = (entry: Entry) => isNewer(entry.added_at)
+const isNewArticle = (article: Article) => isNewer(article.linked_at)
+
+const newSummary = computed(() => {
+  if (lastVisit.value === null) return ''
+  const entries = [...props.portfolio.background.flatMap((g) => g.entries), ...props.portfolio.sections.flatMap((s) => s.groups.flatMap((g) => g.entries))]
+  const count = entries.filter(isNewEntry).length + props.portfolio.articles.filter(isNewArticle).length
+  if (count > 0) return `${count} new item${count === 1 ? '' : 's'} since your last visit, tagged "New" below.`
+  return isNewer(candidate.value.updated_at) ? 'Profile details updated since your last visit.' : ''
+})
 
 // ---- Entries ----
 const deleteEntry = async (entry: Entry) => {

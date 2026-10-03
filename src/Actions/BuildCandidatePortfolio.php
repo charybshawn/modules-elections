@@ -61,6 +61,7 @@ class BuildCandidatePortfolio
             'sections' => $sections,
             'articles' => ArticleResource::collection($candidate->articles)->resolve(),
             'entryCount' => $candidate->entries->count(),
+            'now' => now()->getTimestamp(),
         ];
     }
 

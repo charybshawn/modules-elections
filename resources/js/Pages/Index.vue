@@ -47,6 +47,11 @@
 
       <div class="grid gap-8 lg:grid-cols-3">
         <div class="lg:col-span-2 space-y-8">
+          <p v-if="newCandidateCount" class="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-amber-800 dark:text-amber-300">
+            New information on {{ newCandidateCount }} candidate{{ newCandidateCount === 1 ? '' : 's' }} since your last visit.
+            <button type="button" class="tap-target-touch text-xs font-medium underline underline-offset-2" @click="seen.markAllSeen()">Mark all as seen</button>
+          </p>
+
           <section v-for="group in candidateGroups" :key="group.office">
             <h2 :class="sectionHeadingClass">{{ group.label }}</h2>
             <ul class="mt-3 grid gap-3 sm:grid-cols-2">
@@ -57,8 +62,14 @@
                   :class="candidate.status === 'withdrawn' ? 'opacity-60' : ''"
                 >
                   <CandidatePhoto :name="candidate.name" :url="candidate.photo_url" class="h-14 w-14 shrink-0 rounded-full text-lg" />
-                  <div class="min-w-0">
-                    <div class="font-medium text-gray-900 dark:text-white truncate">{{ candidate.name }}</div>
+                  <div class="min-w-0 flex-1">
+                    <div class="flex items-center gap-2">
+                      <span class="font-medium text-gray-900 dark:text-white truncate">{{ candidate.name }}</span>
+                      <span
+                        v-if="newFor(candidate)"
+                        class="shrink-0 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800 dark:bg-amber-500/20 dark:text-amber-300"
+                      >{{ newFor(candidate) }}</span>
+                    </div>
                     <div class="text-sm text-gray-500 dark:text-gray-400 truncate">
                       <span v-if="candidate.is_incumbent" class="font-medium text-amber-700 dark:text-amber-400">Incumbent</span>
                       <span v-if="candidate.is_incumbent && candidate.occupation"> · </span>
@@ -143,6 +154,7 @@ import CandidatePhoto from './Partials/CandidatePhoto.vue'
 import EventItem from './Partials/EventItem.vue'
 import { secondaryButtonClass, sectionHeadingClass } from './Partials/classes'
 import { daysUntil, formatDate, formatDateTime, isHttpUrl, useReadOnly } from './Partials/format'
+import { toUnix, useSeen } from './Partials/seen'
 import type { Article, Candidate, ElectionEvent, Options } from './Partials/types'
 
 defineOptions({ layout: (h, page) => h(AdminLayout, { wide: true, hideBreadcrumbOnMobile: true }, () => page) })
@@ -153,6 +165,10 @@ const props = defineProps<{
   pastEvents: ElectionEvent[]
   recentArticles: Article[]
   stats: { candidates: number; entries: number; articles: number }
+  /** Unix times each candidate's entries were added and articles linked, keyed by candidate id. */
+  activity: Record<number, number[]>
+  /** Server time (Unix seconds). */
+  now: number
   options: Options
 }>()
 
@@ -168,6 +184,20 @@ const candidateGroups = computed(() =>
     }))
     .filter((group) => group.candidates.length > 0),
 )
+
+// ---- New since last visit (per-viewer cookie) ----
+const seen = useSeen(() => props.now)
+
+/** "3 new", "Updated" (profile fields only) or '' -- against when the viewer last opened them. */
+const newFor = (candidate: Candidate): string => {
+  const since = seen.seenAt(candidate.slug)
+  if (since === null) return ''
+  const count = (props.activity[candidate.id] ?? []).filter((t) => t > since).length
+  if (count > 0) return `${count} new`
+  return (toUnix(candidate.updated_at) ?? 0) > since ? 'Updated' : ''
+}
+
+const newCandidateCount = computed(() => props.candidates.filter((c) => newFor(c) !== '').length)
 
 const votingDay = computed(() => props.upcomingEvents.find((e) => e.kind === 'general_voting') ?? null)
 const votingDayIn = computed(() => (votingDay.value ? daysUntil(votingDay.value.starts_at) : 0))

@@ -35,6 +35,8 @@ export interface Entry {
   source_type: string
   source_name: string | null
   published_on: string | null
+  /** When it went on file (ISO). */
+  added_at: string | null
 }
 
 export interface Article {
@@ -44,6 +46,8 @@ export interface Article {
   outlet: string | null
   published_on: string | null
   summary: string | null
+  /** When it was linked to this candidate (ISO); only on a candidate's page. */
+  linked_at?: string | null
   candidates?: { name: string; slug: string }[]
 }
 
@@ -87,4 +91,6 @@ export interface Portfolio {
   sections: PortfolioSection[]
   articles: Article[]
   entryCount: number
+  /** Server time (Unix seconds). */
+  now: number
 }

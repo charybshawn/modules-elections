@@ -15,6 +15,7 @@
     >{{ entry.summary }}</p>
 
     <p class="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-gray-500 dark:text-gray-400">
+      <span v-if="isNew" class="rounded-full bg-amber-100 px-1.5 py-0.5 font-medium text-amber-800 dark:bg-amber-500/20 dark:text-amber-300">New</span>
       <span v-if="showKind" class="rounded bg-gray-100 px-1.5 py-0.5 font-medium text-gray-600 dark:bg-gray-700 dark:text-gray-300">{{ options.kinds[entry.kind] ?? entry.kind }}</span>
       <a
         v-if="isHttpUrl(entry.source_url)"
@@ -44,6 +45,8 @@ defineProps<{
   editable?: boolean
   /** Label the entry's kind -- for sections that mix kinds (statements + Q&A). */
   showKind?: boolean
+  /** Added since the viewer last opened this candidate. */
+  isNew?: boolean
 }>()
 
 defineEmits<{ delete: [entry: Entry] }>()
