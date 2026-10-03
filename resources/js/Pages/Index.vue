@@ -79,6 +79,15 @@
                   class="tap-target-touch shrink-0 rounded-full px-3 py-1.5 text-sm font-medium transition-colors"
                   @click="filters.office = o.value"
                 >{{ o.label }}</button>
+                <!-- Incumbents: an on/off toggle that combines with the office choice. -->
+                <span class="mx-0.5 w-px shrink-0 self-stretch bg-gray-300 dark:bg-gray-600" aria-hidden="true" />
+                <button
+                  type="button"
+                  :aria-pressed="filters.incumbents"
+                  :class="filters.incumbents ? 'bg-amber-600 text-white dark:bg-amber-500 dark:text-gray-900' : 'bg-white text-gray-700 ring-1 ring-gray-300 hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-300 dark:ring-gray-600'"
+                  class="tap-target-touch shrink-0 rounded-full px-3 py-1.5 text-sm font-medium transition-colors"
+                  @click="filters.incumbents = !filters.incumbents"
+                >Incumbents</button>
               </div>
             </div>
           </div>
@@ -137,7 +146,7 @@
 
           <p v-if="candidates.length && !candidateGroups.length" class="rounded-lg bg-white dark:bg-gray-800 shadow-sm p-6 text-sm text-gray-500 dark:text-gray-400">
             No candidates match these filters.
-            <button type="button" class="font-medium text-indigo-600 underline underline-offset-2 dark:text-indigo-400" @click="filters.search = ''; filters.office = 'all'">Clear filters</button>
+            <button type="button" class="font-medium text-indigo-600 underline underline-offset-2 dark:text-indigo-400" @click="filters.search = ''; filters.office = 'all'; filters.incumbents = false">Clear filters</button>
           </p>
 
           <p v-if="candidates.length === 0" class="rounded-lg bg-white dark:bg-gray-800 shadow-sm p-6 text-sm text-gray-500 dark:text-gray-400">
@@ -294,10 +303,11 @@ const { confirmDialog } = useConfirmDialog()
 interface DashboardFilters {
   search: string
   office: 'all' | 'mayor' | 'councillor'
+  incumbents: boolean
   tag: string | null
 }
 // useRemember returns a reactive object only when given one (a plain object comes back as a ref).
-const filters = useRemember(reactive<DashboardFilters>({ search: '', office: 'all', tag: null }), 'elections-dashboard-filters') as DashboardFilters
+const filters = useRemember(reactive<DashboardFilters>({ search: '', office: 'all', incumbents: false, tag: null }), 'elections-dashboard-filters') as DashboardFilters
 
 const officeChoices = [
   { value: 'all', label: 'Everyone' },
@@ -380,7 +390,7 @@ const candidateGroups = computed(() =>
   Object.entries(props.options.offices)
     .filter(([office]) => filters.office === 'all' || filters.office === office)
     .map(([office, label]) => {
-      let list = props.candidates.filter((c) => c.office === office && matchesSearch(c))
+      let list = props.candidates.filter((c) => c.office === office && matchesSearch(c) && (!filters.incumbents || c.is_incumbent))
       // A picked subject floats its candidates to the top, strongest emphasis first.
       if (filters.tag) {
         list = [...list].sort((a, b) => tierWeight(tagCell(a)?.tier) - tierWeight(tagCell(b)?.tier))
