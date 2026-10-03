@@ -5,6 +5,14 @@ description: Read local election discussion in the Salmon Arm Rant and Rave Face
 
 # Community Pulse for Salmon Arm
 
+**Status (Oct. 2026): tabled.** The user paused Community Pulse after seeing a one-thread sample,
+so don't run a pass unless they ask. What exists so far:
+- **In the database:** the one-thread sample snapshot (Oct. 2).
+- **`~/Documents/election-research/pulse-pass-1-notes-2026-10-02.md`:** summary notes from 6
+  campaign threads, the draft issues, mentions, and unread threads for a later pass.
+- **If revived:** turn the notes into a snapshot dated 2026-10-02 (importing that date replaces
+  the sample), then read the unread threads.
+
 Summarizes **what residents are discussing** about the 2026 Salmon Arm
 election into a dated snapshot shown on Elections → Community Pulse, a page
 visible to admins and invited viewers. It's an honest read of one online
@@ -68,6 +76,8 @@ the database; the user reviews and imports the file.
 - Map each issue to a module `topic`, and tag it with 1 to 3 slugs from
   `../research-salmon-arm-candidates/references/tags.md`. The page matches issues to
   candidates' planks by shared tags, so use the same slugs planks use.
+- Tagged issues also add heat to the dashboard's "What's being talked about" list, weighted by
+  the number of people who raised them, so keep `voices` honest.
 - Reuse issue `<key>`s from earlier snapshots (check the last export or the
   page) so changes over time line up.
 - `<conclusions>`: three to five plain-language takeaways, each tied to an

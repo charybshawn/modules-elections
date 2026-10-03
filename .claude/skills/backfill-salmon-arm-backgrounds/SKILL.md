@@ -164,6 +164,18 @@ Save to `~/Documents/election-research/` as
 for a single candidate. Work in batches of about five candidates per file so
 each file stays reviewable.
 
+## Photos
+
+Candidate photos are part of who they are, so this pass may fill gaps.
+- **Prefer linking:** `photo_url` pointing at the candidate's own published headshot (their site
+  or a news story).
+- **App-stored photos:** some photos already live in the private app repo at
+  `public/images/elections/candidates/<slug>.jpg`, with `photo_url`
+  `/images/elections/candidates/<slug>.jpg` and `<photo_credit>` (e.g. Friday AM, Oct. 2026).
+- Don't re-host a new photo unless the user asks, and never put photos in the public module
+  repo.
+- **No photo yet** (Oct. 2026): Alan Harrison, Daniel Bardy, Adam Meikle, Anthony McLean.
+
 ## Hand-off summary
 
 - Per candidate: how many facts, by category, and the sources used.

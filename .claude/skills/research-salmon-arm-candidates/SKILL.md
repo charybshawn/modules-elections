@@ -1,6 +1,6 @@
 ---
 name: research-salmon-arm-candidates
-description: Research the candidates already on file in the cultpantry admin panel's Elections module (modules-elections) for the Salmon Arm (BC) 2026 municipal election (mayor and council) and write a ready-to-import XML file. It covers platform planks, statements, answers to questions from media, forums and Facebook, incumbents' council record, endorsements, campaign finance, election news coverage, withdrawals and election events (forums, voting days). Use this whenever the user asks to research, update, refresh or look into Salmon Arm election candidates, a specific candidate, their platform or promises, election coverage, or all-candidates forums, even if they don't mention XML, the import or this skill by name. Finding out who's running is find-salmon-arm-candidates, which must be run and imported first; candidates' backgrounds and bios are backfill-salmon-arm-backgrounds.
+description: Research the candidates already on file in the cultpantry admin panel's Elections module (modules-elections) for the Salmon Arm (BC) 2026 municipal election (mayor and council) and write a ready-to-import XML file. It covers platform planks (ranked by the candidate's own emphasis), each plank's plan (how they'd do it, mined from new sources) and AI analysis (impact, challenges, risks, with footnoted sources), statements and Q&A answers from media, forums and Facebook, incumbents' council record, endorsements, campaign finance, election news coverage, subject tags, third-party scorecards such as Vote4Tomorrow, withdrawals and election events. Use this whenever the user asks to research, update, refresh, backfill or look into Salmon Arm election candidates, a specific candidate, their platform, plans or promises, election coverage, or all-candidates forums, even if they don't mention XML, the import or this skill by name. Finding out who's running is find-salmon-arm-candidates, which must be run and imported first; candidates' backgrounds and bios are backfill-salmon-arm-backgrounds.
 ---
 
 # Research Salmon Arm candidates
@@ -57,6 +57,26 @@ invited readers will rely on to decide how to vote. So:
 6. **Flag, don't resolve.** If sources conflict (two different occupations, a
    quote reported two ways), put both in `<notes>` and the summary, and let
    the user decide.
+
+## Where the work shows
+
+So you know what each piece is for:
+- **Candidate page tabs:**
+  - About: bio and background.
+  - Platform: planks by tier. Each plank card shows "What they said" beside "Their plan", then
+    an "AI analysis" panel, with subject chips that filter in place.
+  - Then the scorecard tab (e.g. Vote4Tomorrow), the other statement tabs, In the news, and
+    Research notes (admins only).
+- **Elections dashboard:** a ranked "What's being talked about" list (subject heat from dated
+  statements, articles and pulse issues), candidate cards with compare toggles, and the latest
+  coverage.
+- **Browse by subject:** the who-campaigns-on-what matrix and one page per tag.
+- **Compare:** two or three candidates side by side.
+- **Quick search (⌘K):** candidates, subjects and planks.
+
+Thin profiles read as thin candidates, so **coverage balance is a priority**. When the user asks
+for a general research pass, backfill the candidates with the least on file first: fewest planks
+and statements, no Castanet or Friday AM entry, no council record for an incumbent.
 
 ## Workflow
 
@@ -278,19 +298,71 @@ very little, rank what there is and say in the hand-off that the order is
 a rough guide (the page shows "Limited sources" when there are fewer than
 two).
 
-**Assess the plan for every plank.** Add a `<plan>` saying what they have conveyed about *how*
-they'd do it:
+**Assess the plan for every plank, from new research.** The plan is not a paraphrase of the
+statements already behind the plank. The page shows them side by side, so a plan that only
+restates them adds nothing (the user called that out). Dig for *how* they'd do it:
+- the full platform pages, not excerpts
+- complete questionnaire answers, interviews and forum coverage
+- their campaign posts and replies
+- for incumbents, what they've moved or voted for on the same issue
+
+Add any new statements you find to the plank as `<entries>`, then write the `<plan>`:
 - **status:** specific, partial or none.
 - **summary:** a neutral one- or two-sentence summary.
 - **details:** each concrete element they stated (how, funding, timeline, measure, partners),
   with its source.
 
-"No plan conveyed to date" (`none`) is a finding, not a criticism. Re-assess the plan whenever a
+"No plan conveyed to date" (`none`) is a finding, not a criticism, and only valid **after**
+looking in those places; list where you looked in the hand-off. Re-assess the plan whenever a
 plank gains new statements; a later Q&A often adds the how. See the schema doc's "Plans" section.
 
 **Hand-off** (in addition to the usual summary): per candidate, the planks
 in rank order with tier and source count, which sources were used, and any
 statements left out because they weren't the candidate's own words.
+
+## AI analysis pass
+
+Each plank can carry an **AI analysis** (the page labels it exactly that) answering the same three
+questions for every candidate:
+- **impact:** what it would change if done
+- **challenges:** what makes it hard (the City's powers versus the Province or others, cost,
+  legal limits, capacity)
+- **risks:** how it could fall short
+
+See the schema doc's "Analyses" section for the XML.
+
+**Rules:**
+- **Same treatment for everyone.** Every plank of every candidate gets the same questions and
+  depth. Usually 2 or 3 points per part, each one or two sentences.
+- **Balanced and conditional.** Upsides and challenges for every plank; never a verdict ("bad
+  idea"), and never a judgement of the candidate.
+- **Facts are footnoted.** Every factual claim (a law, a number, a court ruling, an existing City
+  plan or budget) needs a `source_url` you opened; the page shows these as numbered footnotes.
+- **Reasoning points stay rare.** A point that reasons from footnoted facts may go without a
+  source, but sparingly.
+- **Ground it in Salmon Arm.** Use the City's powers under the Community Charter, its budgets,
+  plans and reports, BC law and court rulings, and local coverage. Build up and reuse a small
+  library of sourced local facts, so the same fact gets the same citation across candidates.
+- **Use the candidate's full proposal.** Read their own page for it first, not just the quote on
+  file, so the analysis addresses what they actually proposed.
+
+**Status (Oct. 3, 2026):** three samples are in
+`~/Documents/election-research/salmon-arm-analysis-SAMPLES-2026-10-03.xml` (Bardy, Cannon,
+Desautels). Run the full pass only after the user approves the tone and depth.
+
+## Working with subagents
+
+Large passes split well. For example: tag or plan batches of about 40 planks, or one candidate's
+open-web sources per agent. Keep Chrome work (Castanet, Facebook) in the main session, one tab
+at a time and throttled.
+- **Give every agent the same rules.** The same vocabulary or yardstick, and the same output
+  shape with a validation script.
+- **Always run a check pass after the batches.** Have one agent verify every claim against the
+  source it cites, drop what isn't supported, re-apply the yardstick, and report what changed.
+  Batches drift apart: one plan batch leaned on our own plank summaries instead of the cited
+  statements, and the check caught it.
+- **Merge, validate, then dry-run.** Run the merged file against a copy of the database
+  (`DB_DATABASE=…copy.sqlite php artisan tinker`) before handing it over.
 
 ## Tagging
 
