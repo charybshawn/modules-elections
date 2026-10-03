@@ -90,6 +90,10 @@ inside an element doesn't matter. Write `&amp;` for `&` in URLs.
 - **Candidates match on `<name>`, exactly.** Spell a returning candidate's
   name exactly as it's on file (the baseline query shows it), or the import
   creates a second candidate.
+- **A supplied candidate field replaces what's on file** -- including
+  `notes`. To add to a candidate's notes, write their existing notes
+  (from the baseline) first and append the new ones; writing only the new
+  notes erases the old.
 - **An omitted candidate field is left alone, not cleared.** You don't need to
   carry forward the whole baseline row; write only what you found or what
   changed. (The opposite of the market import.) There is no way to clear a

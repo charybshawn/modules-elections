@@ -76,8 +76,11 @@ For each candidate:
    `https://www.facebook.com/profile.php?id=61593018722121`). If the
    candidate has no `facebook_url` on file, find it:
    - Start from the page name the City published (in `notes`, "Facebook per
-     the City list"), then links on their campaign site, then a Facebook
-     search in Chrome for the name plus "council", "mayor" or "Salmon Arm".
+     the City list"), then links on their campaign site and Instagram, then
+     a web search (`site:facebook.com "<name>" council` or the City's page
+     name in quotes). Facebook's own search is unreliable (it "corrects"
+     unusual surnames), so use it only as a last resort; a handle the City
+     listed can also be tried directly as `facebook.com/<handle>`.
    - It's theirs only if the page name carries the candidate's name and its
      About or intro names the 2026 Salmon Arm race (or it's linked from their
      campaign site). A personal profile, a business page or a same-named
@@ -144,6 +147,9 @@ only here -- no scrolling through posts; that's the research skill's job.
   sourced enough to summarize; otherwise leave it out.
 - **`occupation`**: a short label ("Business owner, GIS consultant"), only
   when a source states it.
+- **`notes` replaces what's on file**, so start it with the candidate's
+  existing notes from the baseline, unchanged, then add a blank line and
+  this pass's notes. Leaving the old notes out would erase them.
 - Don't repeat what's on file. Re-supplying an entry with the same source
   URL and summary is harmless, but it isn't new.
 
