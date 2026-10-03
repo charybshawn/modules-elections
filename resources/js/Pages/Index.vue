@@ -46,7 +46,7 @@
         </div>
       </dl>
 
-      <TagHeatMap :heat="heat" :selected="filters.tag" class="mb-8" @select="filters.tag = $event" />
+      <TagHeatMap id="subject-heat" :heat="heat" :selected="filters.tag" :matching-count="matchingCount" class="mb-6" @select="selectSubject" />
 
       <div class="grid grid-cols-1 gap-8 lg:grid-cols-3">
         <div class="min-w-0 lg:col-span-2 space-y-8">
@@ -78,14 +78,6 @@
                 >{{ o.label }}</button>
               </div>
             </div>
-
-            <Transition enter-from-class="opacity-0 -translate-y-1" enter-active-class="transition duration-200" leave-to-class="opacity-0" leave-active-class="transition duration-150">
-              <div v-if="selectedTag" class="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-2 text-sm text-indigo-900 dark:border-indigo-500/30 dark:bg-indigo-500/10 dark:text-indigo-100">
-                <span><span class="font-semibold">{{ matchingCount }}</span> candidate{{ matchingCount === 1 ? '' : 's' }} campaign{{ matchingCount === 1 ? 's' : '' }} on <span class="font-semibold">{{ selectedTag.name }}</span> -- listed first, strongest emphasis first.</span>
-                <Link :href="route('admin.elections.tags.show', selectedTag.slug)" class="tap-target-touch font-medium underline underline-offset-2">Open subject</Link>
-                <button type="button" class="tap-target-touch font-medium underline underline-offset-2" @click="filters.tag = null">Clear</button>
-              </div>
-            </Transition>
           </div>
 
           <section v-for="group in candidateGroups" :key="group.office">
@@ -192,7 +184,7 @@
 import TagHeatMap from './Partials/TagHeatMap.vue'
 import { cellOf, tierBadgeClass, tierShortLabel, tierWeight, type SubjectCoverage } from './Partials/coverage'
 import ElectionsNav from './Partials/ElectionsNav.vue'
-import { computed, ref, reactive } from 'vue'
+import { computed, nextTick, ref, reactive } from 'vue'
 import { Link, router, useForm, useRemember } from '@inertiajs/vue3'
 import AdminLayout from '@/Layouts/AdminLayout.vue'
 import AdminMobileHeader from '@/Components/Admin/AdminMobileHeader.vue'
@@ -241,6 +233,42 @@ const officeChoices = [
   { value: 'mayor', label: 'Mayor' },
   { value: 'councillor', label: 'Council' },
 ] as const
+
+/**
+ * Pick a subject in the heat map: it folds to a strip, which is then
+ * scrolled to the top with the candidate cards right under it.
+ */
+const selectSubject = async (slug: string | null) => {
+  filters.tag = slug
+  if (slug === null) return
+  await nextTick()
+  window.setTimeout(() => {
+    const strip = document.getElementById('subject-heat')
+    if (!strip) return
+    const target = () => Math.max(0, strip.getBoundingClientRect().top + window.scrollY - stickyHeaderHeight() - 8)
+    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    window.scrollTo({ top: target(), behavior: reduceMotion ? 'auto' : 'smooth' })
+    // Browsers skip smooth scrolling in some cases (background tabs); land it anyway.
+    window.setTimeout(() => {
+      if (Math.abs(window.scrollY - target()) > 48) window.scrollTo({ top: target() })
+    }, 900)
+  }, 50)
+}
+
+/**
+ * How much of the top of the screen the sticky/fixed headers cover once
+ * stuck (the admin bar, plus the page header on phones), so the strip
+ * lands just below them.
+ */
+const stickyHeaderHeight = () =>
+  Array.from(document.querySelectorAll<HTMLElement>('body *')).reduce((bottom, el) => {
+    const style = getComputedStyle(el)
+    if ((style.position !== 'sticky' && style.position !== 'fixed') || style.top === 'auto') return bottom
+    const rect = el.getBoundingClientRect()
+    const stuckTop = parseFloat(style.top) || 0
+    const isHeader = rect.height > 0 && rect.width > window.innerWidth / 2 && stuckTop < window.innerHeight / 3 && rect.height < window.innerHeight / 3
+    return isHeader ? Math.max(bottom, stuckTop + rect.height) : bottom
+  }, 0)
 
 const selectedTag = computed(() => props.coverage.tags.find((t) => t.slug === filters.tag) ?? null)
 const tagCell = (candidate: Candidate) => (filters.tag ? cellOf(props.coverage, candidate.id, filters.tag) : undefined)
