@@ -241,6 +241,11 @@ what someone is running on.
    two-sentence neutral `<summary>`. No adjectives about the position.
 4. Give it a stable kebab-case `<key>`; on a repeat run reuse the key from
    the baseline.
+5. **One statement backs one plank.** The import matches a statement by
+   source URL + quote (or summary), so reusing the same quote from the same
+   source under two planks moves it to whichever comes last. When one
+   sentence touches two positions, file it under the one it's mainly about,
+   or quote a different part of it for the other.
 
 **Rank them by the candidate's emphasis.** Judge each plank on:
 - **Named priority**: they list or number it as a priority, pillar or
