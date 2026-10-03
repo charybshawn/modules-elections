@@ -3,9 +3,5 @@ export const secondaryButtonClass =
 
 export const sectionHeadingClass = 'text-sm font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400'
 
-/** A titled block inside a candidate tab (Biography, Career, Housing...): one look on every tab. */
-export const subsectionHeadingClass =
-  'pb-2 border-b-2 border-amber-500/70 text-sm font-semibold uppercase tracking-wider text-gray-900 dark:text-white'
-
 export const newPillClass =
   'rounded-full bg-amber-100 px-1.5 py-0.5 text-xs font-medium text-amber-800 dark:bg-amber-500/20 dark:text-amber-300'

@@ -35,12 +35,27 @@ class CandidateController extends Controller implements HasMiddleware
         ]);
     }
 
-    public function show(Candidate $candidate, BuildCandidatePortfolio $buildCandidatePortfolio): Response
+    public function show(Request $request, Candidate $candidate, BuildCandidatePortfolio $buildCandidatePortfolio): Response
     {
         $this->authorize('view', $candidate);
 
+        $portfolio = $buildCandidatePortfolio->handle($candidate);
+
+        // Each tab is its own URL (?tab=platform), like Customers' Overview /
+        // Support tabs; an unknown or empty tab falls back to About.
+        $tab = (string) $request->query('tab', 'about');
+        $tabs = [
+            'about',
+            ...array_column($portfolio['sections'], 'key'),
+            ...($portfolio['articles'] === [] ? [] : ['news']),
+            // Research notes are admin working material (CandidateResource
+            // leaves them out for invited viewers), so their tab is too.
+            ...($request->user()?->isAdmin() && filled($candidate->notes) ? ['notes'] : []),
+        ];
+
         return Inertia::render('Vendor/elections/Candidates/Show', [
-            'portfolio' => $buildCandidatePortfolio->handle($candidate),
+            'portfolio' => $portfolio,
+            'activeTab' => in_array($tab, $tabs, true) ? $tab : 'about',
             'options' => Options::all(),
         ]);
     }
