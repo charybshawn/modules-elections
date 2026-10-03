@@ -39,7 +39,7 @@ class BuildCandidatePortfolio
 
     public function handle(Candidate $candidate): array
     {
-        $candidate->load(['entries', 'articles', 'planks.entries']);
+        $candidate->load(['entries', 'articles', 'planks.entries', 'planks.rankHistory']);
 
         $sections = [];
         foreach (self::SECTIONS as $key => $section) {

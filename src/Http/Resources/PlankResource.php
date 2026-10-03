@@ -27,6 +27,16 @@ class PlankResource extends JsonResource
             'source_count' => $this->entries->pluck('source_url')->unique()->count(),
             'sources' => EntryResource::collection($this->entries)->resolve(),
             'added_at' => $this->created_at?->toIso8601String(),
+            // Where it has stood over the campaign, oldest first; the page
+            // compares the last two to say "Up from #4".
+            'history' => $this->whenLoaded('rankHistory', fn () => $this->rankHistory
+                ->map(fn ($point) => [
+                    'tier' => $point->tier,
+                    'rank' => $point->rank,
+                    'recorded_at' => $point->recorded_at->toIso8601String(),
+                ])
+                ->values()
+                ->all(), []),
         ];
     }
 }

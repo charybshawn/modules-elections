@@ -7,6 +7,7 @@
     "tables": [
         "elections_article_candidate",
         "elections_entries",
+        "elections_plank_ranks",
         "elections_planks",
         "elections_articles",
         "elections_events",

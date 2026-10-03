@@ -58,9 +58,32 @@ class Plank extends Model
         'has_commitment' => 'boolean',
     ];
 
+    protected static function booted(): void
+    {
+        // History: one row when the plank appears, then one per change of
+        // tier or rank. A re-import that changes nothing writes nothing.
+        static::saved(function (Plank $plank) {
+            if ($plank->wasRecentlyCreated || $plank->wasChanged(['tier', 'rank'])) {
+                $plank->rankHistory()->create([
+                    'tier' => $plank->tier,
+                    'rank' => $plank->rank,
+                    'recorded_at' => now(),
+                ]);
+            }
+        });
+    }
+
     public function candidate(): BelongsTo
     {
         return $this->belongsTo(Candidate::class);
+    }
+
+    /**
+     * Every place it has held, oldest first.
+     */
+    public function rankHistory(): HasMany
+    {
+        return $this->hasMany(PlankRank::class)->orderBy('recorded_at')->orderBy('id');
     }
 
     /**

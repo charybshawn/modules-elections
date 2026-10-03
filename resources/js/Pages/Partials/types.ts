@@ -91,6 +91,8 @@ export interface Plank {
   sources: Entry[]
   /** When it went on file (ISO). */
   added_at: string | null
+  /** Every tier/rank it has held, oldest first. */
+  history: { tier: string; rank: number; recorded_at: string }[]
 }
 
 export interface Platform {
