@@ -1,5 +1,5 @@
 <template>
-  <AdminShowShell>
+  <AdminShowShell wide>
     <template #mobile-header>
       <AdminMobileHeader :title="candidate.name" :href="route('admin.elections.index')" />
     </template>
@@ -158,35 +158,44 @@
             Limited sources: this platform rests on {{ portfolio.platform.source_count === 1 ? 'a single source' : 'very little published material' }}, so its order is a rough guide.
           </p>
 
-          <AccountSection
-            v-for="group in filteredTiers"
-            :key="group.tier"
-            :title="group.title"
-            :description="tierDescriptions[group.tier]"
-          >
-            <TransitionGroup tag="ol" class="space-y-6" enter-from-class="opacity-0 -translate-y-1" enter-active-class="transition duration-200">
-              <li v-for="plank in group.planks" :key="plank.id">
-                <PlankItem
-                  :plank="plank"
-                  :position="plankPosition(plank)"
-                  :topics="options.topics"
-                  :options="options"
-                  :editable="!readOnly"
-                  :is-new="isNewPlank(plank)"
-                  :is-new-entry="isNewEntry"
-                  :active-tag="platformFilter.tag"
-                  @delete="deletePlank"
-                  @delete-entry="deleteEntry"
-                  @tag="platformFilter.tag = $event"
-                />
-              </li>
+          <!-- Controls: open or close every plank; admins can switch on editing. -->
+          <div class="flex flex-wrap items-center justify-between gap-2 py-3">
+            <p class="text-xs text-gray-500 dark:text-gray-400">Ranked by how much the candidate emphasizes each one. Tap a plank for their plan, their words and, on pillars, the AI analysis.</p>
+            <div class="flex shrink-0 items-center gap-3 text-xs font-medium">
+              <button type="button" class="tap-target-touch text-indigo-600 hover:underline dark:text-indigo-400" @click="openPlanks.ids = visiblePlankIds">Expand all</button>
+              <button type="button" class="tap-target-touch text-indigo-600 hover:underline dark:text-indigo-400" @click="openPlanks.ids = []">Collapse all</button>
+              <button v-if="!readOnly" type="button" :aria-pressed="editing" :class="editing ? 'bg-red-50 text-red-700 ring-red-200 dark:bg-red-500/10 dark:text-red-300 dark:ring-red-500/30' : 'text-gray-600 ring-gray-300 dark:text-gray-300 dark:ring-gray-600'" class="tap-target-touch rounded-md px-2 py-1 ring-1" @click="editing = !editing">{{ editing ? 'Done editing' : 'Edit' }}</button>
+            </div>
+          </div>
+
+          <!-- The platform: one compact, expandable row per plank, grouped by tier. -->
+          <section v-for="group in filteredTiers" :key="group.tier" class="py-3">
+            <h3 class="text-sm font-semibold text-gray-900 dark:text-white">{{ group.title }}</h3>
+            <p class="text-xs text-gray-500 dark:text-gray-400">{{ tierDescriptions[group.tier] }}</p>
+            <TransitionGroup tag="ol" class="mt-2 divide-y divide-gray-100 dark:divide-gray-700/60" enter-from-class="opacity-0 -translate-y-1" enter-active-class="transition duration-200">
+              <PlankRow
+                v-for="plank in group.planks"
+                :key="plank.id"
+                :plank="plank"
+                :position="plankPosition(plank)"
+                :open="openPlanks.ids.includes(plank.id)"
+                :options="options"
+                :editing="editing"
+                :is-new="isNewPlank(plank)"
+                :is-new-entry="isNewEntry"
+                :active-tag="platformFilter.tag"
+                @toggle="togglePlank(plank.id)"
+                @delete="deletePlank"
+                @delete-entry="deleteEntry"
+                @tag="platformFilter.tag = $event"
+              />
             </TransitionGroup>
-          </AccountSection>
+          </section>
 
           <AccountSection v-if="portfolio.platform.unranked.length && !activeSubject" title="Not yet ranked" description="Statements on file that the research hasn't grouped into a plank yet.">
             <ul class="space-y-5">
               <li v-for="entry in portfolio.platform.unranked" :key="entry.id">
-                <EntryCard :entry="entry" :options="options" :editable="!readOnly" :is-new="isNewEntry(entry)" @delete="deleteEntry" />
+                <EntryCard :entry="entry" :options="options" :editable="editing" :is-new="isNewEntry(entry)" @delete="deleteEntry" />
               </li>
             </ul>
           </AccountSection>
@@ -247,7 +256,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref } from 'vue'
+import { computed, nextTick, onMounted, reactive, ref } from 'vue'
 import { Link, router, useRemember } from '@inertiajs/vue3'
 import AdminLayout from '@/Layouts/AdminLayout.vue'
 import AdminMobileHeader from '@/Components/Admin/AdminMobileHeader.vue'
@@ -258,7 +267,7 @@ import { useConfirmDialog } from '@/composables/useConfirmDialog'
 import CandidatePhoto from '../Partials/CandidatePhoto.vue'
 import EntryCard from '../Partials/EntryCard.vue'
 import FactList from '../Partials/FactList.vue'
-import PlankItem from '../Partials/PlankItem.vue'
+import PlankRow from '../Partials/PlankRow.vue'
 import QuickSearch from '../Partials/QuickSearch.vue'
 import ScorecardView from '../Partials/ScorecardView.vue'
 import TagChips from '../Partials/TagChips.vue'
@@ -356,6 +365,23 @@ const filteredTiers = computed(() =>
     .map((group) => ({ ...group, planks: activeSubject.value ? group.planks.filter((p) => p.tags.some((t) => t.slug === activeSubject.value!.slug)) : group.planks }))
     .filter((group) => group.planks.length > 0),
 )
+// ---- Platform: which planks are open (remembered so Back keeps them), and admin edit mode ----
+const openPlanks = useRemember(reactive({ ids: [] as number[] }), 'elections-platform-open') as { ids: number[] }
+const togglePlank = (id: number) => {
+  openPlanks.ids = openPlanks.ids.includes(id) ? openPlanks.ids.filter((x) => x !== id) : [...openPlanks.ids, id]
+}
+const visiblePlankIds = computed(() => filteredTiers.value.flatMap((g) => g.planks.map((p) => p.id)))
+const editing = ref(false)
+
+// A link straight to a plank (#plank-<key>, e.g. from quick search) opens it and scrolls to it.
+onMounted(() => {
+  const key = decodeURIComponent(window.location.hash.replace(/^#plank-/, ''))
+  const plank = allPlanks.value.find((p) => p.key === key)
+  if (!plank) return
+  if (!openPlanks.ids.includes(plank.id)) openPlanks.ids = [...openPlanks.ids, plank.id]
+  nextTick(() => document.getElementById(`plank-${plank.key}`)?.scrollIntoView({ block: 'start' }))
+})
+
 const filteredPlankCount = computed(() => filteredTiers.value.reduce((n, g) => n + g.planks.length, 0))
 
 const isNewPlank = (plank: Plank) => isNewer(plank.added_at) || plank.sources.some(isNewEntry)
