@@ -71,27 +71,46 @@ For each candidate:
    first (`find-salmon-arm-candidates`). `notes` lists the campaign links the
    City published, including Facebook page names without URLs.
 
-2. **Campaign website** (`candidate_site`) -- the About/Meet page first.
+2. **Campaign Facebook page** -- most candidates built a Facebook page just
+   for this election (for example "River Grabowsky for City Council 2026" at
+   `https://www.facebook.com/profile.php?id=61593018722121`). If the
+   candidate has no `facebook_url` on file, find it:
+   - Start from the page name the City published (in `notes`, "Facebook per
+     the City list"), then links on their campaign site, then a Facebook
+     search in Chrome for the name plus "council", "mayor" or "Salmon Arm".
+   - It's theirs only if the page name carries the candidate's name and its
+     About or intro names the 2026 Salmon Arm race (or it's linked from their
+     campaign site). A personal profile, a business page or a same-named
+     stranger doesn't count. Note what you checked in `<notes>`.
+   - Set `<facebook_url>` to the page's own address as the address bar shows
+     it: `https://www.facebook.com/<vanity-name>` or, for pages without one,
+     `https://www.facebook.com/profile.php?id=<number>` with no other query
+     parameters.
+   - Read its About/intro section (`facebook_page`) for background facts.
+     Leave the posts to `research-salmon-arm-candidates`.
+   - If there isn't one, say so in the summary rather than guessing.
 
-3. **News profiles** (`news`): the Salmon Arm Observer's "Introducing Salmon
+3. **Campaign website** (`candidate_site`) -- the About/Meet page first.
+
+4. **News profiles** (`news`): the Salmon Arm Observer's "Introducing Salmon
    Arm's mayoral and council candidates" (Sept. 28, 2026), Castanet's
    "ELECTION 2026 ... candidate profile" series and its Sept. 12 round-up,
    plus earlier announcement stories. Castanet blocks automated fetching, so
    read it in Chrome (below).
 
-4. **Personal websites and blogs** (`personal_site`) -- only ones tied to the
+5. **Personal websites and blogs** (`personal_site`) -- only ones tied to the
    candidate under rule 2. Background facts only; their opinions are for the
    research skill.
 
-5. **Organization pages** (`organization`) -- the staff, board or "about"
+6. **Organization pages** (`organization`) -- the staff, board or "about"
    page of a business they say they own or an organization they say they
    serve. This confirms the role and often the years.
 
-6. **City of Salmon Arm** (`city`) -- committee and board rosters, past
+7. **City of Salmon Arm** (`city`) -- committee and board rosters, past
    council lists, and the City's past election results for previous runs for
    office.
 
-7. **LinkedIn** (`linkedin`), only if the user is logged in to LinkedIn in
+8. **LinkedIn** (`linkedin`), only if the user is logged in to LinkedIn in
    Chrome:
    - Find the profile through the candidate's own site or socials first;
      otherwise run one LinkedIn search for the name plus "Salmon Arm". Only
@@ -136,6 +155,7 @@ each file stays reviewable.
 ## Hand-off summary
 
 - Per candidate: how many facts, by category, and the sources used.
+- Campaign Facebook pages: found (with how you confirmed them) and not found.
 - Candidates with little published, and why ("no campaign site; only the
   Observer introduction").
 - Pages left out because they couldn't be tied to the candidate (rule 2).
