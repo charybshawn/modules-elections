@@ -21,7 +21,7 @@
     </p>
 
     <p v-if="heat.heatingUp.length" class="mt-3 text-sm text-gray-700 dark:text-gray-300">
-      <span class="font-medium text-red-700 dark:text-red-400">Heating up this week:</span>
+      <span class="font-medium text-red-700 dark:text-red-400">Heating up this week:</span>{{ ' ' }}
       <template v-for="(t, i) in heat.heatingUp" :key="t.slug">
         <Link :href="route('admin.elections.tags.show', t.slug)" class="hover:underline">{{ t.name }}</Link><template v-if="i < heat.heatingUp.length - 1"> · </template>
       </template>
@@ -54,6 +54,7 @@
 </template>
 
 <script setup lang="ts">
+import { reactive } from 'vue'
 import { Link, useRemember } from '@inertiajs/vue3'
 import { sectionHeadingClass } from './classes'
 import type { TagHeat } from './types'
@@ -65,8 +66,8 @@ defineProps<{
 }>()
 defineEmits<{ select: [slug: string | null] }>()
 
-// useRemember hands back a reactive object for object state.
-const view = useRemember<{ mode: 'recent' | 'all' }>({ mode: 'recent' }, 'elections-heat-mode') as { mode: 'recent' | 'all' }
+// useRemember returns a reactive object only when given one (a plain object comes back as a ref).
+const view = useRemember(reactive<{ mode: 'recent' | 'all' }>({ mode: 'recent' }), 'elections-heat-mode') as { mode: 'recent' | 'all' }
 
 type HeatTag = TagHeat['headings'][number]['tags'][number]
 /** Within a heading, hottest first by whichever measure is showing. */

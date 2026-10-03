@@ -61,6 +61,7 @@
 </template>
 
 <script setup lang="ts">
+import { reactive } from 'vue'
 import ElectionsNav from '../Partials/ElectionsNav.vue'
 import { Link, useRemember } from '@inertiajs/vue3'
 import AdminLayout from '@/Layouts/AdminLayout.vue'
@@ -90,6 +91,6 @@ defineProps<{
   options: Options
 }>()
 
-// useRemember hands back a reactive object for object state.
-const view = useRemember<{ mode: 'matrix' | 'list' }>({ mode: 'matrix' }, 'elections-subjects-view') as { mode: 'matrix' | 'list' }
+// useRemember returns a reactive object only when given one (a plain object comes back as a ref).
+const view = useRemember(reactive<{ mode: 'matrix' | 'list' }>({ mode: 'matrix' }), 'elections-subjects-view') as { mode: 'matrix' | 'list' }
 </script>

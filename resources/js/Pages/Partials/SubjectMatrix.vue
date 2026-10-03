@@ -129,7 +129,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, reactive } from 'vue'
 import { Link, useRemember } from '@inertiajs/vue3'
 import CoverageDetail from './CoverageDetail.vue'
 import { cellOf, tierBadgeClass, tierCellClass, tierShortLabel, tierWeight, type CoverageDetailData, type SubjectCoverage } from './coverage'
@@ -150,9 +150,9 @@ interface MatrixState {
   sortTag: string | null
   focus: number | null
 }
-// useRemember hands back a reactive object for object state.
-const state = useRemember<MatrixState>(
-  { office: 'all', incumbentsOnly: false, showAll: false, sortTag: null, focus: null },
+// useRemember returns a reactive object only when given one (a plain object comes back as a ref).
+const state = useRemember(
+  reactive<MatrixState>({ office: 'all', incumbentsOnly: false, showAll: false, sortTag: null, focus: null }),
   'elections-subject-matrix',
 ) as MatrixState
 

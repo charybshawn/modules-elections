@@ -48,8 +48,8 @@
 
       <TagHeatMap :heat="heat" :selected="filters.tag" class="mb-8" @select="filters.tag = $event" />
 
-      <div class="grid gap-8 lg:grid-cols-3">
-        <div class="lg:col-span-2 space-y-8">
+      <div class="grid grid-cols-1 gap-8 lg:grid-cols-3">
+        <div class="min-w-0 lg:col-span-2 space-y-8">
           <p v-if="newCandidateCount" class="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-amber-800 dark:text-amber-300">
             New information on {{ newCandidateCount }} candidate{{ newCandidateCount === 1 ? '' : 's' }} since your last visit.
             <button type="button" class="tap-target-touch text-xs font-medium underline underline-offset-2" @click="seen.markAllSeen()">Mark all as seen</button>
@@ -90,7 +90,7 @@
 
           <section v-for="group in candidateGroups" :key="group.office">
             <h2 :class="sectionHeadingClass">{{ group.label }} <span class="font-normal normal-case tracking-normal text-gray-400">{{ group.candidates.length }}</span></h2>
-            <TransitionGroup tag="ul" class="relative mt-3 grid gap-3 sm:grid-cols-2" move-class="transition-transform duration-300 ease-out" enter-from-class="opacity-0 scale-95" enter-active-class="transition duration-200" leave-to-class="opacity-0 scale-95" leave-active-class="absolute transition duration-150">
+            <TransitionGroup tag="ul" class="relative mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2" move-class="transition-transform duration-300 ease-out" enter-from-class="opacity-0 scale-95" enter-active-class="transition duration-200" leave-to-class="opacity-0 scale-95" leave-active-class="absolute transition duration-150">
               <li v-for="candidate in group.candidates" :key="candidate.id">
                 <Link
                   :href="route('admin.elections.candidates.show', candidate.slug)"
@@ -113,7 +113,7 @@
                     </div>
                     <div v-if="selectedTag && tagCell(candidate)" class="mt-1 flex items-start gap-1.5 text-xs">
                       <span :class="tierBadgeClass(tagCell(candidate)!.tier)" class="shrink-0 rounded px-1.5 py-0.5 font-medium">{{ tierShortLabel[tagCell(candidate)!.tier] ?? tagCell(candidate)!.tier }}</span>
-                      <span class="line-clamp-2 text-gray-600 dark:text-gray-300">{{ tagCell(candidate)!.planks[0] }}</span>
+                      <span class="min-w-0 line-clamp-2 text-gray-600 dark:text-gray-300">{{ tagCell(candidate)!.planks[0] }}</span>
                     </div>
                     <div v-else class="mt-0.5 text-xs text-gray-400 dark:text-gray-500">
                       <span v-if="candidate.status !== 'nominated'">{{ options.statuses[candidate.status] ?? candidate.status }} · </span>
@@ -192,7 +192,7 @@
 import TagHeatMap from './Partials/TagHeatMap.vue'
 import { cellOf, tierBadgeClass, tierShortLabel, tierWeight, type SubjectCoverage } from './Partials/coverage'
 import ElectionsNav from './Partials/ElectionsNav.vue'
-import { computed, ref } from 'vue'
+import { computed, ref, reactive } from 'vue'
 import { Link, router, useForm, useRemember } from '@inertiajs/vue3'
 import AdminLayout from '@/Layouts/AdminLayout.vue'
 import AdminMobileHeader from '@/Components/Admin/AdminMobileHeader.vue'
@@ -233,8 +233,8 @@ interface DashboardFilters {
   office: 'all' | 'mayor' | 'councillor'
   tag: string | null
 }
-// useRemember hands back a reactive object for object state.
-const filters = useRemember<DashboardFilters>({ search: '', office: 'all', tag: null }, 'elections-dashboard-filters') as DashboardFilters
+// useRemember returns a reactive object only when given one (a plain object comes back as a ref).
+const filters = useRemember(reactive<DashboardFilters>({ search: '', office: 'all', tag: null }), 'elections-dashboard-filters') as DashboardFilters
 
 const officeChoices = [
   { value: 'all', label: 'Everyone' },
