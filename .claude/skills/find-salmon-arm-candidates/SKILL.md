@@ -11,7 +11,7 @@ councillors, plus the School District 83 trustees elected by Salmon Arm
 voters) and writes it as an XML file for the Elections module's **Import
 XML** button. This is the preliminary step. It runs once, the user imports the
 file, and `research-salmon-arm-candidates` then researches each candidate on
-file. It writes an import file and loads it into the local database with `php artisan elections:import` (dry run first).
+file. It writes an import file into the app repo's `database/elections/` folder and loads it into the local database with `php artisan elections:import-pending` (dry run first).
 
 **Read `../research-salmon-arm-candidates/references/elections-xml-schema.md`
 before writing any output.** It has the field list, the controlled value lists
@@ -95,8 +95,8 @@ and how the import matches on exact `<name>`.
 9. **Notes.** In each candidate's `<notes>`, list where they were found: the
    City list URL and the article URLs.
 
-10. **Write the file and hand it off.** Save to `~/Documents/election-research/`
-    (create it if needed) as `salmon-arm-candidates-<YYYY-MM-DD>.xml`, with only
+10. **Write the file and hand it off.** Save to the app repo's `database/elections/` folder
+    (see "Saving and importing") as `salmon-arm-candidates-<YYYY-MM-DD>.xml`, with only
     `<candidates>`, `<articles>` and `<events>` and no `<entries>`. Then
     summarize:
     - A table with one row per candidate: name | office | on City list |
@@ -105,11 +105,4 @@ and how the import matches on exact `<name>`.
       differences, withdrawals, acclamations, and anything you couldn't open.
     - Events added.
 
-    **Importing (user's standing instruction, Oct. 3, 2026):** load the file yourself with the
-    artisan command instead of handing it over. From `/Users/shawn/Documents/code/cultpantry`:
-    1. Back up the local database: copy `database/database.sqlite` into the scratchpad.
-    2. `php artisan elections:import <file> --dry-run`, and fix every problem it reports.
-    3. `php artisan elections:import <file>`, then report the summary in the hand-off.
-    
-    This is for the local database only. Never import into staging or production unless the user
-    asks for that specifically.
+    **Saving and importing:** follow "Saving and importing" in `../research-salmon-arm-candidates/references/elections-xml-schema.md`: write the file into the app repo's `database/elections/` folder with the next sequence number, then load it with `php artisan elections:import-pending` (dry run first).

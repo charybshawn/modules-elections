@@ -4,6 +4,7 @@ namespace Cultpantry\Elections;
 
 use App\Support\AdminNav;
 use Cultpantry\Elections\Console\ImportElectionCommand;
+use Cultpantry\Elections\Console\ImportPendingCommand;
 use Cultpantry\Elections\Models\Article;
 use Cultpantry\Elections\Models\Candidate;
 use Cultpantry\Elections\Models\ElectionEvent;
@@ -15,6 +16,7 @@ use Cultpantry\Elections\Models\ScorecardItem;
 use Cultpantry\Elections\Models\Tag;
 use Cultpantry\Elections\Policies\AdminWritePolicy;
 use Cultpantry\Elections\Policies\CandidatePolicy;
+use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
@@ -65,10 +67,16 @@ class ElectionsServiceProvider extends ServiceProvider
         ]);
 
         // 4c. `php artisan elections:import file.xml [--dry-run]`: the XML import
-        //     without the browser.
+        //     without the browser. `elections:import-pending` loads the research
+        //     files committed to the host app's database/elections/ folder that
+        //     aren't in the ledger yet; it runs from the deploy script and
+        //     hourly as a safety net.
         if ($this->app->runningInConsole()) {
-            $this->commands([ImportElectionCommand::class]);
+            $this->commands([ImportElectionCommand::class, ImportPendingCommand::class]);
         }
+        $this->callAfterResolving(Schedule::class, function (Schedule $schedule) {
+            $schedule->command('elections:import-pending')->hourly()->withoutOverlapping();
+        });
 
         // 5. Publish the Vue source into resources/js/Pages/Vendor/elections/.
         //    php artisan vendor:publish --tag=elections-pages

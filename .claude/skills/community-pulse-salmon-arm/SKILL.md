@@ -16,7 +16,7 @@ so don't run a pass unless they ask. What exists so far:
 Summarizes **what residents are discussing** about the 2026 Salmon Arm
 election into a dated snapshot shown on Elections → Community Pulse, a page
 visible to admins and invited viewers. It's an honest read of one online
-conversation, not a poll and not a verdict on candidates. It writes an import file and loads it into the local database with `php artisan elections:import` (dry run first).
+conversation, not a poll and not a verdict on candidates. It writes an import file into the app repo's `database/elections/` folder and loads it into the local database with `php artisan elections:import-pending` (dry run first).
 
 **Read `../research-salmon-arm-candidates/references/elections-xml-schema.md`
 → "Community Pulse" before writing output.**
@@ -83,7 +83,7 @@ conversation, not a poll and not a verdict on candidates. It writes an import fi
   issue key, about the conversation, not about candidates. "Homelessness
   draws the most people, split between services and enforcement" is fine;
   "residents are turning against X" is not.
-- Save to `~/Documents/election-research/salmon-arm-pulse-<YYYY-MM-DD>.xml`
+- Save to the app repo's `database/elections/` folder (see "Saving and importing") as `…-pulse.xml`
   with just a `<pulse>` block inside `<election>`.
 
 ## Hand-off
@@ -93,11 +93,4 @@ anything partial or skewed, and any thread where a **candidate** answered:
 pass those to `research-salmon-arm-candidates`, since a candidate's own reply
 belongs on their platform, not in the pulse.
 
-**Importing (user's standing instruction, Oct. 3, 2026):** load the file yourself with the
-artisan command instead of handing it over. From `/Users/shawn/Documents/code/cultpantry`:
-1. Back up the local database: copy `database/database.sqlite` into the scratchpad.
-2. `php artisan elections:import <file> --dry-run`, and fix every problem it reports.
-3. `php artisan elections:import <file>`, then report the summary in the hand-off.
-
-This is for the local database only. Never import into staging or production unless the user
-asks for that specifically.
+**Saving and importing:** follow "Saving and importing" in `../research-salmon-arm-candidates/references/elections-xml-schema.md`: write the file into the app repo's `database/elections/` folder with the next sequence number, then load it with `php artisan elections:import-pending` (dry run first).

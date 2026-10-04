@@ -98,6 +98,7 @@ class ImportElectionFromXml
             'tagged' => $counts(),
             'plans' => $counts(),
             'analyses' => $counts(),
+            'changes' => $counts(),
         ];
 
         DB::transaction(function () use ($xml, &$result) {
@@ -129,6 +130,10 @@ class ImportElectionFromXml
             foreach ($xml->analyses->analysis ?? [] as $node) {
                 $this->importAnalysis($node, $result);
             }
+            // Corrections last, so they apply to what this file just loaded too.
+            foreach ($xml->changes ?? [] as $node) {
+                $this->applyChanges($node, $result);
+            }
         });
 
         Tag::pruneOrphans();
@@ -150,6 +155,11 @@ class ImportElectionFromXml
                 continue;
             }
             $parts[] = "{$type}: {$created} new, {$updated} updated, {$unchanged} unchanged";
+        }
+
+        $changes = $result['changes'] ?? ['updated' => 0];
+        if ($changes['updated'] > 0) {
+            $parts[] = "changes: {$changes['updated']} applied";
         }
 
         $message = $parts === [] ? 'Nothing to import.' : 'Imported '.implode('; ', $parts).'.';
@@ -961,6 +971,113 @@ class ImportElectionFromXml
 
         $this->applyPlan($plank, $node, "{$name}: plank \"{$plank->title}\"");
         $this->tally($plank, $result['plans']);
+    }
+
+    /**
+     * Corrections the rest of the format can't express, applied after
+     * everything else in the file:
+     *
+     *   <changes>
+     *     <detach_entries candidate="Name" plank="key|*" before="YYYY-MM-DD" kind="prior_record"/>
+     *     <remove_plank candidate="Name" key="plank-key"/>
+     *     <remove_entry candidate="Name" hash="match_hash"/>
+     *   </changes>
+     *
+     * detach_entries takes a plank's statements off it (all planks with "*",
+     * optionally only those published before a date) and refiles them as
+     * `kind` (default statement). remove_plank deletes a plank, refiling any
+     * statements still on it as statements, and closes the rank gap.
+     * remove_entry deletes one entry. Unknown targets are reported, never
+     * guessed at.
+     */
+    private function applyChanges(SimpleXMLElement $changes, array &$result): void
+    {
+        foreach ($changes->children() as $node) {
+            $name = trim((string) $node['candidate']);
+            $candidate = Candidate::where('name', $name)->first();
+            if ($candidate === null) {
+                $this->problems[] = "<changes>: no candidate \"{$name}\" on file -- skipped <{$node->getName()}>.";
+
+                continue;
+            }
+
+            match ($node->getName()) {
+                'detach_entries' => $this->detachEntries($candidate, $node, $result),
+                'remove_plank' => $this->removePlank($candidate, $node, $result),
+                'remove_entry' => $this->removeEntry($candidate, $node, $result),
+                default => $this->problems[] = "<changes>: unknown change <{$node->getName()}> -- skipped.",
+            };
+        }
+    }
+
+    private function detachEntries(Candidate $candidate, SimpleXMLElement $node, array &$result): void
+    {
+        $key = trim((string) $node['plank']);
+        $kind = trim((string) $node['kind']) ?: 'statement';
+        if (! array_key_exists($kind, Entry::KINDS) || in_array($kind, ['plank', 'background'], true)) {
+            $this->problems[] = "<changes>: {$candidate->name}: can't refile statements as \"{$kind}\" -- skipped.";
+
+            return;
+        }
+
+        $planks = $candidate->planks()->when($key !== '*', fn ($q) => $q->where('key', $key))->pluck('id');
+        if ($planks->isEmpty()) {
+            $this->problems[] = "<changes>: {$candidate->name}: no plank \"{$key}\" on file -- skipped detach_entries.";
+
+            return;
+        }
+
+        $before = trim((string) $node['before']);
+        if ($before !== '' && ! preg_match('/^\d{4}-\d{2}-\d{2}$/', $before)) {
+            $this->problems[] = "<changes>: {$candidate->name}: before=\"{$before}\" isn't YYYY-MM-DD -- skipped detach_entries.";
+
+            return;
+        }
+
+        $entries = $candidate->entries()->whereIn('plank_id', $planks)
+            ->when($before !== '', fn ($q) => $q->whereNotNull('published_on')->where('published_on', '<', $before))
+            ->get();
+        foreach ($entries as $entry) {
+            $entry->forceFill(['plank_id' => null, 'kind' => $kind])->save();
+        }
+        $result['changes']['updated'] += $entries->count();
+    }
+
+    private function removePlank(Candidate $candidate, SimpleXMLElement $node, array &$result): void
+    {
+        $key = trim((string) $node['key']);
+        $plank = $candidate->planks()->where('key', $key)->first();
+        if ($plank === null) {
+            $this->problems[] = "<changes>: {$candidate->name}: no plank \"{$key}\" on file -- skipped remove_plank.";
+
+            return;
+        }
+
+        $candidate->entries()->where('plank_id', $plank->id)->update(['plank_id' => null, 'kind' => 'statement']);
+        $plank->tags()->detach();
+        $plank->delete();
+
+        foreach ($candidate->planks()->orderBy('rank')->get()->values() as $i => $remaining) {
+            if ($remaining->rank !== $i + 1) {
+                $remaining->forceFill(['rank' => $i + 1])->save();
+            }
+        }
+        $result['changes']['updated']++;
+    }
+
+    private function removeEntry(Candidate $candidate, SimpleXMLElement $node, array &$result): void
+    {
+        $hash = trim((string) $node['hash']);
+        $entry = $candidate->entries()->where('match_hash', $hash)->first();
+        if ($entry === null) {
+            $this->problems[] = "<changes>: {$candidate->name}: no entry with hash \"{$hash}\" on file -- skipped remove_entry.";
+
+            return;
+        }
+
+        $entry->tags()->detach();
+        $entry->delete();
+        $result['changes']['updated']++;
     }
 
     private function list(?SimpleXMLElement $parent, string $child): array

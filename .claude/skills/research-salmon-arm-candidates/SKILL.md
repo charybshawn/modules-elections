@@ -11,7 +11,7 @@ trustees elected by Salmon Arm voters) and writes an XML file shaped for
 the Elections module's **Import XML** button (`POST /admin/elections/import`,
 handled by `Cultpantry\Elections\Actions\ImportElectionFromXml`). This is a
 research aid that writes an import file, then loads it into the local database with
-`php artisan elections:import` (dry run first; see the hand-off step).
+`php artisan elections:import-pending` (dry run first; see "Saving and importing" in the schema doc).
 
 It researches only the candidates already on file. The roster (who's running)
 comes from `find-salmon-arm-candidates`, which the user runs and imports first.
@@ -213,7 +213,7 @@ and statements, no Castanet or Friday AM entry, no council record for an incumbe
    module repo.
 
 9. **Write the XML and hand it off as a diff.** Save to
-   `~/Documents/election-research/` (create it if needed) as
+   the app repo's `database/elections/` folder (see "Saving and importing") as
    `salmon-arm-election-<YYYY-MM-DD>.xml`, or with the candidate's name in it
    for a targeted pass. Then summarize, structured around the baseline:
    - **Status changes** (declared → nominated, withdrawals), named.
@@ -230,14 +230,7 @@ and statements, no Castanet or Friday AM entry, no council record for an incumbe
    - **Coverage balance** (rule 4): how much each candidate has on file and
      why it differs.
 
-   **Importing (user's standing instruction, Oct. 3, 2026):** load the file yourself with the
-   artisan command instead of handing it over. From `/Users/shawn/Documents/code/cultpantry`:
-   1. Back up the local database: copy `database/database.sqlite` into the scratchpad.
-   2. `php artisan elections:import <file> --dry-run`, and fix every problem it reports.
-   3. `php artisan elections:import <file>`, then report the summary in the hand-off.
-   
-   This is for the local database only. Never import into staging or production unless the user
-   asks for that specifically.
+   **Saving and importing:** follow "Saving and importing" in `references/elections-xml-schema.md`: write the file into the app repo's `database/elections/` folder with the next sequence number, then load it with `php artisan elections:import-pending` (dry run first).
 
 ## School trustees
 
@@ -413,7 +406,7 @@ Tag everything you write: planks, statements, Q&A answers, articles and scorecar
 
 **Backfill or re-tag existing records** when the user asks, or after the vocabulary changes:
 - Read the records with the baseline `tinker` query.
-- Write a `<tagging>` file to `~/Documents/election-research/salmon-arm-tags-<date>.xml`.
+- Write a `<tagging>` file to the app repo's `database/elections/` folder (see "Saving and importing") as `…-tags.xml`.
 - Large batches split well across subagents: give each one the vocabulary and a slice of
   records, then merge and validate. Every slug must be in the vocabulary, each record gets 1 to
   3 tags, and there are no missing or extra records.

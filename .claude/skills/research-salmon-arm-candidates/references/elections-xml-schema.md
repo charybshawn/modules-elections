@@ -378,3 +378,48 @@ For planks already on file, or to take an analysis off a plank:
 - **Date:** `on` is the date it was written; if it's missing, the import uses today.
 - **Retired shape:** analyses in the earlier impact/challenges/risks format are hidden on the
   page.
+
+## Corrections (`<changes>`)
+
+The rest of the format only adds and updates. For the few corrections it can't express, put a
+`<changes>` block in the file; it runs after everything else in the same file:
+
+```xml
+<changes>
+  <!-- Take statements off a plank (or every plank with "*"), optionally only ones published
+       before a date, and refile them as another kind (default statement). E.g. an incumbent's
+       pre-campaign remarks belong in their record, not their platform. -->
+  <detach_entries candidate="Alan Harrison" plank="*" before="2026-08-25" kind="prior_record"/>
+  <!-- Delete a plank. Statements still on it are refiled as statements, never deleted, and
+       the candidate's remaining ranks close up. -->
+  <remove_plank candidate="Alan Harrison" key="rec-facility-not-now"/>
+  <!-- Delete one entry, by its match_hash (from the baseline query). -->
+  <remove_entry candidate="Robin Wiens" hash="…"/>
+</changes>
+```
+
+Unknown candidates, planks or hashes are reported as problems, never guessed at. Never edit the
+database directly: a change that isn't in a file won't reach staging.
+
+## Saving and importing
+
+Research files live in the private app repo, in `database/elections/` (in
+`/Users/shawn/Documents/code/cultpantry`), and travel with every push:
+
+1. **Name** the file `YYYY-MM-DD-NN-<what>.xml`, where `NN` is the next two-digit sequence number
+   for that day (`ls database/elections`). Files are imported in name order, so a roster or a
+   vocabulary must sort before the research that needs it.
+2. **Back up** the local database: copy `database/database.sqlite` into the scratchpad.
+3. **Dry run:** `php artisan elections:import-pending --dry-run` imports every pending file and
+   rolls it all back. Fix every problem it reports.
+4. **Import:** `php artisan elections:import-pending`, then report the summary in the hand-off.
+   Each file is all-or-nothing, the run stops at the first failure, and the ledger
+   (`elections_imports`) records each file by content hash.
+5. **Commit** the file with the rest of the work. On deploy, staging runs the same command (from
+   the deploy script, and hourly), so committed files reach staging on their own.
+
+Never edit a file after it's imported unless you mean to re-import it: a changed file gets a new
+hash and is imported again (harmless for adds and updates, since the import matches what's on
+file). Files under `database/elections/archive/` are history only and are never imported.
+`elections:import` (one named file) still exists for one-off checks; don't use it for research
+that should reach staging.

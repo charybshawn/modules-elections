@@ -159,7 +159,7 @@ only here -- no scrolling through posts; that's the research skill's job.
 - Don't repeat what's on file. Re-supplying an entry with the same source
   URL and summary is harmless, but it isn't new.
 
-Save to `~/Documents/election-research/` as
+Save to the app repo's `database/elections/` folder (see "Saving and importing") as
 `salmon-arm-backgrounds-<YYYY-MM-DD>.xml`, or with the candidate's name in it
 for a single candidate. Work in batches of about five candidates per file so
 each file stays reviewable.
@@ -187,11 +187,4 @@ Candidate photos are part of who they are, so this pass may fill gaps.
 - LinkedIn: used or not, and any warning seen.
 - Anything you couldn't open.
 
-**Importing (user's standing instruction, Oct. 3, 2026):** load the file yourself with the
-artisan command instead of handing it over. From `/Users/shawn/Documents/code/cultpantry`:
-1. Back up the local database: copy `database/database.sqlite` into the scratchpad.
-2. `php artisan elections:import <file> --dry-run`, and fix every problem it reports.
-3. `php artisan elections:import <file>`, then report the summary in the hand-off.
-
-This is for the local database only. Never import into staging or production unless the user
-asks for that specifically.
+**Saving and importing:** follow "Saving and importing" in `../research-salmon-arm-candidates/references/elections-xml-schema.md`: write the file into the app repo's `database/elections/` folder with the next sequence number, then load it with `php artisan elections:import-pending` (dry run first).
