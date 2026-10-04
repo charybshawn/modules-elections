@@ -1,13 +1,14 @@
 ---
 name: find-salmon-arm-candidates
-description: One-time setup for the cultpantry admin panel's Elections module (modules-elections) that finds everyone running for mayor and council in the Salmon Arm (BC) 2026 municipal election and writes a ready-to-import XML roster (name, office, status, incumbency, campaign links, the round-up articles that name them, and the voting-day events). Use this when the user asks who's running, wants the candidate list or the election hopefuls, or wants to set up or start the Salmon Arm election tracker, even if they don't mention XML, the import or this skill by name. Researching what candidates say or stand for (platforms, statements, Q&A, records) belongs to research-salmon-arm-candidates, which needs this roster imported first.
+description: One-time setup for the cultpantry admin panel's Elections module (modules-elections) that finds everyone running for mayor, council and the Salmon Arm-area School District 83 trustee seats in the Salmon Arm (BC) 2026 local election and writes a ready-to-import XML roster (name, office, status, incumbency, campaign links, the round-up articles that name them, and the voting-day events). Use this when the user asks who's running, wants the candidate list or the election hopefuls, or wants to set up or start the Salmon Arm election tracker, even if they don't mention XML, the import or this skill by name. Researching what candidates say or stand for (platforms, statements, Q&A, records) belongs to research-salmon-arm-candidates, which needs this roster imported first.
 ---
 
 # Find Salmon Arm candidates
 
 Builds the list of everyone seeking election in the Salmon Arm 2026 general
 local election (voting day Saturday, October 17, 2026; mayor + six
-councillors) and writes it as an XML file for the Elections module's **Import
+councillors, plus the School District 83 trustees elected by Salmon Arm
+voters) and writes it as an XML file for the Elections module's **Import
 XML** button. This is the preliminary step. It runs once, the user imports the
 file, and `research-salmon-arm-candidates` then researches each candidate on
 file. It writes an import file and loads it into the local database with `php artisan elections:import` (dry run first).
@@ -23,7 +24,8 @@ and how the import matches on exact `<name>`.
 1. **Every name comes from a page you actually opened.** Search results only
    tell you which pages to open. Never put a name on the roster from a search
    summary; open the page and confirm the person is running for mayor or
-   council in Salmon Arm (not Sicamous, the CSRD or the school board).
+   council in Salmon Arm, or for a School District 83 (North Okanagan-Shuswap)
+   trustee seat that Salmon Arm voters elect (not Sicamous council or the CSRD).
 2. **Neutral and factual.** Record who is running and where it's stated,
    nothing about their merits.
 3. **Private individuals stay out**, and nothing about any candidate's family,
@@ -72,8 +74,13 @@ and how the import matches on exact `<name>`.
      official list; may not have filed or may have withdrawn").
    - Use the City's spelling as `<name>`, since the import matches on it
      exactly. Put other spellings found in the news in `<notes>`.
-   - Mayor and council only. School trustee and regional district (CSRD)
-     candidates are out of scope.
+   - Mayor, council and school trustees. Trustees use `<office>trustee</office>`.
+     The authority for trustee candidates is School District 83's own election
+     page (sd83.bc.ca), which runs its own nominations; say in `<notes>` which
+     trustee electoral area each one is running in, and record the number of
+     seats for that area in the summary. Trustees running only in areas
+     Salmon Arm voters don't vote in are out of scope.
+   - Regional district (CSRD) candidates are out of scope.
 
 7. **Light fields only.** For each candidate: `name`, `office`, `status`,
    `is_incumbent`, and `website`, `facebook_url` or `instagram_url` only if

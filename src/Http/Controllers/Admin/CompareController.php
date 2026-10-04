@@ -38,7 +38,7 @@ class CompareController extends Controller implements HasMiddleware
         }
 
         $everyone = Candidate::where('status', '!=', 'withdrawn')
-            ->orderByRaw("case office when 'mayor' then 0 else 1 end")
+            ->orderByRaw(Candidate::OFFICE_ORDER_SQL)
             ->orderBy('name')
             ->get(['id', 'slug', 'name', 'office']);
 

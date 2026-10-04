@@ -68,7 +68,7 @@
               >
                 <button type="button" class="text-left font-medium text-gray-900 hover:underline dark:text-white" @click="toggleFocus(candidate.id)">{{ candidate.name }}</button>
                 <span v-if="candidate.is_incumbent" class="ml-1.5 text-xs text-amber-700 dark:text-amber-400">inc.</span>
-                <span v-if="candidate.office === 'mayor'" class="ml-1.5 text-xs text-gray-500 dark:text-gray-400">mayor</span>
+                <span v-if="candidate.office !== 'councillor'" class="ml-1.5 text-xs text-gray-500 dark:text-gray-400">{{ candidate.office === 'mayor' ? 'mayor' : 'trustee' }}</span>
               </th>
               <td v-for="tag in columns" :key="tag.slug" class="border-t border-gray-100 p-0.5 dark:border-gray-700" :class="state.sortTag === tag.slug ? 'bg-indigo-50/60 dark:bg-indigo-500/5' : ''">
                 <button
@@ -144,7 +144,7 @@ const DEFAULT_COLUMNS = 12
 
 // Remembered in history state, so Back returns to the same view.
 interface MatrixState {
-  office: 'all' | 'mayor' | 'councillor'
+  office: 'all' | 'mayor' | 'councillor' | 'trustee'
   incumbentsOnly: boolean
   showAll: boolean
   sortTag: string | null
@@ -160,6 +160,7 @@ const officeChoices = [
   { value: 'all', label: 'Everyone' },
   { value: 'mayor', label: 'Mayor' },
   { value: 'councillor', label: 'Council' },
+  { value: 'trustee', label: 'School board' },
 ] as const
 
 const allColumns = computed(() => props.coverage.tags.filter((t) => t.candidates > 0))

@@ -24,7 +24,7 @@
             @change="addPicked(($event.target as HTMLSelectElement).value)"
           >
             <option value="" disabled>+ Add a candidate</option>
-            <option v-for="c in addable" :key="c.slug" :value="c.slug">{{ c.name }}{{ c.office === 'mayor' ? ' (mayor)' : '' }}</option>
+            <option v-for="c in addable" :key="c.slug" :value="c.slug">{{ c.name }}{{ c.office === 'mayor' ? ' (mayor)' : c.office === 'trustee' ? ' (trustee)' : '' }}</option>
           </select>
         </template>
       </div>

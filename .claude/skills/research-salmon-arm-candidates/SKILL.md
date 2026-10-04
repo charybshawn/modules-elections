@@ -1,12 +1,13 @@
 ---
 name: research-salmon-arm-candidates
-description: Research the candidates already on file in the cultpantry admin panel's Elections module (modules-elections) for the Salmon Arm (BC) 2026 municipal election (mayor and council) and write a ready-to-import XML file. It covers platform planks (ranked by the candidate's own emphasis), each plank's plan (how they'd do it, mined from new sources) and AI analysis of each pillar (what it means, why it could work, why it might not, the devil in the details; footnoted), statements and Q&A answers from media, forums and Facebook, incumbents' council record, endorsements, campaign finance, election news coverage, subject tags, third-party scorecards such as Vote4Tomorrow, withdrawals and election events. Use this whenever the user asks to research, update, refresh, backfill or look into Salmon Arm election candidates, a specific candidate, their platform, plans or promises, election coverage, or all-candidates forums, even if they don't mention XML, the import or this skill by name. Finding out who's running is find-salmon-arm-candidates, which must be run and imported first; candidates' backgrounds and bios are backfill-salmon-arm-backgrounds.
+description: Research the candidates already on file in the cultpantry admin panel's Elections module (modules-elections) for the Salmon Arm (BC) 2026 local election (mayor, council and the School District 83 trustees Salmon Arm voters elect) and write a ready-to-import XML file. It covers platform planks (ranked by the candidate's own emphasis), each plank's plan (how they'd do it, mined from new sources) and AI analysis of each pillar (what it means, why it could work, why it might not, the devil in the details; footnoted), statements and Q&A answers from media, forums and Facebook, incumbents' council record, endorsements, campaign finance, election news coverage, subject tags, third-party scorecards such as Vote4Tomorrow, withdrawals and election events. Use this whenever the user asks to research, update, refresh, backfill or look into Salmon Arm election candidates, a specific candidate, their platform, plans or promises, election coverage, or all-candidates forums, even if they don't mention XML, the import or this skill by name. Finding out who's running is find-salmon-arm-candidates, which must be run and imported first; candidates' backgrounds and bios are backfill-salmon-arm-backgrounds.
 ---
 
 # Research Salmon Arm candidates
 
 Researches the Salmon Arm 2026 general local election (voting day Saturday,
-October 17, 2026; mayor + six councillors) and writes an XML file shaped for
+October 17, 2026; mayor + six councillors, plus the School District 83
+trustees elected by Salmon Arm voters) and writes an XML file shaped for
 the Elections module's **Import XML** button (`POST /admin/elections/import`,
 handled by `Cultpantry\Elections\Actions\ImportElectionFromXml`). This is a
 research aid that writes an import file, then loads it into the local database with
@@ -237,6 +238,24 @@ and statements, no Castanet or Friday AM entry, no council record for an incumbe
    
    This is for the local database only. Never import into staging or production unless the user
    asks for that specifically.
+
+## School trustees
+
+Trustee candidates (`office` `trustee`) are researched the same way, with the
+same rules, but from different places:
+- **School District 83** (`sd83.bc.ca`): its election page, and for incumbent
+  trustees the board's meeting minutes and votes (their `prior_record`).
+- **News:** Observer and Castanet trustee announcements and any trustee
+  profile series.
+- **Parent and education groups:** candidate questionnaires or forums run by
+  the District Parent Advisory Council, parent groups or the teachers'
+  association, where published.
+- City-focused questionnaires (Aim High, Vote4Tomorrow) usually don't cover
+  trustees; don't treat their absence there as a non-response.
+
+Trustee planks mostly fall under the `education` topic and the education tags
+in `references/tags.md`. A trustee's views on City matters count only if they
+said them; don't extend council issues to them.
 
 ## Platform pass (planks)
 

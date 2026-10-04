@@ -29,7 +29,7 @@ class TagController extends Controller implements HasMiddleware
         $this->authorize('viewAny', Tag::class);
 
         $candidates = Candidate::where('status', '!=', 'withdrawn')
-            ->orderByRaw("case office when 'mayor' then 0 else 1 end")
+            ->orderByRaw(Candidate::OFFICE_ORDER_SQL)
             ->orderBy('name')
             ->get();
 

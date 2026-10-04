@@ -59,6 +59,7 @@ class Entry extends Model
         'economy_business' => 'Economy & business',
         'social_services' => 'Social services',
         'governance_transparency' => 'Governance & transparency',
+        'education' => 'Education & schools',
         'other' => 'Other',
     ];
 

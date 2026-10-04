@@ -110,6 +110,15 @@ The shared list of subject tags. Every research skill picks tags from here: 1 to
 | `local-priorities` | Local priorities and autonomy | Putting local needs ahead of outside or senior-government agendas. |
 | `full-term` | Commitment to serve | Commitments to serve the full term or full-time. |
 
+## education
+
+| slug | name | covers |
+|---|---|---|
+| `school-facilities` | School space and buildings | School capacity, new or expanded schools, closures, portables and building upkeep. |
+| `school-funding` | School district budget | The district's budget, provincial education funding and how the board spends it. |
+| `student-learning` | Student learning and supports | Literacy and numeracy, programs, inclusive education, special-needs and mental-health supports in schools. |
+| `school-governance` | School board governance | How the board works: transparency, parent and community engagement, and relations with the Ministry of Education. |
+
 ## other
 
 | slug | name | covers |

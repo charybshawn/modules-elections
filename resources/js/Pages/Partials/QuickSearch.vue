@@ -162,6 +162,7 @@ const ranked = <T,>(items: T[], text: (item: T) => string, title: (item: T) => s
     .slice(0, limit)
     .map((x) => x.item)
 
+const officeLabel: Record<string, string> = { mayor: 'Mayor', councillor: 'Council', trustee: 'School trustee' }
 const tierLabel: Record<string, string> = { top: 'top priority', also: 'also stated', mentioned: 'mentioned' }
 
 const groups = computed(() => {
@@ -181,7 +182,7 @@ const groups = computed(() => {
   return [
     {
       label: 'Candidates',
-      rows: candidates.map((c) => row(c.name, [c.office === 'mayor' ? 'Mayor' : 'Council', c.occupation].filter(Boolean).join(' · '), route('admin.elections.candidates.show', c.slug))),
+      rows: candidates.map((c) => row(c.name, [officeLabel[c.office] ?? c.office, c.occupation].filter(Boolean).join(' · '), route('admin.elections.candidates.show', c.slug))),
     },
     { label: 'Subjects', rows: subjects.map((s) => row(s.name, s.heading, route('admin.elections.tags.show', s.slug))) },
     {

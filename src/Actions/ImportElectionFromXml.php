@@ -183,7 +183,7 @@ class ImportElectionFromXml
             $candidate->office = $office;
         }
         if (! $candidate->exists && $candidate->office === null) {
-            $this->problems[] = "Skipped new candidate {$name}: no valid <office> (mayor or councillor).";
+            $this->problems[] = "Skipped new candidate {$name}: no valid <office> (mayor, councillor or trustee).";
 
             return;
         }

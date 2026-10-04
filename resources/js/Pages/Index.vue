@@ -8,7 +8,7 @@
         <div>
           <h1 class="hidden md:block text-2xl font-semibold text-gray-900 dark:text-white">Salmon Arm Election 2026</h1>
           <p class="mt-1 text-sm text-gray-600 dark:text-gray-400">
-            Mayor and six councillors. Every item on a candidate's page links to where it came from.
+            Mayor, six councillors and School District 83 trustees. Every item on a candidate's page links to where it came from.
           </p>
           <p v-if="votingDay" class="mt-2 text-sm font-medium text-amber-700 dark:text-amber-400">
             General voting day {{ formatDateTime(votingDay.starts_at) }}<template v-if="votingDayIn > 0"> · {{ votingDayIn }} day{{ votingDayIn === 1 ? '' : 's' }} away</template><template v-else-if="votingDayIn === 0"> · today</template>
@@ -302,7 +302,7 @@ const { confirmDialog } = useConfirmDialog()
 // ---- Find a candidate (remembered in history state, so Back keeps it) ----
 interface DashboardFilters {
   search: string
-  office: 'all' | 'mayor' | 'councillor'
+  office: 'all' | 'mayor' | 'councillor' | 'trustee'
   incumbents: boolean
   tag: string | null
 }
@@ -313,7 +313,10 @@ const officeChoices = [
   { value: 'all', label: 'Everyone' },
   { value: 'mayor', label: 'Mayor' },
   { value: 'councillor', label: 'Council' },
+  { value: 'trustee', label: 'School board' },
 ] as const
+
+const officeHeading: Record<string, string> = { councillor: 'Council', trustee: 'School board trustees' }
 
 /**
  * Pick a subject: its candidates float to the top of the list. On phones,
@@ -395,7 +398,7 @@ const candidateGroups = computed(() =>
       if (filters.tag) {
         list = [...list].sort((a, b) => tierWeight(tagCell(a)?.tier) - tierWeight(tagCell(b)?.tier))
       }
-      return { office, label: office === 'councillor' ? 'Council' : label, candidates: list }
+      return { office, label: officeHeading[office] ?? label, candidates: list }
     })
     .filter((group) => group.candidates.length > 0),
 )

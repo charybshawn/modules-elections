@@ -22,7 +22,7 @@ class BuildElectionDashboard
     {
         $candidates = Candidate::query()
             ->withCount(['entries', 'articles'])
-            ->orderByRaw("case office when 'mayor' then 0 else 1 end")
+            ->orderByRaw(Candidate::OFFICE_ORDER_SQL)
             ->orderByRaw("case status when 'withdrawn' then 1 else 0 end")
             ->orderBy('name')
             ->get();

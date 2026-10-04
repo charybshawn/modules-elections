@@ -36,7 +36,11 @@ class Candidate extends Model
     public const OFFICES = [
         'mayor' => 'Mayor',
         'councillor' => 'Councillor',
+        'trustee' => 'School trustee',
     ];
+
+    /** SQL that sorts mayor, then council, then school trustees. */
+    public const OFFICE_ORDER_SQL = "case office when 'mayor' then 0 when 'councillor' then 1 else 2 end";
 
     public const STATUSES = [
         'declared' => 'Declared',
