@@ -149,13 +149,14 @@ and statements, no Castanet or Friday AM entry, no council record for an incumbe
    is the coverage and the entry is the claim.
 
 5. **Candidates' own channels.** Their website (platform page, about page,
-   news posts), then Facebook and Instagram:
-   - **Use the Chrome extension, never WebFetch, for Facebook and Instagram.**
+   news posts), then Facebook. **Skip Instagram entirely** (the user's standing instruction, Oct.
+   2026): don't open profiles or posts, even when an `instagram_url` is on file.
+   - **Use the Chrome extension, never WebFetch, for Facebook.**
      Load the tools first with
      `ToolSearch("select:mcp__claude-in-chrome__tabs_context_mcp,mcp__claude-in-chrome__tabs_create_mcp,mcp__claude-in-chrome__navigate,mcp__claude-in-chrome__get_page_text,mcp__claude-in-chrome__find,mcp__claude-in-chrome__javascript_tool")`,
      open a new tab, and read pages as the user's own logged-in session would.
      Only report what you actually read.
-   - **Login walls are the user's step.** If Facebook or Instagram asks to log
+   - **Login walls are the user's step.** If Facebook asks to log
      in, stop and ask the user to log in themselves in that tab. Never click a
      login button or type credentials.
    - **Facebook candidate pages:** read the About section, pinned posts and
@@ -175,13 +176,8 @@ and statements, no Castanet or Friday AM entry, no council record for an incumbe
      `source_type` `facebook_group` and the permalink as `source_url`. Note in
      `<notes>` that the source is in a group, since only members can open the
      link. Never post, react, comment, join or request to join anything.
-   - **Instagram:** the bio and the candidate's own posts. The profile page
-     text doesn't carry post dates; open a post and read its `<time>` element
-     (`[...document.querySelectorAll('time')].map(t => t.getAttribute('datetime'))`)
-     for `published_on`. Never like, follow, comment or open Stories (the
-     owner sees who views a Story).
    - **Keep it light.** One candidate at a time, a pause between candidates,
-     no endless scrolling. If Facebook or Instagram shows a challenge, a
+     no endless scrolling. If Facebook shows a challenge, a
      "suspicious activity" notice or "try again later", stop immediately
      and tell the user. It's their real account.
 
@@ -202,8 +198,8 @@ and statements, no Castanet or Friday AM entry, no council record for an incumbe
    summary rather than leaving it unmentioned.
 
 8. **Photos.** `photo_url` should link to the candidate's own published
-   headshot, ideally from their website or a news story. Facebook and
-   Instagram image URLs expire within days, so use them only as a last
+   headshot, ideally from their website or a news story. Facebook
+   image URLs expire within days, so use them only as a last
    resort and note it. Don't download or re-host images on your own
    initiative. The user may choose to keep photos in the app instead (they
    did for the Friday AM candidate profiles, Oct. 2026). Those live in the
@@ -262,7 +258,7 @@ what someone is running on.
 **Sources: only the candidate's own material.**
 - Their campaign website: platform/priorities pages first, then the home
   and about pages and their own posts.
-- Their campaign Facebook page and Instagram: their own posts, **and their
+- Their campaign Facebook page: their own posts, **and their
   own replies in those posts' comment sections** -- often where a position
   gets spelled out. Paraphrase the resident's question, never name them.
 - Their own posts and replies in the **Salmon Arm Rant and Rave** group

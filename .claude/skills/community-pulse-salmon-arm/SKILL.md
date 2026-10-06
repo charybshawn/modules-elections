@@ -5,13 +5,10 @@ description: Read local election discussion in the Salmon Arm Rant and Rave Face
 
 # Community Pulse for Salmon Arm
 
-**Status (Oct. 2026): tabled.** The user paused Community Pulse after seeing a one-thread sample,
-so don't run a pass unless they ask. What exists so far:
-- **In the database:** the one-thread sample snapshot (Oct. 2).
-- **`~/Documents/election-research/pulse-pass-1-notes-2026-10-02.md`:** summary notes from 6
-  campaign threads, the draft issues, mentions, and unread threads for a later pass.
-- **If revived:** turn the notes into a snapshot dated 2026-10-02 (importing that date replaces
-  the sample), then read the unread threads.
+**Status (Oct. 3, 2026): active.** The first full pass is the 2026-10-02 snapshot (six threads,
+Sept. 29 to Oct. 2, replacing the one-thread sample). The next pass gets a new `taken_on` date and
+reuses its issue keys: `homelessness`, `themed-crosswalks`, `candidate-answers`, `forum-format`,
+`campaign-signs`.
 
 Summarizes **what residents are discussing** about the 2026 Salmon Arm
 election into a dated snapshot shown on Elections → Community Pulse, a page
@@ -63,7 +60,9 @@ conversation, not a poll and not a verdict on candidates. It writes an import fi
      button, then the "All comments" menu item);
    - expand **View N replies** one at a time with ~4 s waits;
    - read each comment's author (the `aria-label` "Comment by …" /
-     "Reply by …") only to count distinct people and spot candidates, and its
+     "Reply by …") only to count distinct people. A reply's label reads "Reply by A to B's
+     comment" (or "reply"), so strip the "to …" part before counting, or one person counts once
+     per person they answer and spot candidates, and its
      text to summarize. Don't keep either.
    Long threads may not load every top-level comment; note partial coverage.
 4. Keep running tallies per issue: distinct people, rough stance, heat (how

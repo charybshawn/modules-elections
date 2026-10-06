@@ -78,7 +78,7 @@ For each candidate:
    `https://www.facebook.com/profile.php?id=61593018722121`). If the
    candidate has no `facebook_url` on file, find it:
    - Start from the page name the City published (in `notes`, "Facebook per
-     the City list"), then links on their campaign site and Instagram, then
+     the City list"), then links on their campaign site, then
      a web search (`site:facebook.com "<name>" council` or the City's page
      name in quotes). Facebook's own search is unreliable (it "corrects"
      unusual surnames), so use it only as a last resort; a handle the City
@@ -133,12 +133,12 @@ For each candidate:
    - In the entry's summary or `<notes>`, say the source is a LinkedIn
      profile (readers need to be logged in to open it).
 
-**Use the Chrome extension, not WebFetch, for Castanet, LinkedIn, Facebook
-and Instagram.** Load the tools in one call:
+**Use the Chrome extension, not WebFetch, for Castanet, LinkedIn and Facebook.**
+Skip Instagram entirely (the user's standing instruction, Oct. 2026). Load the tools in one call:
 `ToolSearch("select:mcp__claude-in-chrome__tabs_context_mcp,mcp__claude-in-chrome__tabs_create_mcp,mcp__claude-in-chrome__tabs_close_mcp,mcp__claude-in-chrome__navigate,mcp__claude-in-chrome__get_page_text,mcp__claude-in-chrome__find")`,
 call `tabs_context_mcp`, work in a tab you create, and close it when done.
 If a site asks you to sign in, stop and ask the user to sign in themselves;
-never type credentials. Facebook and Instagram are for the "About"/bio text
+never type credentials. Facebook is for the "About"/bio text
 only here -- no scrolling through posts; that's the research skill's job.
 
 ## Writing it up
