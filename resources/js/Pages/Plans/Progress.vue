@@ -31,6 +31,16 @@
             Of {{ sheet.tally.total }} projects, {{ sheet.tally.behind }} are running behind the plan's own window for them.
           </p>
 
+          <div class="mt-4" role="img" :aria-label="`Overall, roughly ${overall.pct}% of the way to done`">
+            <div class="flex items-baseline justify-between text-xs text-gray-600 dark:text-gray-400">
+              <span>All {{ sheet.tally.total }} projects: roughly <strong class="text-sm text-gray-900 dark:text-white">{{ overall.pct }}%</strong> of the way to done</span>
+            </div>
+            <div class="mt-1 flex h-4 w-full overflow-hidden rounded-full bg-gray-200 ring-1 ring-gray-900/5 dark:bg-gray-700 dark:ring-white/10">
+              <div v-for="seg in overall.segments" :key="seg.key" :class="seg.bar" :style="{ width: seg.width + '%' }" :title="`${seg.count} ${seg.label.toLowerCase()} (${seg.weight}% credit each)`" />
+            </div>
+            <p class="mt-1.5 text-xs text-gray-500 dark:text-gray-400">{{ sheet.gauge_note }}</p>
+          </div>
+
           <div class="mt-5 space-y-3 text-[15px] leading-relaxed text-gray-800 dark:text-gray-200">
             <p v-for="para in sheet.summary" :key="para">{{ para }}</p>
           </div>
@@ -42,15 +52,14 @@
             </h2>
             <p class="mt-1 text-sm text-gray-600 dark:text-gray-400">{{ group.note }}</p>
 
-            <div class="mt-3" role="img" :aria-label="barSummary(group)">
-              <div class="flex h-3 w-full overflow-hidden rounded-full bg-gray-200 ring-1 ring-gray-900/5 dark:bg-gray-700 dark:ring-white/10">
-                <div v-for="seg in segments(group)" :key="seg.key" :class="seg.bar" :style="{ width: seg.pct + '%' }" :title="`${seg.label}: ${seg.count}`" />
+            <div class="mt-3" role="img" :aria-label="gaugeLabel(group)">
+              <div class="flex items-baseline justify-between text-xs text-gray-600 dark:text-gray-400">
+                <span>Roughly <strong class="text-sm text-gray-900 dark:text-white">{{ gauge(group.projects).pct }}%</strong> of the way to done</span>
+                <span>{{ group.projects.length }} projects</span>
               </div>
-              <ul class="mt-1.5 flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-600 dark:text-gray-400">
-                <li v-for="seg in segments(group)" :key="seg.key" class="flex items-center gap-1.5">
-                  <span :class="['h-2.5 w-2.5 rounded-full', seg.bar]" aria-hidden="true" />{{ seg.count }} {{ seg.label.toLowerCase() }}
-                </li>
-              </ul>
+              <div class="mt-1 flex h-3.5 w-full overflow-hidden rounded-full bg-gray-200 ring-1 ring-gray-900/5 dark:bg-gray-700 dark:ring-white/10">
+                <div v-for="seg in gauge(group.projects).segments" :key="seg.key" :class="seg.bar" :style="{ width: seg.width + '%' }" :title="`${seg.count} ${seg.label.toLowerCase()} (${seg.weight}% credit each)`" />
+              </div>
             </div>
 
             <div class="mt-3 space-y-3">
@@ -148,7 +157,7 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref, watch } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { Link } from '@inertiajs/vue3'
 import AdminLayout from '@/Layouts/AdminLayout.vue'
 import AdminMobileHeader from '@/Components/Admin/AdminMobileHeader.vue'
@@ -177,7 +186,8 @@ const props = defineProps<{
     plan_slug: string
     title: string
     as_of: string
-    scale: { key: string; label: string; help: string }[]
+    scale: { key: string; weight: number; label: string; help: string }[]
+    gauge_note: string
     tally: Record<string, number>
     summary: string[]
     groups: { label: string; years: string; note: string; projects: Project[] }[]
@@ -215,14 +225,19 @@ const tones: Record<string, { bar: string; card: string; chip: string }> = {
 }
 const tone = (key: string) => tones[key] ?? tones.unknown
 
-// One segment per status that has projects in the group, in scale order, sized by share of the group.
-const segments = (group: { projects: Project[] }) =>
-  props.sheet.scale
-    .map((item) => ({ key: item.key, label: item.label, bar: tone(item.key).bar, count: group.projects.filter((p) => p.status === item.key).length }))
-    .filter((seg) => seg.count > 0)
-    .map((seg) => ({ ...seg, pct: (seg.count / group.projects.length) * 100 }))
-const barSummary = (group: { label: string; projects: Project[] }) =>
-  `${group.label}: ` + segments(group).map((seg) => `${seg.count} ${seg.label.toLowerCase()}`).join(', ')
+// Completion gauge: each project earns its status's weight (a share of "done"), so the filled
+// part of the track is how close the group is to finished. Segments keep their status colour.
+const gauge = (projects: Project[]) => {
+  const segments = props.sheet.scale
+    .map((item) => {
+      const count = projects.filter((p) => p.status === item.key).length
+      return { key: item.key, label: item.label, bar: tone(item.key).bar, weight: item.weight, count, width: projects.length ? (count * item.weight) / projects.length : 0 }
+    })
+    .filter((seg) => seg.width > 0)
+  return { segments, pct: Math.round(segments.reduce((sum, seg) => sum + seg.width, 0)) }
+}
+const overall = computed(() => gauge(props.sheet.groups.flatMap((group) => group.projects)))
+const gaugeLabel = (group: { label: string; projects: Project[] }) => `${group.label}: roughly ${gauge(group.projects).pct}% of the way to done`
 
 const label = (key: string) => props.sheet.scale.find((item) => item.key === key)?.label ?? key
 
