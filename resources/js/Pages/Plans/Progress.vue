@@ -42,6 +42,17 @@
             </h2>
             <p class="mt-1 text-sm text-gray-600 dark:text-gray-400">{{ group.note }}</p>
 
+            <div class="mt-3" role="img" :aria-label="barSummary(group)">
+              <div class="flex h-3 w-full overflow-hidden rounded-full bg-gray-200 ring-1 ring-gray-900/5 dark:bg-gray-700 dark:ring-white/10">
+                <div v-for="seg in segments(group)" :key="seg.key" :class="seg.bar" :style="{ width: seg.pct + '%' }" :title="`${seg.label}: ${seg.count}`" />
+              </div>
+              <ul class="mt-1.5 flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-600 dark:text-gray-400">
+                <li v-for="seg in segments(group)" :key="seg.key" class="flex items-center gap-1.5">
+                  <span :class="['h-2.5 w-2.5 rounded-full', seg.bar]" aria-hidden="true" />{{ seg.count }} {{ seg.label.toLowerCase() }}
+                </li>
+              </ul>
+            </div>
+
             <div class="mt-3 space-y-3">
               <details v-for="project in group.projects" :key="project.name" class="group rounded-lg ring-1 ring-gray-900/10 dark:ring-white/10 open:bg-gray-50/60 dark:open:bg-gray-900/30" :open="hasDetail(project) && openAll">
                 <summary class="flex cursor-pointer list-none items-start gap-3 px-4 py-3">
@@ -195,14 +206,24 @@ watch(() => props.sheet.slug, openSheet)
 
 const hasDetail = (project: Project) => project.done.length + project.next.length + project.challenges.length > 0
 
-const tones: Record<string, { card: string; chip: string }> = {
-  complete: { card: 'bg-emerald-50 text-emerald-900 ring-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-100 dark:ring-emerald-400/20', chip: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-500/20 dark:text-emerald-200' },
-  underway: { card: 'bg-sky-50 text-sky-900 ring-sky-200 dark:bg-sky-500/10 dark:text-sky-100 dark:ring-sky-400/20', chip: 'bg-sky-100 text-sky-800 dark:bg-sky-500/20 dark:text-sky-200' },
-  planning: { card: 'bg-violet-50 text-violet-900 ring-violet-200 dark:bg-violet-500/10 dark:text-violet-100 dark:ring-violet-400/20', chip: 'bg-violet-100 text-violet-800 dark:bg-violet-500/20 dark:text-violet-200' },
-  paused: { card: 'bg-amber-50 text-amber-900 ring-amber-200 dark:bg-amber-500/10 dark:text-amber-100 dark:ring-amber-400/20', chip: 'bg-amber-100 text-amber-800 dark:bg-amber-500/20 dark:text-amber-200' },
-  unknown: { card: 'bg-gray-100 text-gray-800 ring-gray-200 dark:bg-gray-700/40 dark:text-gray-100 dark:ring-white/10', chip: 'bg-gray-200 text-gray-800 dark:bg-gray-600/40 dark:text-gray-200' },
+const tones: Record<string, { bar: string; card: string; chip: string }> = {
+  complete: { bar: 'bg-emerald-500', card: 'bg-emerald-50 text-emerald-900 ring-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-100 dark:ring-emerald-400/20', chip: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-500/20 dark:text-emerald-200' },
+  underway: { bar: 'bg-sky-500', card: 'bg-sky-50 text-sky-900 ring-sky-200 dark:bg-sky-500/10 dark:text-sky-100 dark:ring-sky-400/20', chip: 'bg-sky-100 text-sky-800 dark:bg-sky-500/20 dark:text-sky-200' },
+  planning: { bar: 'bg-violet-500', card: 'bg-violet-50 text-violet-900 ring-violet-200 dark:bg-violet-500/10 dark:text-violet-100 dark:ring-violet-400/20', chip: 'bg-violet-100 text-violet-800 dark:bg-violet-500/20 dark:text-violet-200' },
+  paused: { bar: 'bg-amber-500', card: 'bg-amber-50 text-amber-900 ring-amber-200 dark:bg-amber-500/10 dark:text-amber-100 dark:ring-amber-400/20', chip: 'bg-amber-100 text-amber-800 dark:bg-amber-500/20 dark:text-amber-200' },
+  unknown: { bar: 'bg-gray-400 dark:bg-gray-500', card: 'bg-gray-100 text-gray-800 ring-gray-200 dark:bg-gray-700/40 dark:text-gray-100 dark:ring-white/10', chip: 'bg-gray-200 text-gray-800 dark:bg-gray-600/40 dark:text-gray-200' },
 }
 const tone = (key: string) => tones[key] ?? tones.unknown
+
+// One segment per status that has projects in the group, in scale order, sized by share of the group.
+const segments = (group: { projects: Project[] }) =>
+  props.sheet.scale
+    .map((item) => ({ key: item.key, label: item.label, bar: tone(item.key).bar, count: group.projects.filter((p) => p.status === item.key).length }))
+    .filter((seg) => seg.count > 0)
+    .map((seg) => ({ ...seg, pct: (seg.count / group.projects.length) * 100 }))
+const barSummary = (group: { label: string; projects: Project[] }) =>
+  `${group.label}: ` + segments(group).map((seg) => `${seg.count} ${seg.label.toLowerCase()}`).join(', ')
+
 const label = (key: string) => props.sheet.scale.find((item) => item.key === key)?.label ?? key
 
 const print = () => window.print()
