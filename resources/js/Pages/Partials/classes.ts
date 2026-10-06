@@ -3,5 +3,4 @@ export const secondaryButtonClass =
 
 export const sectionHeadingClass = 'text-sm font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400'
 
-export const newPillClass =
-  'rounded-full bg-amber-100 px-1.5 py-0.5 text-xs font-medium text-amber-800 dark:bg-amber-500/20 dark:text-amber-300'
+export const newPillClass = 'rounded-full bg-orange-500 px-1.5 py-0.5 text-xs font-semibold text-white dark:bg-orange-600'

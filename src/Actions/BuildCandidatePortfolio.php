@@ -39,7 +39,8 @@ use Illuminate\Support\Collection;
  */
 class BuildCandidatePortfolio
 {
-    private const SECTIONS = [
+    /** The "in their own words" style tabs, by tab id. Shared with UpdateTabs so the update feed files an item under the same tab the page shows it on. */
+    public const SECTIONS = [
         'words' => ['title' => 'In their own words', 'kinds' => ['statement', 'qa_answer'], 'grouped' => true],
         'record' => ['title' => 'Prior record', 'kinds' => ['prior_record'], 'grouped' => true],
         'endorsements' => ['title' => 'Endorsements', 'kinds' => ['endorsement'], 'grouped' => false],
@@ -190,6 +191,10 @@ class BuildCandidatePortfolio
                 'url' => $scorecard->url,
                 'about' => $scorecard->about,
                 'retrieved_on' => $scorecard->retrieved_on?->toDateString(),
+                // Latest change to anything this candidate's scorecard rests on,
+                // for the "new since your last visit" tab marker.
+                'changed_at' => collect([$response->created_at, $response->updated_at, $response->answers->max('updated_at'), $response->takeaways->max('updated_at'), $scorecard->categories->max('updated_at')])
+                    ->filter()->max()?->toIso8601String(),
                 'source_url' => $response->source_url,
                 'responded' => $response->responded,
                 'respondents' => $respondents,

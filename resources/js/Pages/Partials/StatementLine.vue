@@ -7,7 +7,7 @@
         {{ entry.quote ? `“${entry.quote}”` : entry.summary }}
       </span>
       <span class="mt-0.5 flex flex-wrap items-center gap-x-2 text-xs text-gray-500 dark:text-gray-400">
-        <span v-if="isNew" class="rounded-full bg-amber-100 px-1.5 font-medium text-amber-800 dark:bg-amber-500/20 dark:text-amber-300">New</span>
+        <span v-if="isNew" class="rounded-full bg-orange-500 px-1.5 font-semibold text-white dark:bg-orange-600">New</span>
         <span>{{ entry.source_name ?? hostOf(entry.source_url) }}</span>
         <span v-if="entry.published_on">· {{ formatDate(entry.published_on) }}</span>
         <span class="text-indigo-600 group-hover:underline dark:text-indigo-400">Full statement</span>

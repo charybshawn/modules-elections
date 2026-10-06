@@ -24,6 +24,10 @@ export interface Candidate {
   entries_count?: number
   articles_count?: number
   updated_at: string | null
+  /** When the public profile last changed (the About tab's own update time). */
+  profile_changed_at: string | null
+  /** When the research notes last changed -- admins only. */
+  notes_changed_at?: string | null
 }
 
 export interface TagHeat {
@@ -60,6 +64,8 @@ export interface Entry {
   published_on: string | null
   /** When it went on file (ISO). */
   added_at: string | null
+  /** The candidate-page tab it is shown on. */
+  tab: string | null
 }
 
 export interface Article {
@@ -137,6 +143,8 @@ export interface Plank {
   sources: Entry[]
   /** When it went on file (ISO). */
   added_at: string | null
+  /** Its last edit (a new plan, analysis or rank), ISO. */
+  changed_at: string | null
   /** Every tier/rank it has held, oldest first. */
   history: { tier: string; rank: number; recorded_at: string }[]
 }
@@ -193,6 +201,8 @@ export interface Scorecard {
   url: string | null
   about: string | null
   retrieved_on: string | null
+  /** Latest change to anything this candidate's scorecard rests on (ISO). */
+  changed_at: string | null
   /** The candidate's own page on the publisher's site. */
   source_url: string | null
   responded: boolean

@@ -35,6 +35,10 @@ class CandidateResource extends JsonResource
             'entries_count' => $this->whenCounted('entries'),
             'articles_count' => $this->whenCounted('articles'),
             'updated_at' => $this->updated_at?->toIso8601String(),
+            // When the public profile last changed (not the notes), and the
+            // notes -- admins only, like the notes themselves.
+            'profile_changed_at' => max($this->created_at, $this->profile_changed_at ?? $this->created_at)?->toIso8601String(),
+            'notes_changed_at' => $this->when((bool) $request->user()?->isAdmin(), fn () => $this->notes_changed_at?->toIso8601String()),
         ];
     }
 }

@@ -497,6 +497,11 @@ class ImportElectionFromXml
         ]);
         $snapshot->save();
 
+        // Issues and mentions are rebuilt on every import, which stamps fresh
+        // rows even when nothing changed. Remember what was there, so a
+        // re-import of identical content doesn't read as an update.
+        $before = $isNew ? null : $this->pulseContent($snapshot);
+
         $snapshot->issues()->delete();
         $snapshot->mentions()->delete();
 
@@ -552,7 +557,28 @@ class ImportElectionFromXml
             ]);
         }
 
+        // The snapshot's own updated_at is what the update feed reads: bump it
+        // only when its issues or mentions really changed.
+        if ($before !== null && $before !== $this->pulseContent($snapshot)) {
+            $snapshot->touch();
+        }
+
         $result['pulse'][$isNew ? 'created' : 'updated']++;
+    }
+
+    /**
+     * A snapshot's issues and mentions as comparable text, ignoring row ids
+     * and timestamps.
+     */
+    private function pulseContent(PulseSnapshot $snapshot): string
+    {
+        $issues = $snapshot->issues()->with('tags')->get()->sortBy('key')->map(fn (PulseIssue $i) => [
+            $i->key, $i->title, $i->topic, $i->voices, $i->support_pct, $i->oppose_pct, $i->mixed_pct, $i->heat, $i->summary,
+            $i->wants, $i->questions, $i->tags->pluck('slug')->sort()->values()->all(),
+        ])->values()->all();
+        $mentions = $snapshot->mentions()->get()->sortBy('candidate_id')->map(fn ($m) => [$m->candidate_id, $m->mentions, $m->commenters])->values()->all();
+
+        return json_encode([$issues, $mentions]);
     }
 
     /**

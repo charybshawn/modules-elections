@@ -12,6 +12,7 @@
           <p class="text-xs font-semibold uppercase tracking-widest text-indigo-100 print:text-gray-500">City of Salmon Arm</p>
           <h1 class="mt-1 text-2xl sm:text-3xl font-bold tracking-tight">{{ plan.title }}</h1>
           <p class="mt-1 text-sm text-indigo-100 print:text-gray-600">{{ plan.status }}</p>
+          <p v-if="wasUpdated" class="mt-3 inline-block rounded-full bg-orange-500 px-3 py-1 text-sm font-semibold text-white print:hidden">Updated since your last visit</p>
           <div class="mt-4 flex flex-wrap gap-2 print:hidden">
             <a :href="plan.source_url" target="_blank" rel="noopener" class="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1.5 text-sm font-medium hover:bg-white/25">Read the full plan (PDF) ↗</a>
             <a :href="plan.page_url" target="_blank" rel="noopener" class="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1.5 text-sm font-medium hover:bg-white/25">City web page ↗</a>
@@ -114,12 +115,14 @@
 </template>
 
 <script setup lang="ts">
+import { onMounted, ref, watch } from 'vue'
 import { Link } from '@inertiajs/vue3'
 import AdminLayout from '@/Layouts/AdminLayout.vue'
 import AdminMobileHeader from '@/Components/Admin/AdminMobileHeader.vue'
 import ElectionsNav from '../Partials/ElectionsNav.vue'
 import PageRefs from './PageRefs.vue'
 import { formatDate } from '../Partials/format'
+import { useUpdates } from '../Partials/updates'
 
 defineOptions({ layout: (h, page) => h(AdminLayout, { wide: true, hideBreadcrumbOnMobile: true }, () => page) })
 
@@ -134,7 +137,7 @@ type PlanSection = {
   groups?: { label: string; years: string; pages: number[]; items: { text: string; tag: string }[] }[]
 }
 
-defineProps<{
+const props = defineProps<{
   plan: {
     slug: string
     title: string
@@ -148,6 +151,17 @@ defineProps<{
     sections: PlanSection[]
   }
 }>()
+
+// Opening a sheet marks it seen; "Updated since your last visit" stays up for this visit only.
+const updates = useUpdates()
+const wasUpdated = ref(false)
+const openSheet = async () => {
+  await updates.ensure()
+  wasUpdated.value = updates.planUnread(props.plan.slug)
+  updates.mark(`plans:${props.plan.slug}`)
+}
+onMounted(openSheet)
+watch(() => props.plan.slug, openSheet)
 
 const cardTones = [
   'bg-sky-50 text-sky-900 ring-sky-200 dark:bg-sky-500/10 dark:text-sky-100 dark:ring-sky-400/20',

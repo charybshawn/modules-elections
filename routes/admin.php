@@ -11,6 +11,7 @@ use Cultpantry\Elections\Http\Controllers\Admin\EntryController;
 use Cultpantry\Elections\Http\Controllers\Admin\PlankController;
 use Cultpantry\Elections\Http\Controllers\Admin\SearchIndexController;
 use Cultpantry\Elections\Http\Controllers\Admin\TagController;
+use Cultpantry\Elections\Http\Controllers\Admin\UpdateFeedController;
 use Illuminate\Support\Facades\Route;
 
 // 'web' is REQUIRED here and is not optional. Core routes/web.php gets the
@@ -43,6 +44,9 @@ Route::prefix('admin')->name('admin.')->middleware(['web', 'auth', 'admin'])->gr
         Route::delete('candidates/{candidate}/planks/{plank}', [PlankController::class, 'destroy'])->name('planks.destroy');
 
         Route::delete('events/{event}', [ElectionEventController::class, 'destroy'])->name('events.destroy');
+
+        // The timestamps behind every "new since your last visit" marker.
+        Route::get('updates', UpdateFeedController::class)->name('updates');
 
         Route::get('compare', [CompareController::class, 'show'])->name('compare');
         Route::get('search-index', SearchIndexController::class)->name('search-index');

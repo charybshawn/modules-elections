@@ -14,6 +14,7 @@
         <span class="block text-sm font-medium text-gray-900 sm:text-base dark:text-white">
           {{ plank.title }}
           <span v-if="isNew" :class="newPillClass" class="ml-1 align-middle">New</span>
+          <span v-else-if="isUpdated" :class="newPillClass" class="ml-1 align-middle">Updated</span>
         </span>
         <span class="mt-1 flex flex-wrap items-center gap-1.5 text-xs">
           <span :class="checkChipClass" class="inline-flex items-center gap-1 rounded px-1.5 py-0.5" :title="plan ? `${statedCount} of ${CORE_ASPECTS.length} plan questions answered on record` : 'Plan not checked yet'">
@@ -115,6 +116,8 @@ const props = defineProps<{
   /** Admin edit mode: delete controls show. */
   editing?: boolean
   isNew?: boolean
+  /** Edited since the last look (a new plan, analysis or rank) without being new. */
+  isUpdated?: boolean
   isNewEntry: (entry: Entry) => boolean
   /** When set (even to null), tag chips filter the platform in place. */
   activeTag?: string | null

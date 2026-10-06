@@ -28,6 +28,8 @@ use Illuminate\Support\Str;
  * @property string|null $phone
  * @property string|null $photo_url
  * @property string|null $notes
+ * @property \Illuminate\Support\Carbon|null $profile_changed_at
+ * @property \Illuminate\Support\Carbon|null $notes_changed_at
  */
 class Candidate extends Model
 {
@@ -68,6 +70,8 @@ class Candidate extends Model
 
     protected $casts = [
         'is_incumbent' => 'boolean',
+        'profile_changed_at' => 'datetime',
+        'notes_changed_at' => 'datetime',
     ];
 
     protected static function booted(): void
@@ -76,6 +80,18 @@ class Candidate extends Model
         static::saving(function (Candidate $candidate) {
             if ($candidate->slug === null || $candidate->isDirty('name')) {
                 $candidate->slug = static::uniqueSlug($candidate->name, $candidate->id);
+            }
+
+            // When the public profile and the admin notes last changed, kept
+            // apart so a notes-only edit doesn't flag the profile as updated
+            // for everyone (see the update feed).
+            $dirty = array_keys($candidate->getDirty());
+            $profile = array_diff($dirty, ['updated_at', 'profile_changed_at', 'notes_changed_at', 'notes', 'slug']);
+            if (! $candidate->exists || $profile !== []) {
+                $candidate->profile_changed_at = now();
+            }
+            if (in_array('notes', $dirty, true) || ($candidate->notes !== null && ! $candidate->exists)) {
+                $candidate->notes_changed_at = now();
             }
         });
     }

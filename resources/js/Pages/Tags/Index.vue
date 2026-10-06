@@ -61,7 +61,7 @@
 </template>
 
 <script setup lang="ts">
-import { reactive } from 'vue'
+import { onMounted, reactive } from 'vue'
 import ElectionsNav from '../Partials/ElectionsNav.vue'
 import { Link, useRemember } from '@inertiajs/vue3'
 import AdminLayout from '@/Layouts/AdminLayout.vue'
@@ -69,9 +69,17 @@ import AdminMobileHeader from '@/Components/Admin/AdminMobileHeader.vue'
 import SubjectMatrix from '../Partials/SubjectMatrix.vue'
 import { sectionHeadingClass } from '../Partials/classes'
 import type { SubjectCoverage } from '../Partials/coverage'
+import { useUpdates } from '../Partials/updates'
 import type { Candidate, Options } from '../Partials/types'
 
 defineOptions({ layout: (h, page) => h(AdminLayout, { wide: true, hideBreadcrumbOnMobile: true }, () => page) })
+
+// Opening Browse by subject marks it seen (the nav tab stops being orange).
+const updates = useUpdates()
+onMounted(async () => {
+  await updates.ensure()
+  updates.mark('subjects')
+})
 
 interface TagRow {
   slug: string

@@ -14,10 +14,14 @@
           v-for="(plan, i) in plans"
           :key="plan.slug"
           :href="route('admin.elections.plans.show', plan.slug)"
-          class="group flex flex-col overflow-hidden rounded-xl bg-white dark:bg-gray-800 shadow-sm ring-1 ring-gray-900/5 dark:ring-white/10 transition hover:shadow-md hover:ring-indigo-300 dark:hover:ring-indigo-500/50"
+          class="group flex flex-col overflow-hidden rounded-xl bg-white dark:bg-gray-800 shadow-sm transition hover:shadow-md"
+          :class="updates.planUnread(plan.slug) ? 'ring-4 ring-orange-400 dark:ring-orange-500' : 'ring-1 ring-gray-900/5 dark:ring-white/10 hover:ring-indigo-300 dark:hover:ring-indigo-500/50'"
         >
           <div :class="['px-6 py-5 text-white bg-gradient-to-br', i % 2 ? 'from-emerald-600 to-teal-600' : 'from-indigo-600 to-sky-600']">
-            <p class="text-xs font-semibold uppercase tracking-widest opacity-80">City of Salmon Arm</p>
+            <p class="flex items-center gap-2 text-xs font-semibold uppercase tracking-widest opacity-80">
+              City of Salmon Arm
+              <span v-if="updates.planUnread(plan.slug)" class="rounded-full bg-orange-500 px-2 py-0.5 text-xs font-semibold normal-case tracking-normal text-white opacity-100">Updated</span>
+            </p>
             <h2 class="mt-1 text-xl font-bold">{{ plan.title }}</h2>
             <p class="mt-1 text-sm opacity-90">{{ plan.status }}</p>
           </div>
@@ -38,12 +42,18 @@
 </template>
 
 <script setup lang="ts">
+import { onMounted } from 'vue'
 import { Link } from '@inertiajs/vue3'
 import AdminLayout from '@/Layouts/AdminLayout.vue'
 import AdminMobileHeader from '@/Components/Admin/AdminMobileHeader.vue'
 import ElectionsNav from '../Partials/ElectionsNav.vue'
+import { useUpdates } from '../Partials/updates'
 
 defineOptions({ layout: (h, page) => h(AdminLayout, { wide: true, hideBreadcrumbOnMobile: true }, () => page) })
+
+// A sheet refreshed since you last opened it carries an orange "Updated" chip.
+const updates = useUpdates()
+onMounted(() => updates.ensure())
 
 defineProps<{
   plans: { slug: string; title: string; short: string; status: string; stats: { value: string; label: string }[] }[]

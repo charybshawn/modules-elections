@@ -73,10 +73,10 @@
           class="md:hidden block w-full rounded-md border-gray-300 text-base dark:border-gray-600 dark:bg-gray-700 dark:text-white"
           @change="switchTab(($event.target as HTMLSelectElement).value)"
         >
-          <option v-for="tab in tabs" :key="tab.id" :value="tab.id">{{ tab.title }}{{ tab.count ? ` (${tab.count})` : '' }}{{ tab.hasNew ? ' · new' : '' }}</option>
+          <option v-for="tab in tabs" :key="tab.id" :value="tab.id">{{ tab.title }}{{ tab.count ? ` (${tab.count})` : '' }}{{ tab.newCount ? ` · ${tab.newCount} new` : '' }}</option>
         </select>
 
-        <nav class="hidden md:flex gap-6 overflow-x-auto scrollbar-hide border-b border-gray-200 dark:border-gray-700" aria-label="Candidate sections">
+        <nav class="hidden md:flex gap-1 overflow-x-auto scrollbar-hide border-b border-gray-200 dark:border-gray-700" aria-label="Candidate sections">
           <Link
             v-for="tab in tabs"
             :key="tab.id"
@@ -85,21 +85,25 @@
             preserve-scroll
             :aria-current="activeTab === tab.id ? 'page' : undefined"
             :class="[
-              'tap-target-touch -mb-px inline-flex items-center gap-1.5 py-3 px-1 border-b-2 font-medium text-sm whitespace-nowrap transition-colors',
-              activeTab === tab.id
-                ? 'border-indigo-500 text-indigo-600 dark:text-indigo-400'
-                : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600',
+              'tap-target-touch -mb-px inline-flex items-center gap-1.5 rounded-t-md py-3 px-3 border-b-2 font-medium text-sm whitespace-nowrap transition-colors',
+              // A tab with something new is filled orange; the open tab keeps a darker underline.
+              tab.newCount
+                ? [activeTab === tab.id ? 'border-orange-800' : 'border-orange-500', 'bg-orange-500 text-white hover:bg-orange-600 dark:bg-orange-600 dark:hover:bg-orange-500']
+                : activeTab === tab.id
+                  ? 'border-indigo-500 text-indigo-600 dark:text-indigo-400'
+                  : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600',
             ]"
           >
             {{ tab.title }}
-            <span v-if="tab.count" class="text-xs font-normal text-gray-400 dark:text-gray-500">{{ tab.count }}</span>
-            <span v-if="tab.hasNew" class="h-1.5 w-1.5 rounded-full bg-amber-500" aria-label="has new items" />
+            <span v-if="tab.count" :class="tab.newCount ? 'text-orange-100' : 'text-gray-400 dark:text-gray-500'" class="text-xs font-normal">{{ tab.count }}</span>
+            <span v-if="tab.newCount" class="rounded-full bg-white px-1.5 py-0.5 text-xs font-semibold leading-none text-orange-700" :aria-label="`${tab.newCount} new`">{{ tab.newCount }} new</span>
           </Link>
         </nav>
 
         <!-- About: the City councillor-page layout -- a biography, then each
              background category as a short bulleted list. -->
         <div v-if="activeTab === 'about'" class="divide-y divide-gray-200 dark:divide-gray-700">
+          <p v-if="newerThan(candidate.profile_changed_at, 'about')" :class="changeNoteClass">Profile details (bio, links or status) were updated since your last visit.</p>
           <AccountSection title="Biography" description="A short, neutral summary, with where it came from.">
             <template v-if="candidate.bio">
               <p class="text-sm sm:text-base leading-relaxed text-gray-900 dark:text-gray-100 whitespace-pre-line">{{ candidate.bio }}</p>
@@ -198,6 +202,7 @@
                 :options="options"
                 :editing="editing"
                 :is-new="isNewPlank(plank)"
+                :is-updated="isUpdatedPlank(plank)"
                 :is-new-entry="isNewEntry"
                 :active-tag="platformFilter.tag"
                 @toggle="togglePlank(plank.id)"
@@ -219,6 +224,7 @@
 
         <!-- Scorecards: third-party questionnaires under the publisher's own headers -->
         <div v-else-if="activeTab === 'scorecards'" class="divide-y-4 divide-gray-100 dark:divide-gray-800">
+          <p v-if="newCounts.scorecards" :class="changeNoteClass">Scorecard answers or readings were updated since your last visit.</p>
           <ScorecardView v-for="scorecard in portfolio.scorecards" :key="scorecard.key" :scorecard="scorecard" :candidate-name="candidate.name" :stances="options.scorecardStances" />
         </div>
 
@@ -262,6 +268,7 @@
 
         <!-- Research notes: admins only (the server omits notes for invited viewers) -->
         <div v-else-if="activeTab === 'notes'">
+          <p v-if="newCounts.notes" :class="changeNoteClass">The research notes were updated since your last visit.</p>
           <AccountSection title="Research notes" description="Where facts came from, conflicts between sources and follow-ups. Admins only -- invited viewers never see this tab.">
             <p class="text-sm leading-relaxed text-gray-900 dark:text-gray-100 whitespace-pre-line">{{ candidate.notes }}</p>
           </AccountSection>
@@ -272,7 +279,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, onMounted, reactive, ref } from 'vue'
+import { computed, nextTick, onMounted, reactive, ref, watch } from 'vue'
 import { Link, router, useRemember } from '@inertiajs/vue3'
 import AdminLayout from '@/Layouts/AdminLayout.vue'
 import AdminMobileHeader from '@/Components/Admin/AdminMobileHeader.vue'
@@ -289,10 +296,12 @@ import ScorecardView from '../Partials/ScorecardView.vue'
 import TagChips from '../Partials/TagChips.vue'
 import { newPillClass } from '../Partials/classes'
 import { formatDate, hostOf, isHttpUrl, useReadOnly } from '../Partials/format'
-import { toUnix, useSeen } from '../Partials/seen'
+import { tabScope, toUnix, useUpdates } from '../Partials/updates'
 import type { Article, Entry, Options, Plank, Portfolio } from '../Partials/types'
 
 defineOptions({ layout: (h, page) => h(AdminLayout, { hideBreadcrumbOnMobile: true }, () => page) })
+
+const changeNoteClass = 'rounded-md bg-orange-100 px-3 py-2 text-sm font-medium text-orange-900 dark:bg-orange-500/20 dark:text-orange-200'
 
 const props = defineProps<{
   portfolio: Portfolio
@@ -334,21 +343,43 @@ const backgroundDescriptions: Record<string, string> = {
   past_activity: 'What they have done before running: projects, campaigns, events and causes.',
 }
 
-// ---- New since last visit (per-viewer cookie) ----
-// Snapshot when the viewer last opened this candidate, then mark it seen:
-// items newer than the snapshot stay tagged "New" for this visit. Switching
-// tabs keeps the page component (preserve-state), so the snapshot survives.
-// useSeen reads the cookie in its own onMounted, registered (so run) first.
-const seen = useSeen(() => props.portfolio.now)
-const lastVisit = ref<number | null>(null)
-onMounted(() => {
-  lastVisit.value = seen.seenAt(candidate.value.slug)
-  seen.markSeen(candidate.value.slug)
-})
+// ---- New since last visit (per viewer, per tab) ----
+// Each tab remembers when it was last looked at. Opening a candidate marks only
+// the tab you land on as seen, so what's new on their other tabs stays flagged
+// until you open them. The marks as they stood when the page opened are kept
+// for this visit, so the tabs stay orange and the items keep their "New" tags
+// while you read them (switching tabs keeps this component alive).
+const updates = useUpdates()
+const TAB_IDS = ['about', 'affiliations', 'platform', 'scorecards', 'words', 'record', 'endorsements', 'finance', 'news', 'notes']
+const lastLook = reactive<Record<string, number>>({})
 
-const isNewer = (iso: string | null | undefined) => lastVisit.value !== null && (toUnix(iso) ?? 0) > lastVisit.value
-const isNewEntry = (entry: Entry) => isNewer(entry.added_at)
-const isNewArticle = (article: Article) => isNewer(article.linked_at)
+const markTab = (tab: string) => updates.mark(tabScope(candidate.value.slug, tab))
+const openPage = async () => {
+  await updates.ensure()
+  for (const key of Object.keys(lastLook)) delete lastLook[key]
+  for (const tab of TAB_IDS) {
+    const at = updates.seenAt(tabScope(candidate.value.slug, tab))
+    if (at !== null) lastLook[tab] = at
+  }
+  markTab(props.activeTab)
+}
+onMounted(openPage)
+// The same page component can be reused for another candidate.
+watch(() => candidate.value.slug, openPage)
+watch(
+  () => props.activeTab,
+  async (tab) => {
+    await updates.ensure()
+    markTab(tab)
+  },
+)
+
+const newerThan = (iso: string | null | undefined, tab: string | null | undefined) => {
+  const since = tab ? lastLook[tab] : undefined
+  return since !== undefined && (toUnix(iso) ?? 0) > since
+}
+const isNewEntry = (entry: Entry) => newerThan(entry.added_at, entry.tab)
+const isNewArticle = (article: Article) => newerThan(article.linked_at, 'news')
 
 const backgroundEntries = computed(() => props.portfolio.background.flatMap((g) => g.entries))
 const affiliationEntries = computed(() => props.portfolio.affiliations.flatMap((g) => g.entries))
@@ -403,36 +434,39 @@ onMounted(() => {
 
 const filteredPlankCount = computed(() => filteredTiers.value.reduce((n, g) => n + g.planks.length, 0))
 
-const isNewPlank = (plank: Plank) => isNewer(plank.added_at) || plank.sources.some(isNewEntry)
+/** A plank added since the last look (or whose statements were) is "new"; one only edited is "updated". */
+const isNewPlank = (plank: Plank) => newerThan(plank.added_at, 'platform') || plank.sources.some(isNewEntry)
+const isUpdatedPlank = (plank: Plank) => !isNewPlank(plank) && newerThan(plank.changed_at, 'platform')
 const sectionEntries = (key: string) => props.portfolio.sections.find((s) => s.key === key)?.groups.flatMap((g) => g.entries) ?? []
 
+// New items per tab, counted the way the server's update feed counts them.
+const newCounts = computed<Record<string, number>>(() => ({
+  about: (newerThan(candidate.value.profile_changed_at, 'about') ? 1 : 0) + backgroundEntries.value.filter(isNewEntry).length,
+  affiliations: affiliationEntries.value.filter(isNewEntry).length,
+  platform: allPlanks.value.filter((p) => newerThan(p.changed_at, 'platform')).length + plankEntries.value.filter(isNewEntry).length,
+  scorecards: props.portfolio.scorecards.filter((sc) => newerThan(sc.changed_at, 'scorecards')).length,
+  ...Object.fromEntries(props.portfolio.sections.map((s) => [s.key, sectionEntries(s.key).filter(isNewEntry).length])),
+  news: props.portfolio.articles.filter(isNewArticle).length,
+  notes: newerThan(candidate.value.notes_changed_at, 'notes') ? 1 : 0,
+}))
+
 const newSummary = computed(() => {
-  if (lastVisit.value === null) return ''
-  const entries = [...backgroundEntries.value, ...affiliationEntries.value, ...plankEntries.value, ...props.portfolio.sections.flatMap((s) => s.groups.flatMap((g) => g.entries))]
-  const count = entries.filter(isNewEntry).length + props.portfolio.articles.filter(isNewArticle).length
-  if (count > 0) return `${count} new item${count === 1 ? '' : 's'} since your last visit -- look for the dot on a tab and the "New" tag on the item.`
-  return isNewer(candidate.value.updated_at) ? 'Profile details updated since your last visit.' : ''
+  const visible = tabs.value.reduce((n, tab) => n + tab.newCount, 0)
+  return visible > 0 ? `${visible} new item${visible === 1 ? '' : 's'} since your last visit -- the orange tabs show where, and each item is tagged.` : ''
 })
 
 // ---- Tabs ----
 const tabs = computed(() => [
-  { id: 'about', title: 'About', count: backgroundEntries.value.length, hasNew: backgroundEntries.value.some(isNewEntry) },
-  { id: 'affiliations', title: 'Background & Affiliations', count: affiliationEntries.value.length, hasNew: affiliationEntries.value.some(isNewEntry) },
-  ...(props.portfolio.platform
-    ? [{ id: 'platform', title: 'Platform', count: allPlanks.value.length, hasNew: allPlanks.value.some(isNewPlank) || plankEntries.value.some(isNewEntry) }]
-    : []),
+  { id: 'about', title: 'About', count: backgroundEntries.value.length },
+  { id: 'affiliations', title: 'Background & Affiliations', count: affiliationEntries.value.length },
+  ...(props.portfolio.platform ? [{ id: 'platform', title: 'Platform', count: allPlanks.value.length }] : []),
   ...(props.portfolio.scorecards.length
-    ? [{ id: 'scorecards', title: props.portfolio.scorecards.length === 1 ? props.portfolio.scorecards[0].title : 'Scorecards', count: 0, hasNew: false }]
+    ? [{ id: 'scorecards', title: props.portfolio.scorecards.length === 1 ? props.portfolio.scorecards[0].title : 'Scorecards', count: 0 }]
     : []),
-  ...props.portfolio.sections.map((s) => {
-    const entries = sectionEntries(s.key)
-    return { id: s.key, title: s.title, count: entries.length, hasNew: entries.some(isNewEntry) }
-  }),
-  ...(props.portfolio.articles.length
-    ? [{ id: 'news', title: 'In the news', count: props.portfolio.articles.length, hasNew: props.portfolio.articles.some(isNewArticle) }]
-    : []),
-  ...(!readOnly.value && candidate.value.notes ? [{ id: 'notes', title: 'Research notes', count: 0, hasNew: false }] : []),
-])
+  ...props.portfolio.sections.map((s) => ({ id: s.key, title: s.title, count: sectionEntries(s.key).length })),
+  ...(props.portfolio.articles.length ? [{ id: 'news', title: 'In the news', count: props.portfolio.articles.length }] : []),
+  ...(!readOnly.value && candidate.value.notes ? [{ id: 'notes', title: 'Research notes', count: 0 }] : []),
+].map((tab) => ({ ...tab, newCount: newCounts.value[tab.id] ?? 0 })))
 
 const activeSection = computed(() => props.portfolio.sections.find((s) => s.key === props.activeTab) ?? null)
 

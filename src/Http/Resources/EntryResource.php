@@ -25,6 +25,8 @@ class EntryResource extends JsonResource
             'published_on' => $this->published_on?->toDateString(),
             // When it went on file -- what "new since your last visit" compares.
             'added_at' => $this->created_at?->toIso8601String(),
+            // The candidate-page tab it appears on, so "new" lights up the right one.
+            'tab' => \Cultpantry\Elections\Support\UpdateTabs::forEntry($this->kind, $this->topic),
             'tags' => $this->whenLoaded('tags', fn () => TagResource::collection($this->tags)->resolve(), []),
         ];
     }

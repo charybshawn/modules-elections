@@ -55,9 +55,9 @@
         <TagHeatList :heat="heat" :selected="filters.tag" :matching-count="matchingCount" class="lg:col-start-3 lg:row-start-2" @select="selectSubject" />
 
         <div id="candidate-list" class="min-w-0 space-y-8 lg:col-span-2 lg:col-start-1 lg:row-span-3 lg:row-start-1">
-          <p v-if="newCandidateCount" class="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-amber-800 dark:text-amber-300">
+          <p v-if="newCandidateCount" class="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-md bg-orange-500 px-4 py-3 text-sm font-semibold text-white dark:bg-orange-600">
             New information on {{ newCandidateCount }} candidate{{ newCandidateCount === 1 ? '' : 's' }} since your last visit.
-            <button type="button" class="tap-target-touch text-xs font-medium underline underline-offset-2" @click="seen.markAllSeen()">Mark all as seen</button>
+            <button type="button" class="tap-target-touch rounded bg-white/90 px-2 py-0.5 text-xs font-semibold text-orange-700 hover:bg-white" @click="updates.markAll()">Mark all as seen</button>
           </p>
 
           <!-- Find a candidate: live search and office filter, plus whatever subject is picked in the heat map. -->
@@ -100,8 +100,14 @@
               <li v-for="candidate in group.candidates" :key="candidate.id" class="relative">
                 <Link
                   :href="route('admin.elections.candidates.show', candidate.slug)"
-                  class="tap-target-touch flex items-center gap-4 rounded-lg bg-white dark:bg-gray-800 shadow-sm p-4 pr-24 hover:ring-2 hover:ring-amber-400/60 transition-opacity"
-                  :class="[candidate.status === 'withdrawn' ? 'opacity-60' : '', selectedTag && !tagCell(candidate) ? 'opacity-40' : '', selectedTag && tagCell(candidate) ? 'ring-1 ring-indigo-300 dark:ring-indigo-500/50' : '']"
+                  class="tap-target-touch flex items-center gap-4 rounded-lg shadow-sm p-4 pr-24 hover:ring-2 hover:ring-amber-400/60 transition-opacity"
+                  :class="[
+                    // Anything unread tints the whole card orange; the tabs that changed are named inside.
+                    newFor(candidate) ? 'bg-orange-50 ring-2 ring-orange-400 dark:bg-orange-500/10 dark:ring-orange-500/70' : 'bg-white dark:bg-gray-800',
+                    candidate.status === 'withdrawn' ? 'opacity-60' : '',
+                    selectedTag && !tagCell(candidate) ? 'opacity-40' : '',
+                    selectedTag && tagCell(candidate) ? 'ring-1 ring-indigo-300 dark:ring-indigo-500/50' : '',
+                  ]"
                 >
                   <CandidatePhoto :name="candidate.name" :url="candidate.photo_url" class="h-14 w-14 shrink-0 rounded-full text-lg" />
                   <div class="min-w-0 flex-1">
@@ -109,7 +115,7 @@
                       <span class="font-medium text-gray-900 dark:text-white truncate">{{ candidate.name }}</span>
                       <span
                         v-if="newFor(candidate)"
-                        class="shrink-0 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800 dark:bg-amber-500/20 dark:text-amber-300"
+                        class="shrink-0 rounded-full bg-orange-500 px-2 py-0.5 text-xs font-semibold text-white dark:bg-orange-600"
                       >{{ newFor(candidate) }}</span>
                     </div>
                     <div class="text-sm text-gray-500 dark:text-gray-400 truncate">
@@ -117,6 +123,7 @@
                       <span v-if="candidate.is_incumbent && candidate.occupation"> · </span>
                       <span>{{ candidate.occupation }}</span>
                     </div>
+                    <div v-if="newTabsFor(candidate)" class="text-xs font-medium text-orange-700 dark:text-orange-300 truncate">New in: {{ newTabsFor(candidate) }}</div>
                     <div v-if="selectedTag && tagCell(candidate)" class="mt-1 flex items-start gap-1.5 text-xs">
                       <span :class="tierBadgeClass(tagCell(candidate)!.tier)" class="shrink-0 rounded px-1.5 py-0.5 font-medium">{{ tierShortLabel[tagCell(candidate)!.tier] ?? tagCell(candidate)!.tier }}</span>
                       <span class="min-w-0 line-clamp-2 text-gray-600 dark:text-gray-300">{{ tagCell(candidate)!.planks[0] }}</span>
@@ -262,7 +269,7 @@ import TagHeatList from './Partials/TagHeatList.vue'
 import LatestUpdates from './Partials/LatestUpdates.vue'
 import { cellOf, tierBadgeClass, tierShortLabel, tierWeight, type SubjectCoverage } from './Partials/coverage'
 import ElectionsNav from './Partials/ElectionsNav.vue'
-import { computed, nextTick, ref, reactive } from 'vue'
+import { computed, nextTick, onMounted, ref, reactive } from 'vue'
 import { Link, router, useForm, useRemember } from '@inertiajs/vue3'
 import AdminLayout from '@/Layouts/AdminLayout.vue'
 import AdminMobileHeader from '@/Components/Admin/AdminMobileHeader.vue'
@@ -272,7 +279,7 @@ import CandidatePhoto from './Partials/CandidatePhoto.vue'
 import EventItem from './Partials/EventItem.vue'
 import { secondaryButtonClass, sectionHeadingClass } from './Partials/classes'
 import { daysUntil, formatDate, formatDateTime, isHttpUrl, useReadOnly } from './Partials/format'
-import { toUnix, useSeen } from './Partials/seen'
+import { useUpdates } from './Partials/updates'
 import type { Article, Candidate, ElectionEvent, Options, TagHeat, LatestUpdate } from './Partials/types'
 
 defineOptions({ layout: (h, page) => h(AdminLayout, { wide: true, hideBreadcrumbOnMobile: true }, () => page) })
@@ -283,8 +290,6 @@ const props = defineProps<{
   pastEvents: ElectionEvent[]
   recentArticles: Article[]
   stats: { candidates: number; entries: number; articles: number }
-  /** Unix times each candidate's entries were added and articles linked, keyed by candidate id. */
-  activity: Record<number, number[]>
   /** The subject heat map. */
   heat: TagHeat
   /** Who campaigns on which subject. */
@@ -403,17 +408,28 @@ const candidateGroups = computed(() =>
     .filter((group) => group.candidates.length > 0),
 )
 
-// ---- New since last visit (per-viewer cookie) ----
-const seen = useSeen(() => props.now)
+// ---- New since last visit (per viewer, per tab) ----
+// Viewing the dashboard marks the events list seen; each candidate's own tabs
+// stay flagged until you open them (see Partials/updates.ts).
+const updates = useUpdates()
+onMounted(async () => {
+  await updates.ensure()
+  updates.mark('events')
+})
 
-/** "3 new", "Updated" (profile fields only) or '' -- against when the viewer last opened them. */
-const newFor = (candidate: Candidate): string => {
-  const since = seen.seenAt(candidate.slug)
-  if (since === null) return ''
-  const count = (props.activity[candidate.id] ?? []).filter((t) => t > since).length
-  if (count > 0) return `${count} new`
-  return (toUnix(candidate.updated_at) ?? 0) > since ? 'Updated' : ''
+const tabTitles: Record<string, string> = {
+  about: 'About', affiliations: 'Background', platform: 'Platform', scorecards: 'Scorecard', words: 'Statements',
+  record: 'Prior record', endorsements: 'Endorsements', finance: 'Finance', news: 'News', notes: 'Notes',
 }
+
+/** "3 new", or '' when nothing is unread for them. */
+const newFor = (candidate: Candidate): string => {
+  const n = updates.candidateUnread(candidate.slug)
+  return n > 0 ? `${n} new` : ''
+}
+/** The tabs on their page with something new, e.g. "Platform, News". */
+const newTabsFor = (candidate: Candidate): string =>
+  Object.keys(updates.candidateTabs(candidate.slug)).map((tab) => tabTitles[tab] ?? tab).join(', ')
 
 const newCandidateCount = computed(() => props.candidates.filter((c) => newFor(c) !== '').length)
 

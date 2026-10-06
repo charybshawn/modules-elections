@@ -40,6 +40,8 @@ class PlankResource extends JsonResource
             'source_count' => $this->entries->pluck('source_url')->unique()->count(),
             'sources' => EntryResource::collection($this->entries)->resolve(),
             'added_at' => $this->created_at?->toIso8601String(),
+            // Last edit (a new plan, analysis, rank...). The platform tab flags a plank as updated when this is newer than the viewer's last look.
+            'changed_at' => $this->updated_at?->toIso8601String(),
             'tags' => $this->whenLoaded('tags', fn () => TagResource::collection($this->tags)->resolve(), []),
             // Where it has stood over the campaign, oldest first; the page
             // compares the last two to say "Up from #4".
