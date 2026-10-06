@@ -5,6 +5,7 @@
     "publish_tag": "elections-pages",
     "provider": "Cultpantry\\Elections\\ElectionsServiceProvider",
     "tables": [
+        "elections_update_digests",
         "elections_taggables",
         "elections_tags",
         "elections_scorecard_takeaways",

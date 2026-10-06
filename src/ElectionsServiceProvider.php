@@ -5,6 +5,7 @@ namespace Cultpantry\Elections;
 use App\Support\AdminNav;
 use Cultpantry\Elections\Console\ImportElectionCommand;
 use Cultpantry\Elections\Console\ImportPendingCommand;
+use Cultpantry\Elections\Console\NotifyUpdatesCommand;
 use Cultpantry\Elections\Models\Article;
 use Cultpantry\Elections\Models\Candidate;
 use Cultpantry\Elections\Models\ElectionEvent;
@@ -72,11 +73,16 @@ class ElectionsServiceProvider extends ServiceProvider
         //     aren't in the ledger yet; it runs from the deploy script and
         //     hourly as a safety net.
         if ($this->app->runningInConsole()) {
-            $this->commands([ImportElectionCommand::class, ImportPendingCommand::class]);
+            $this->commands([ImportElectionCommand::class, ImportPendingCommand::class, NotifyUpdatesCommand::class]);
         }
         $this->callAfterResolving(Schedule::class, function (Schedule $schedule) {
             $schedule->command('elections:import-pending')->hourly()->withoutOverlapping();
+            // Then one digest email of whatever that (or anything else) added.
+            $schedule->command('elections:notify-updates')->hourlyAt(10)->withoutOverlapping();
         });
+
+        // 4d. `elections:notify-updates` emails users with Elections access a digest
+        //     of what's new since its last run (first run only sets a baseline).
 
         // 5. Publish the Vue source into resources/js/Pages/Vendor/elections/.
         //    php artisan vendor:publish --tag=elections-pages
