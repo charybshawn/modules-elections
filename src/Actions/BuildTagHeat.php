@@ -4,7 +4,6 @@ namespace Cultpantry\Elections\Actions;
 
 use Cultpantry\Elections\Models\Article;
 use Cultpantry\Elections\Models\Entry;
-use Cultpantry\Elections\Models\PulseIssue;
 use Cultpantry\Elections\Models\Tag;
 use Illuminate\Support\Carbon;
 
@@ -13,12 +12,11 @@ use Illuminate\Support\Carbon;
  * has been talked about.
  *
  * Every dated mention adds heat to the tags it carries -- a candidate's
- * statement (through its plank's tags, or its own), a news article, or a
- * Community Pulse issue (weighted up by how many residents raised it) --
+ * statement (through its plank's tags, or its own) or a news article --
  * and that heat halves every HALF_LIFE_DAYS, so the map leans toward what's
- * being said now. Scorecard answers are left out on purpose: every
- * respondent answers the same fixed questions on the same day, which says
- * nothing about what anyone chose to raise.
+ * being said now. Community Pulse issues are left out on purpose, as are
+ * scorecard answers: every respondent answers the same fixed questions on
+ * the same day, which says nothing about what anyone chose to raise.
  */
 class BuildTagHeat
 {
@@ -61,10 +59,6 @@ class BuildTagHeat
 
         Article::with('tags:id')->get()
             ->each(fn (Article $a) => $add($a->tags->pluck('id'), $a->published_on ?? $a->created_at));
-
-        // A resident issue counts once, plus a little for every ten people.
-        PulseIssue::with(['tags:id', 'snapshot'])->get()
-            ->each(fn (PulseIssue $i) => $add($i->tags->pluck('id'), $i->snapshot->taken_on, 1 + $i->voices / 10));
 
         $max = max($score ?: [0]);
         $maxMentions = max($mentions ?: [0]);

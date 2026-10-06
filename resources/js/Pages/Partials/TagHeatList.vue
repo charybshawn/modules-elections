@@ -15,7 +15,7 @@
       </div>
     </div>
     <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
-      {{ view.mode === 'recent' ? 'Mentions by candidates, the news and residents, recent ones counting most.' : 'Total mentions over the campaign.' }}
+      {{ view.mode === 'recent' ? 'Mentions by candidates and the news, recent ones counting most.' : 'Total mentions over the campaign.' }}
       Tap one to see who campaigns on it.
     </p>
 
