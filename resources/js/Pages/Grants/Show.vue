@@ -147,6 +147,22 @@
             </p>
           </section>
 
+          <!-- Powell River -->
+          <section class="break-inside-avoid">
+            <SectionHeading>Why Powell River is so far ahead</SectionHeading>
+            <p class="mt-1 text-sm text-gray-600 dark:text-gray-400">{{ g.powell_river.intro }}</p>
+            <div class="mt-4 space-y-4">
+              <div v-for="(pt, i) in g.powell_river.points" :key="pt.heading" class="flex gap-3">
+                <span class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-sky-600 text-xs font-semibold text-white">{{ i + 1 }}</span>
+                <div>
+                  <h3 class="text-sm font-semibold text-gray-900 dark:text-white">{{ pt.heading }}</h3>
+                  <p class="mt-0.5 text-sm leading-relaxed text-gray-800 dark:text-gray-200">{{ pt.text }} <Cite :keys="pt.sources" :index="sourceIndex" /></p>
+                </div>
+              </div>
+            </div>
+            <p class="mt-4 text-xs text-gray-500 dark:text-gray-400">{{ g.powell_river.unknown }}</p>
+          </section>
+
           <!-- Full ledger -->
           <section>
             <SectionHeading>Every application</SectionHeading>
@@ -262,6 +278,7 @@ const props = defineProps<{
     groups: { label: string; median: number; rank: number; of: number }[]
     halves: { early: { salmon_arm: number; median: number }; late: { salmon_arm: number; median: number } }
     excluded: { name: string; reason: string }[]
+    powell_river: { intro: string; points: ({ heading: string; text: string } & Cited)[]; unknown: string }
     analysis: ({ heading: string; text: string } & Cited)[]
     questions: string[]
     method: string[]
@@ -319,6 +336,7 @@ const sourceOrder = computed(() => {
   add(['agendaCenter', 'escribe'])
   bigAsks.value.forEach((r) => add(r.sources))
   add(['ar2016', 'ar2022', 'fs2025', 'bcStats'])
+  x.powell_river.points.forEach((p) => add(p.sources))
   x.ledger.forEach((r) => add(r.sources))
   x.analysis.forEach((s) => add(s.sources))
   Object.keys(x.sources).forEach((k) => add([k]))

@@ -64,12 +64,22 @@ class CityGrants
                 'obsWpcc2026' => ['label' => 'Salmon Arm Observer: $7M contract for sewage plant upgrade design work', 'url' => 'https://saobserver.net/2026/09/25/salmon-arm-looking-at-7m-bill-for-engineering-design-works-for-sewage-plant-upgrade/', 'date' => '2026-09-25'],
                 'citySpf2026' => ['label' => 'City of Salmon Arm: Building Communities Strong Fund, $58,000 for a long-term financial plan', 'url' => 'https://www.salmonarm.ca/m/newsflash/Home/Detail/469', 'date' => '2026-08-07'],
                 'obsParkHill' => ['label' => 'Salmon Arm Observer: City pursuing grant to upgrade popular but boggy trail', 'url' => 'https://saobserver.net/2026/01/16/city-pursuing-grant-to-upgrade-popular-but-boggy-salmon-arm-trail/', 'date' => '2026-01-16'],
+                'agenda2018Nov' => ['label' => 'Salmon Arm council agenda, Nov. 13, 2018: fee-for-service report listing future sewer projects', 'url' => 'https://www.salmonarm.ca/AgendaCenter/ViewFile/Agenda/_11132018-490', 'date' => '2018-11-13'],
+                'agenda2018Dec' => ['label' => 'Salmon Arm council agenda, Dec. 10, 2018: staff report, Investing in Canada Infrastructure Grant 2019', 'url' => 'https://www.salmonarm.ca/AgendaCenter/ViewFile/Agenda/_12102018-497', 'date' => '2018-12-10'],
+                'agenda2019Jan' => ['label' => 'Salmon Arm special council agenda, Jan. 7, 2019: 2019 budget', 'url' => 'https://www.salmonarm.ca/AgendaCenter/ViewFile/Agenda/_01072019-499', 'date' => '2019-01-07'],
+                'agenda2019Oct' => ['label' => 'Salmon Arm special council agenda, Oct. 21, 2019: 2020 budget', 'url' => 'https://www.salmonarm.ca/AgendaCenter/ViewFile/Agenda/_10212019-582', 'date' => '2019-10-21'],
+                'agenda2021Jan' => ['label' => 'Salmon Arm council agenda, Jan. 18, 2021: 2021 budget', 'url' => 'https://www.salmonarm.ca/AgendaCenter/ViewFile/Agenda/_01182021-644', 'date' => '2021-01-18'],
+                'agenda2021Feb' => ['label' => 'Salmon Arm council agenda, Feb. 8, 2021: sewage plant site selection results', 'url' => 'https://www.salmonarm.ca/AgendaCenter/ViewFile/Agenda/_02082021-648', 'date' => '2021-02-08'],
+                'agenda2022Aug' => ['label' => 'Salmon Arm council agenda, Aug. 8, 2022: regional district board highlights (Scotch Creek ICIP application)', 'url' => 'https://www.salmonarm.ca/AgendaCenter/ViewFile/Agenda/_08082022-726', 'date' => '2022-08-08'],
+                'agenda2023Jan' => ['label' => 'Salmon Arm council agenda, Jan. 10, 2023: 2023 budget', 'url' => 'https://www.salmonarm.ca/AgendaCenter/ViewFile/Agenda/_01102023-741', 'date' => '2023-01-10'],
+                'prWwtp' => ['label' => 'City of Powell River: Consolidated Wastewater Treatment Plant (completed)', 'url' => 'https://participatepr.ca/wastewater-treatment-plant', 'date' => null],
+                'prCity' => ['label' => 'City of Powell River: Wastewater Treatment Facility', 'url' => 'https://powellriver.ca/pages/pr-wastewater-treatment', 'date' => null],
                 'evnFifa' => ['label' => 'Eagle Valley News: City of Salmon Arm scores $70K for FIFA celebration', 'url' => 'https://eaglevalleynews.com/2026/04/08/city-of-salmon-arm-scores-70k-for-fifa-celebration/', 'date' => '2026-04-08'],
             ],
 
             'stats' => [
-                ['value' => '63', 'label' => 'grant applications found, 2016-2026', 'sources' => ['agendaCenter', 'escribe']],
-                ['value' => '32 of 50', 'label' => 'funded, where the result is known (64%)', 'sources' => ['ar2019', 'fs2025']],
+                ['value' => '64', 'label' => 'grant applications found, 2016-2026', 'sources' => ['agendaCenter', 'escribe']],
+                ['value' => '32 of 51', 'label' => 'funded, where the result is known (63%)', 'sources' => ['ar2019', 'fs2025']],
                 ['value' => '$8.7M', 'label' => 'won through applications, 2016-2025', 'sources' => ['ar2016', 'fs2025']],
                 ['value' => '$179', 'label' => 'per resident a year from other governments; similar towns $254', 'sources' => ['bcStats']],
             ],
@@ -207,6 +217,16 @@ class CityGrants
                     'received' => '',
                     'evidence' => 'Reported as "anticipated" in 2018; budgeted in 2019 and 2020 but never recorded as received in the City\'s grant schedule.',
                     'sources' => ['obsUnderpass2018', 'ar2019', 'ar2020'],
+                ],
+                [
+                    'year' => 2018,
+                    'program' => 'Investing in Canada Infrastructure (Rural and Northern Communities)',
+                    'project' => 'Airport runway paving',
+                    'asked' => '$1.5M project (90% asked)',
+                    'outcome' => 'not_funded',
+                    'received' => '',
+                    'evidence' => 'Authorized Dec. 10, 2018; the runway was funded only in 2023, by the BC Air Access Program.',
+                    'sources' => ['agenda2018Dec', 'agenda2019Jan', 'bcAir2023'],
                 ],
                 [
                     'year' => 2019,
@@ -714,7 +734,7 @@ class CityGrants
             'eras' => [
                 [
                     'label' => '2016–2019',
-                    'decided' => 16,
+                    'decided' => 17,
                     'funded' => 8,
                 ],
                 [
@@ -926,8 +946,22 @@ class CityGrants
                 ],
             ],
 
+            // Why the top-ranked stand-alone town is so far ahead. Powell River's
+            // $101.0M in transfers 2015-2024 less its $55.7M plant grant, over the
+            // 2021 census (13,943) and ten years, is $325 a resident a year.
+            'powell_river' => [
+                'intro' => 'Powell River tops the comparison at $724 per resident a year. Council records from 2018 to 2023 show why Salmon Arm did not get similar funding.',
+                'points' => [
+                    ['heading' => 'One grant explains most of the gap', 'text' => 'Powell River received $55.7 million ($30.4 million federal, $25.3 million provincial) from the Investing in Canada Infrastructure Program for a $76 million sewage treatment plant, built from May 2021 to June 2023. Without that grant, its figure drops from $724 to about $325 per resident a year, close to the group median.', 'sources' => ['prWwtp', 'prCity', 'bcStats']],
+                    ['heading' => 'Salmon Arm did not apply for its plant during that program', 'text' => 'When the 2019 intake opened, each local government could submit one application per stream. Staff put forward the airport runway and the West Bay trail, and also weighed the Ross Street underpass and the recreation centre. The sewage plant was not among the options, though a month earlier it had been listed as a $37 million future project.', 'sources' => ['agenda2018Nov', 'agenda2018Dec']],
+                    ['heading' => 'The project was not ready', 'text' => 'In October 2019 staff warned the plant would reach its design capacity in 2020, "after which a deterioration in effluent quality can be expected." A site-selection study was still under way; the site was chosen in February 2021 and a treatment process piloted after that. The estimate rose from $37 million to $50-100 million by late 2020. Budget reports through 2023 plan to pay for it from sewer fees, reserves and borrowing, and none of the reports read mention grants.', 'sources' => ['agenda2019Oct', 'agenda2021Jan', 'agenda2021Feb', 'agenda2023Jan']],
+                    ['heading' => 'The program was open locally', 'text' => 'The Columbia Shuswap Regional District applied to the same program\'s environmental quality stream in 2021 for the Scotch Creek water system. Salmon Arm\'s first large grant request for its plant, $7 million, came in 2025, after the program had wound down.', 'sources' => ['agenda2022Aug', 'escribe']],
+                ],
+                'unknown' => 'The records cannot show whether the City considered applying for the plant and decided against it, for example in closed meetings or in talks with the Province.',
+            ],
+
             'analysis' => [
-                ['heading' => 'Small grants usually come through; big ones rarely have', 'text' => 'Most applications for planning studies, emergency preparedness, FireSmart and active transportation were funded. Of the applications for projects of $1 million or more, most failed: the Ross Street underpass under two programs, the Zone 5 booster station twice, the runway twice before it succeeded, and the 2020 recovery-fund projects. The largest single grant the City has won since 2016 is about $1.4 million.', 'sources' => ['agendaCenter', 'ar2017', 'bcAir2023']],
+                ['heading' => 'Small grants usually come through; big ones rarely have', 'text' => 'Most applications for planning studies, emergency preparedness, FireSmart and active transportation were funded. Of the applications for projects of $1 million or more, most failed: the Ross Street underpass under two programs, the Zone 5 booster station twice, the runway three times before it succeeded, and the 2020 recovery-fund projects. The largest single grant the City has won since 2016 is about $1.4 million.', 'sources' => ['agendaCenter', 'ar2017', 'bcAir2023']],
                 ['heading' => 'Less outside money than similar towns, but the gap is closing', 'text' => 'Over 2015-2024 Salmon Arm took in $179 per resident a year from other governments, against a median of $254 for comparable stand-alone towns, ranking 10th of 11. In 2015-2019 it was about half the median; in 2020-2024 about 79%. These totals include formula money every town receives, so the gap comes mostly from grants won by applying.', 'sources' => ['bcStats']],
                 ['heading' => 'Formula money does most of the work', 'text' => 'Of the $37.4 million in grants recorded 2016-2025, $28.7 million arrived by formula (mainly the federal gas tax share, the COVID-19 restart grant and the Growing Communities Fund) and $8.7 million came from applications.', 'sources' => ['ar2016', 'fs2025']],
                 ['heading' => 'The sewage plant is the next test', 'text' => 'The City has asked for $7 million toward a sewage plant upgrade now estimated at about $100 million, and was told in September 2026 it would be "a strong contender". Every dollar of grant is a dollar not borrowed: borrowed over 30 years at today\'s rate, $7 million would cost about $432,000 a year, close to 2% of City property taxes.', 'sources' => ['obsWpcc2026', 'escribe']],
