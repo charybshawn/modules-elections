@@ -2,6 +2,7 @@
 
 namespace Cultpantry\Elections\Actions;
 
+use Cultpantry\Elections\Support\CityFinances;
 use Cultpantry\Elections\Support\CityPlans;
 use Cultpantry\Elections\Support\PlanProgress;
 use Cultpantry\Elections\Support\UpdateTabs;
@@ -20,7 +21,8 @@ use Illuminate\Support\Facades\DB;
  *   sections.events         election events added or changed
  *   sections.pulse          Community Pulse snapshots added or replaced
  *   sections.subjects       tags and tagged records added
- *   sections.plans[slug]    when each City plan sheet was last refreshed
+ *   sections.plans[slug]    when each City plan sheet, scoresheet and the City finances
+ *                           page was last refreshed
  *
  * One item is one thing to read, so counts mean something: a plank changed
  * five times is one item, ten new entries are ten.
@@ -127,6 +129,8 @@ class BuildUpdateFeed
         foreach (PlanProgress::all() as $sheet) {
             $plans[$sheet['slug']] = Carbon::parse($sheet['read_on'], config('app.timezone'))->startOfDay()->getTimestamp();
         }
+
+        $plans[CityFinances::SLUG] = Carbon::parse(CityFinances::sheet()['read_on'], config('app.timezone'))->startOfDay()->getTimestamp();
 
         return $plans;
     }

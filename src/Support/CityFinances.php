@@ -24,6 +24,9 @@ class CityFinances
 
     public const TERM_YEARS = 30;
 
+    /** Key for this page in the update feed. */
+    public const SLUG = 'city-finances';
+
     public static function sheet(): array
     {
         $fs = 'fs2025';

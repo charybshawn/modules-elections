@@ -10,6 +10,7 @@
           <p class="text-xs font-semibold uppercase tracking-widest text-emerald-100 print:text-gray-500">City of Salmon Arm</p>
           <h1 class="mt-1 text-2xl sm:text-3xl font-bold tracking-tight">{{ f.title }}</h1>
           <p class="mt-1 text-sm text-emerald-50 print:text-gray-600">{{ f.subtitle }}</p>
+          <p v-if="wasUpdated" class="mt-3 inline-block rounded-full bg-orange-500 px-3 py-1 text-sm font-semibold text-white print:hidden">Updated since your last visit</p>
           <p class="mt-3 text-xs text-emerald-100 print:text-gray-500">Figures are the City's audited {{ f.year }} results unless marked otherwise. Read {{ formatDate(f.read_on) }}.</p>
         </header>
 
@@ -178,12 +179,22 @@
 </template>
 
 <script setup lang="ts">
-import { computed, defineComponent, h } from 'vue'
+import { computed, defineComponent, h, onMounted, ref } from 'vue'
 import { Link } from '@inertiajs/vue3'
 import AdminLayout from '@/Layouts/AdminLayout.vue'
 import AdminMobileHeader from '@/Components/Admin/AdminMobileHeader.vue'
 import ElectionsNav from '../Partials/ElectionsNav.vue'
 import { formatDate } from '../Partials/format'
+import { useUpdates } from '../Partials/updates'
+
+// Opening the page marks it seen; the "Updated" ribbon stays for this visit only.
+const updates = useUpdates()
+const wasUpdated = ref(false)
+onMounted(async () => {
+  await updates.ensure()
+  wasUpdated.value = updates.financesUnread()
+  updates.mark('plans:city-finances')
+})
 
 defineOptions({ layout: (hh, page) => hh(AdminLayout, { wide: true, hideBreadcrumbOnMobile: true }, () => page) })
 

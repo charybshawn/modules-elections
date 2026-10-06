@@ -44,6 +44,6 @@ const sections = computed(() => [
   { name: 'admin.elections.tags.index', title: 'Browse by subject', active: route().current('admin.elections.tags.*'), unread: updates.sectionUnread('subjects') > 0 },
   { name: 'admin.elections.pulse.index', title: 'Community Pulse', active: route().current('admin.elections.pulse.*'), unread: updates.sectionUnread('pulse') > 0 },
   { name: 'admin.elections.plans.index', title: 'City plans', active: route().current('admin.elections.plans.*'), unread: updates.plansUnread() > 0 },
-  { name: 'admin.elections.finances', title: 'City finances', active: route().current('admin.elections.finances'), unread: false },
+  { name: 'admin.elections.finances', title: 'City finances', active: route().current('admin.elections.finances'), unread: updates.financesUnread() },
 ])
 </script>
