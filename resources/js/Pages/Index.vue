@@ -46,13 +46,15 @@
         </div>
       </dl>
 
-      <!-- Desktop: candidates take the main column; the subject list heads the
-           sidebar with Upcoming below. Phones: subjects, then candidates, then
-           Upcoming. -->
-      <div class="grid grid-cols-1 gap-8 lg:grid-cols-3 lg:grid-rows-[auto_1fr]">
-        <TagHeatList :heat="heat" :selected="filters.tag" :matching-count="matchingCount" class="lg:col-start-3 lg:row-start-1" @select="selectSubject" />
+      <!-- Desktop: candidates take the main column; the sidebar runs Latest
+           updates, the subject list, then Upcoming. Phones: updates, subjects,
+           candidates, then Upcoming. -->
+      <div class="grid grid-cols-1 gap-8 lg:grid-cols-3 lg:grid-rows-[auto_auto_1fr]">
+        <LatestUpdates :updates="latestUpdates" :now="now" class="lg:col-start-3 lg:row-start-1" />
 
-        <div id="candidate-list" class="min-w-0 space-y-8 lg:col-span-2 lg:col-start-1 lg:row-span-2 lg:row-start-1">
+        <TagHeatList :heat="heat" :selected="filters.tag" :matching-count="matchingCount" class="lg:col-start-3 lg:row-start-2" @select="selectSubject" />
+
+        <div id="candidate-list" class="min-w-0 space-y-8 lg:col-span-2 lg:col-start-1 lg:row-span-3 lg:row-start-1">
           <p v-if="newCandidateCount" class="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-amber-800 dark:text-amber-300">
             New information on {{ newCandidateCount }} candidate{{ newCandidateCount === 1 ? '' : 's' }} since your last visit.
             <button type="button" class="tap-target-touch text-xs font-medium underline underline-offset-2" @click="seen.markAllSeen()">Mark all as seen</button>
@@ -199,9 +201,7 @@
           </section>
         </div>
 
-        <aside class="space-y-6 lg:col-start-3 lg:row-start-2">
-          <LatestUpdates :updates="latestUpdates" :now="now" />
-
+        <aside class="space-y-6 lg:col-start-3 lg:row-start-3">
           <section>
             <h2 :class="sectionHeadingClass">Upcoming</h2>
             <p v-if="upcomingEvents.length === 0" class="mt-3 text-sm text-gray-500 dark:text-gray-400">No upcoming events on file.</p>
