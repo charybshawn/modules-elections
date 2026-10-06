@@ -3,6 +3,7 @@
 namespace Cultpantry\Elections\Actions;
 
 use Cultpantry\Elections\Support\CityPlans;
+use Cultpantry\Elections\Support\PlanProgress;
 use Cultpantry\Elections\Support\UpdateTabs;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -121,6 +122,10 @@ class BuildUpdateFeed
             if (isset($plan['slug']) && $at !== null) {
                 $plans[$plan['slug']] = Carbon::parse($at, config('app.timezone'))->startOfDay()->getTimestamp();
             }
+        }
+
+        foreach (PlanProgress::all() as $sheet) {
+            $plans[$sheet['slug']] = Carbon::parse($sheet['read_on'], config('app.timezone'))->startOfDay()->getTimestamp();
         }
 
         return $plans;

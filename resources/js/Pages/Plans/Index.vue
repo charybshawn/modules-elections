@@ -36,6 +36,30 @@
             <span class="mt-5 text-sm font-medium text-indigo-600 dark:text-indigo-400 group-hover:underline">Read the info sheet →</span>
           </div>
         </Link>
+
+        <Link
+          v-for="item in progress"
+          :key="item.slug"
+          :href="route('admin.elections.plans.progress', item.slug)"
+          class="group flex flex-col overflow-hidden rounded-xl bg-white dark:bg-gray-800 shadow-sm transition hover:shadow-md md:col-span-2"
+          :class="updates.planUnread(item.slug) ? 'ring-4 ring-orange-400 dark:ring-orange-500' : 'ring-1 ring-gray-900/5 dark:ring-white/10 hover:ring-emerald-300 dark:hover:ring-emerald-500/50'"
+        >
+          <div class="bg-gradient-to-br from-amber-600 to-rose-600 px-6 py-5 text-white">
+            <p class="flex items-center gap-2 text-xs font-semibold uppercase tracking-widest opacity-80">
+              Scoresheet
+              <span v-if="updates.planUnread(item.slug)" class="rounded-full bg-orange-500 px-2 py-0.5 text-xs font-semibold normal-case tracking-normal text-white opacity-100">Updated</span>
+            </p>
+            <h2 class="mt-1 text-xl font-bold">{{ item.title }}</h2>
+            <p class="mt-1 text-sm opacity-90">{{ item.status }}</p>
+          </div>
+          <div class="px-6 py-5">
+            <p class="text-sm text-gray-700 dark:text-gray-300">{{ item.short }}</p>
+            <p class="mt-3 text-sm text-gray-600 dark:text-gray-400">
+              {{ item.tally.underway }} under way · {{ item.tally.planning }} planning · {{ item.tally.paused }} paused · {{ item.tally.unknown }} with no report found · {{ item.tally.complete }} complete
+            </p>
+            <span class="mt-4 inline-block text-sm font-medium text-indigo-600 dark:text-indigo-400 group-hover:underline">Open the scoresheet →</span>
+          </div>
+        </Link>
       </div>
     </div>
   </div>
@@ -56,6 +80,7 @@ const updates = useUpdates()
 onMounted(() => updates.ensure())
 
 defineProps<{
+  progress: { slug: string; title: string; short: string; status: string; tally: Record<string, number> }[]
   plans: { slug: string; title: string; short: string; status: string; stats: { value: string; label: string }[] }[]
 }>()
 </script>

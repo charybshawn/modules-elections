@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Cultpantry\Elections\Http\Controllers\Admin\Concerns\ElectionsAdminMiddleware;
 use Cultpantry\Elections\Models\Candidate;
 use Cultpantry\Elections\Support\CityPlans;
+use Cultpantry\Elections\Support\PlanProgress;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -28,6 +29,7 @@ class CityPlanController extends Controller implements HasMiddleware
                 fn (array $plan) => array_intersect_key($plan, array_flip(['slug', 'title', 'short', 'status', 'stats'])),
                 CityPlans::all(),
             )),
+            'progress' => array_values(array_map(fn (array $sheet) => PlanProgress::card(), PlanProgress::all())),
         ]);
     }
 
@@ -38,6 +40,19 @@ class CityPlanController extends Controller implements HasMiddleware
         $sheet = CityPlans::find($plan);
         abort_if($sheet === null, 404);
 
-        return Inertia::render('Vendor/elections/Plans/Show', ['plan' => $sheet]);
+        return Inertia::render('Vendor/elections/Plans/Show', [
+            'plan' => $sheet,
+            'progressSlug' => PlanProgress::find($plan.'-progress') ? $plan.'-progress' : null,
+        ]);
+    }
+
+    public function progress(string $slug): Response
+    {
+        $this->authorize('viewAny', Candidate::class);
+
+        $sheet = PlanProgress::find($slug);
+        abort_if($sheet === null, 404);
+
+        return Inertia::render('Vendor/elections/Plans/Progress', ['sheet' => $sheet]);
     }
 }

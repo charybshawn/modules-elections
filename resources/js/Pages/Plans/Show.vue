@@ -16,6 +16,10 @@
           <div class="mt-4 flex flex-wrap gap-2 print:hidden">
             <a :href="plan.source_url" target="_blank" rel="noopener" class="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1.5 text-sm font-medium hover:bg-white/25">Read the full plan (PDF) ↗</a>
             <a :href="plan.page_url" target="_blank" rel="noopener" class="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1.5 text-sm font-medium hover:bg-white/25">City web page ↗</a>
+            <Link v-if="progressSlug" :href="route('admin.elections.plans.progress', progressSlug)" class="inline-flex items-center gap-1.5 rounded-full bg-white px-3 py-1.5 text-sm font-semibold text-indigo-700 hover:bg-indigo-50">
+              Progress scoresheet →
+              <span v-if="updates.planUnread(progressSlug)" class="rounded-full bg-orange-500 px-2 py-0.5 text-xs font-semibold text-white">Updated</span>
+            </Link>
             <button type="button" class="inline-flex items-center rounded-full bg-white/15 px-3 py-1.5 text-sm font-medium hover:bg-white/25" @click="print">Print</button>
           </div>
         </header>
@@ -138,6 +142,7 @@ type PlanSection = {
 }
 
 const props = defineProps<{
+  progressSlug: string | null
   plan: {
     slug: string
     title: string

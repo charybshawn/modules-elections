@@ -55,6 +55,7 @@ Route::prefix('admin')->name('admin.')->middleware(['web', 'auth', 'admin'])->gr
         Route::get('tags/{tag}', [TagController::class, 'show'])->name('tags.show');
 
         Route::get('plans', [CityPlanController::class, 'index'])->name('plans.index');
+        Route::get('plans/{slug}', [CityPlanController::class, 'progress'])->name('plans.progress')->where('slug', '[a-z0-9-]+-progress');
         Route::get('plans/{plan}', [CityPlanController::class, 'show'])->name('plans.show');
 
         Route::get('pulse', [CommunityPulseController::class, 'index'])->name('pulse.index');
