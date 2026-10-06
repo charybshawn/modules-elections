@@ -15,17 +15,20 @@
           </p>
         </div>
 
-        <div v-if="!readOnly" class="mt-4 md:mt-0 flex flex-wrap gap-2 shrink-0">
-          <input ref="fileInput" type="file" accept=".xml,text/xml,application/xml" class="hidden" @change="handleFileChange" />
-          <button
-            type="button"
-            :disabled="importForm.processing"
-            title="Imports a research XML file. Re-importing updates what's already on file instead of duplicating it."
-            :class="secondaryButtonClass"
-            @click="fileInput?.click()"
-          >{{ importForm.processing ? 'Importing...' : 'Import XML' }}</button>
-          <!-- Plain <a>, not <Link>: Inertia would intercept the file download. -->
-          <a :href="route('admin.elections.export')" :class="secondaryButtonClass">Export XML</a>
+        <div class="mt-4 md:mt-0 flex flex-wrap gap-2 shrink-0">
+          <template v-if="!readOnly">
+            <input ref="fileInput" type="file" accept=".xml,text/xml,application/xml" class="hidden" @change="handleFileChange" />
+            <button
+              type="button"
+              :disabled="importForm.processing"
+              title="Imports a research XML file. Re-importing updates what's already on file instead of duplicating it."
+              :class="secondaryButtonClass"
+              @click="fileInput?.click()"
+            >{{ importForm.processing ? 'Importing...' : 'Import XML' }}</button>
+            <!-- Plain <a>, not <Link>: Inertia would intercept the file download. -->
+            <a :href="route('admin.elections.export')" :class="secondaryButtonClass">Export XML</a>
+          </template>
+          <InviteButton />
         </div>
       </div>
 
@@ -269,6 +272,7 @@ import TagHeatList from './Partials/TagHeatList.vue'
 import LatestUpdates from './Partials/LatestUpdates.vue'
 import { cellOf, tierBadgeClass, tierShortLabel, tierWeight, type SubjectCoverage } from './Partials/coverage'
 import ElectionsNav from './Partials/ElectionsNav.vue'
+import InviteButton from './Partials/InviteButton.vue'
 import { computed, nextTick, onMounted, ref, reactive } from 'vue'
 import { Link, router, useForm, useRemember } from '@inertiajs/vue3'
 import AdminLayout from '@/Layouts/AdminLayout.vue'

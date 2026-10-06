@@ -5,42 +5,8 @@
     <div class="px-4 sm:px-0 max-w-5xl mx-auto">
       <div class="mb-6 flex flex-wrap items-center justify-between gap-3">
         <h1 class="hidden md:block text-2xl font-semibold text-gray-900 dark:text-white">Elections</h1>
-        <button
-          type="button"
-          class="tap-target-touch inline-flex items-center px-4 py-2 rounded-md shadow-sm bg-indigo-600 text-sm font-medium text-white hover:bg-indigo-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-900"
-          :aria-expanded="inviting"
-          aria-controls="elections-invite"
-          @click="toggleInvite"
-        >{{ inviting ? 'Close' : 'Invite someone' }}</button>
+        <InviteButton />
       </div>
-
-      <form
-        v-if="inviting"
-        id="elections-invite"
-        class="mb-6 rounded-lg bg-white dark:bg-gray-800 shadow-sm p-4 sm:p-6"
-        @submit.prevent="sendInvite"
-      >
-        <label for="elections-invite-email" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Their email</label>
-        <p class="text-sm text-gray-500 dark:text-gray-400">They'll get an email to set a password, then can view Elections only, read-only.</p>
-        <div class="mt-2 flex flex-col gap-2 sm:flex-row">
-          <input
-            id="elections-invite-email"
-            ref="emailInput"
-            v-model="inviteForm.email"
-            type="email"
-            inputmode="email"
-            autocomplete="off"
-            required
-            class="block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-900 dark:text-white text-base sm:text-sm"
-          />
-          <button
-            type="submit"
-            :disabled="inviteForm.processing || !inviteForm.email"
-            class="tap-target-touch shrink-0 px-4 py-2 rounded-md bg-indigo-600 text-sm font-medium text-white hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
-          >{{ inviteForm.processing ? 'Sending…' : 'Send invitation' }}</button>
-        </div>
-        <p v-if="inviteForm.errors.email" class="mt-1 text-sm text-red-600 dark:text-red-400">{{ inviteForm.errors.email }}</p>
-      </form>
 
       <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <Link
@@ -73,43 +39,19 @@
 </template>
 
 <script setup lang="ts">
-import { Link, useForm } from '@inertiajs/vue3'
+import { Link } from '@inertiajs/vue3'
 import AdminLayout from '@/Layouts/AdminLayout.vue'
 import AdminMobileHeader from '@/Components/Admin/AdminMobileHeader.vue'
-import { computed, nextTick, onMounted, ref } from 'vue'
+import { computed, onMounted } from 'vue'
 import { formatDate } from './Partials/format'
 import { useUpdates } from './Partials/updates'
+import InviteButton from './Partials/InviteButton.vue'
 
 defineOptions({ layout: (h, page) => h(AdminLayout, { wide: true, hideBreadcrumbOnMobile: true }, () => page) })
 
 defineProps<{
   salmonArm: { candidates: number; votingDay: string | null }
 }>()
-
-// Anyone who can open Elections may invite someone else to it (Elections only);
-// the result arrives as the layout's flash message.
-const inviting = ref(false)
-const emailInput = ref<HTMLInputElement | null>(null)
-const inviteForm = useForm({ email: '' })
-
-const toggleInvite = async () => {
-  inviting.value = !inviting.value
-  if (inviting.value) {
-    await nextTick()
-    emailInput.value?.focus()
-  }
-}
-
-const sendInvite = () => {
-  inviteForm.post(route('admin.elections.invitations.store'), {
-    preserveScroll: true,
-    // Refusals arrive as an error on the email field, so this runs only on a real send.
-    onSuccess: () => {
-      inviteForm.reset()
-      inviting.value = false
-    },
-  })
-}
 
 // Everything unread for this viewer, counted by the same store as every other
 // badge (see Partials/updates.ts), so the numbers always agree.
