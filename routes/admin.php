@@ -5,6 +5,7 @@ use Cultpantry\Elections\Http\Controllers\Admin\CandidateController;
 use Cultpantry\Elections\Http\Controllers\Admin\CommunityPulseController;
 use Cultpantry\Elections\Http\Controllers\Admin\CompareController;
 use Cultpantry\Elections\Http\Controllers\Admin\ElectionEventController;
+use Cultpantry\Elections\Http\Controllers\Admin\ElectionHubController;
 use Cultpantry\Elections\Http\Controllers\Admin\EntryController;
 use Cultpantry\Elections\Http\Controllers\Admin\PlankController;
 use Cultpantry\Elections\Http\Controllers\Admin\SearchIndexController;
@@ -27,7 +28,11 @@ use Illuminate\Support\Facades\Route;
 // never deletes, so they're how a bad or irrelevant find gets removed.
 Route::prefix('admin')->name('admin.')->middleware(['web', 'auth', 'admin'])->group(function () {
     Route::prefix('elections')->name('elections.')->group(function () {
-        Route::get('/', [CandidateController::class, 'index'])->name('index');
+        // The landing page picks an election; 'index' stays the name of the
+        // Salmon Arm dashboard so every existing back link still lands there.
+        Route::get('/', [ElectionHubController::class, 'home'])->name('home');
+        Route::get('salmon-arm', [CandidateController::class, 'index'])->name('index');
+        Route::get('provincial', [ElectionHubController::class, 'provincial'])->name('provincial');
         Route::post('import', [CandidateController::class, 'import'])->name('import');
         Route::get('export', [CandidateController::class, 'export'])->name('export');
 

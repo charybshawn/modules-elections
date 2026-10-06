@@ -50,7 +50,7 @@ class ElectionsUpdateNotification extends Notification implements ShouldQueue
         }
 
         return $message
-            ->action('View the new updates', url('/admin/elections'))
+            ->action('View the new updates', route('admin.elections.index'))
             ->line('You receive this because you have access to the Elections section.');
     }
 

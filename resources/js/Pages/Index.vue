@@ -1,6 +1,6 @@
 <template>
   <div :class="compare.slugs.length ? 'pb-36 md:pb-28' : 'pb-24 md:pb-6'" class="md:pt-6">
-    <AdminMobileHeader title="Elections" />
+    <AdminMobileHeader title="Salmon Arm Elections" :href="route('admin.elections.home')" />
 
     <div class="px-4 sm:px-0">
       <ElectionsNav class="mb-6" />
