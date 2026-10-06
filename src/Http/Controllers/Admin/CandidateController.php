@@ -47,6 +47,7 @@ class CandidateController extends Controller implements HasMiddleware
         $tab = (string) $request->query('tab', 'about');
         $tabs = [
             'about',
+            'affiliations',
             ...($portfolio['platform'] === null ? [] : ['platform']),
             ...($portfolio['scorecards'] === [] ? [] : ['scorecards']),
             ...array_column($portfolio['sections'], 'key'),

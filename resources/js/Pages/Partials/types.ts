@@ -207,6 +207,8 @@ export interface Portfolio {
   candidate: Candidate
   /** Background facts for the About section, grouped by Options.backgroundTopics. */
   background: EntryGroup[]
+  /** Community, public service, affiliations and past activities, for the Background & Affiliations tab. */
+  affiliations: EntryGroup[]
   /** The Platform tab; null until anything is on file. */
   platform: Platform | null
   /** Third-party scorecards (e.g. Vote4Tomorrow) the candidate has a response on file for. */

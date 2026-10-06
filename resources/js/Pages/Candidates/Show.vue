@@ -119,8 +119,24 @@
             <FactList :entries="group.entries" :editable="!readOnly" :is-new="isNewEntry" @delete="deleteEntry" />
           </AccountSection>
 
-          <p v-if="tabs.length === 1" class="py-6 text-sm text-gray-500 dark:text-gray-400">
+          <p v-if="tabs.length === 2 && !affiliationEntries.length" class="py-6 text-sm text-gray-500 dark:text-gray-400">
             Nothing on their platform or statements is on file yet -- the next research import will fill this in.
+          </p>
+        </div>
+
+        <!-- Background & Affiliations: roles, memberships and past activities,
+             grouped by category. -->
+        <div v-else-if="activeTab === 'affiliations'" class="divide-y divide-gray-200 dark:divide-gray-700">
+          <AccountSection
+            v-for="group in portfolio.affiliations"
+            :key="group.topic ?? 'all'"
+            :title="options.backgroundTopics[group.topic ?? ''] ?? group.topic ?? ''"
+            :description="backgroundDescriptions[group.topic ?? '']"
+          >
+            <FactList :entries="group.entries" :editable="!readOnly" :is-new="isNewEntry" @delete="deleteEntry" />
+          </AccountSection>
+          <p v-if="!portfolio.affiliations.length" class="py-6 text-sm text-gray-500 dark:text-gray-400">
+            No community roles, affiliations or past activities are on file yet -- the next background research import will fill this in.
           </p>
         </div>
 
@@ -314,6 +330,8 @@ const backgroundDescriptions: Record<string, string> = {
   community: 'Boards, volunteering and community groups.',
   public_service: 'Elected and appointed roles, committees and past campaigns.',
   local_roots: 'Their time in Salmon Arm and the Shuswap.',
+  affiliation: 'Faith communities, clubs, societies, associations and parties they belong or have belonged to.',
+  past_activity: 'What they have done before running: projects, campaigns, events and causes.',
 }
 
 // ---- New since last visit (per-viewer cookie) ----
@@ -333,6 +351,7 @@ const isNewEntry = (entry: Entry) => isNewer(entry.added_at)
 const isNewArticle = (article: Article) => isNewer(article.linked_at)
 
 const backgroundEntries = computed(() => props.portfolio.background.flatMap((g) => g.entries))
+const affiliationEntries = computed(() => props.portfolio.affiliations.flatMap((g) => g.entries))
 
 // ---- Platform ----
 const tierDescriptions: Record<string, string> = {
@@ -389,7 +408,7 @@ const sectionEntries = (key: string) => props.portfolio.sections.find((s) => s.k
 
 const newSummary = computed(() => {
   if (lastVisit.value === null) return ''
-  const entries = [...backgroundEntries.value, ...plankEntries.value, ...props.portfolio.sections.flatMap((s) => s.groups.flatMap((g) => g.entries))]
+  const entries = [...backgroundEntries.value, ...affiliationEntries.value, ...plankEntries.value, ...props.portfolio.sections.flatMap((s) => s.groups.flatMap((g) => g.entries))]
   const count = entries.filter(isNewEntry).length + props.portfolio.articles.filter(isNewArticle).length
   if (count > 0) return `${count} new item${count === 1 ? '' : 's'} since your last visit -- look for the dot on a tab and the "New" tag on the item.`
   return isNewer(candidate.value.updated_at) ? 'Profile details updated since your last visit.' : ''
@@ -398,6 +417,7 @@ const newSummary = computed(() => {
 // ---- Tabs ----
 const tabs = computed(() => [
   { id: 'about', title: 'About', count: backgroundEntries.value.length, hasNew: backgroundEntries.value.some(isNewEntry) },
+  { id: 'affiliations', title: 'Background & Affiliations', count: affiliationEntries.value.length, hasNew: affiliationEntries.value.some(isNewEntry) },
   ...(props.portfolio.platform
     ? [{ id: 'platform', title: 'Platform', count: allPlanks.value.length, hasNew: allPlanks.value.some(isNewPlank) || plankEntries.value.some(isNewEntry) }]
     : []),

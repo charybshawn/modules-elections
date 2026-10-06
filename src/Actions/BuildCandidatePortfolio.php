@@ -19,6 +19,9 @@ use Illuminate\Support\Collection;
  *
  *   About               -- the bio, then background facts grouped by
  *                          Entry::BACKGROUND_TOPICS ('background')
+ *   Background &        -- community roles, public service, affiliations
+ *   Affiliations           and past activities (Entry::AFFILIATION_TOPICS)
+ *                          ('affiliations'; always present, may be empty)
  *   Platform            -- planks in Plank::TIERS, ranked by the candidate's
  *                          own emphasis, each with the statements behind it
  *                          ('platform'; null when there's nothing yet)
@@ -47,6 +50,8 @@ class BuildCandidatePortfolio
     {
         $candidate->load(['entries.tags', 'articles.tags', 'planks.tags', 'planks.entries.tags', 'planks.rankHistory']);
 
+        $background = $candidate->entries->where('kind', 'background')->values();
+
         $sections = [];
         foreach (self::SECTIONS as $key => $section) {
             $entries = $candidate->entries->whereIn('kind', $section['kinds'])->values();
@@ -66,7 +71,8 @@ class BuildCandidatePortfolio
 
         return [
             'candidate' => CandidateResource::make($candidate)->resolve(),
-            'background' => $this->byTopic($candidate->entries->where('kind', 'background')->values(), Entry::BACKGROUND_TOPICS),
+            'background' => $this->byTopic($background, array_diff_key(Entry::BACKGROUND_TOPICS, array_flip(Entry::AFFILIATION_TOPICS))),
+            'affiliations' => $this->byTopic($background, array_intersect_key(Entry::BACKGROUND_TOPICS, array_flip(Entry::AFFILIATION_TOPICS))),
             'platform' => $this->platform($candidate),
             'scorecards' => $this->scorecards($candidate),
             'sections' => $sections,

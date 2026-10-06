@@ -75,8 +75,16 @@ class Entry extends Model
         'community' => 'Community involvement',
         'public_service' => 'Public service',
         'local_roots' => 'Local roots',
+        'affiliation' => 'Affiliations and memberships',
+        'past_activity' => 'Past activities',
         'other' => 'Other',
     ];
+
+    /**
+     * The background topics shown on the candidate's "Background &
+     * Affiliations" tab; the rest stay on About.
+     */
+    public const AFFILIATION_TOPICS = ['community', 'public_service', 'affiliation', 'past_activity'];
 
     public const SOURCE_TYPES = [
         'candidate_site' => 'Candidate website',

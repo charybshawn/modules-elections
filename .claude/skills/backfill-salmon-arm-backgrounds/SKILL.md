@@ -1,6 +1,6 @@
 ---
 name: backfill-salmon-arm-backgrounds
-description: Backfill who each Salmon Arm (BC) 2026 mayor and council candidate is -- career, businesses, education, community involvement, public service (including past runs for office) and local roots -- for the cultpantry admin panel's Elections module (modules-elections), by working through public sources (campaign and personal sites, blogs, news profiles, organization pages, City records, LinkedIn when the user is logged in) and writing a ready-to-import XML file of sourced, categorized background facts plus a short neutral bio. Use this when the user asks to fill in, backfill or research candidates' backgrounds, bios, résumés, work history or "who they are", for everyone or a named candidate, even if they don't mention XML or this skill by name. What candidates stand for or have said (platforms, statements, Q&A) belongs to research-salmon-arm-candidates; who's running belongs to find-salmon-arm-candidates.
+description: Backfill who each Salmon Arm (BC) 2026 mayor and council candidate is -- career, businesses, education, community involvement, past activities, religious and other affiliations, public service (including past runs for office) and local roots -- for the cultpantry admin panel's Elections module (modules-elections), by working through public sources (campaign and personal sites, blogs, news profiles, organization pages, City records, LinkedIn when the user is logged in) and writing a ready-to-import XML file of sourced, categorized background facts plus a short neutral bio. Use this when the user asks to fill in, backfill or research candidates' backgrounds, bios, résumés, work history or "who they are", for everyone or a named candidate, even if they don't mention XML or this skill by name. What candidates stand for or have said (platforms, statements, Q&A) belongs to research-salmon-arm-candidates; who's running belongs to find-salmon-arm-candidates.
 ---
 
 # Backfill Salmon Arm candidate backgrounds
@@ -29,11 +29,16 @@ before writing any output**, especially the `background` topic list and the
    details already sourced (same business, same board). If you can't tie it,
    leave it out and say so in the summary.
 3. **Public life only.** Record career, business, education, community roles,
-   public service and how long they've lived here. **Never** record family
-   members (spouses, children, their names or ages), health, religion, home
-   address or anything from their private life, even when the candidate's
-   own bio mentions it. "Has lived in Salmon Arm since 2006" is fine; "lives
-   in Canoe with his wife and three kids" is not.
+   public service, affiliations (religious and secular: churches and faith
+   groups, service clubs, lodges, societies, unions, parties, associations)
+   and how long they've lived here. **Record any affiliation a public source
+   discloses** -- the candidate's own material, a news profile, an
+   organization's own page or roster -- with the source. **Never** record
+   family members (spouses, children, their names or ages), health, home
+   address or anything else from their private life, and never infer an
+   affiliation from a name, background, appearance or photo: if no source
+   says it, it isn't a fact. "Has lived in Salmon Arm since 2006" is fine;
+   "lives in Canoe with his wife and three kids" is not.
 4. **Neutral and factual.** State the fact plainly ("Owns Mighty Owl Mapping
    & Analysis, a GIS consultancy"), with no praise or judgment. Opinions they
    have written are not background -- leave them for
@@ -48,6 +53,12 @@ before writing any output**, especially the `background` topic list and the
 
 ## Categories (`<topic>` on a `background` entry)
 
+`community`, `public_service`, `affiliation` and `past_activity` are shown on
+the candidate's **Background & Affiliations** tab; the rest stay on About.
+Religious and other group affiliations go under `affiliation` (or
+`community` for volunteering and service roles) -- the user wants every
+sourced one recorded, per rule 3.
+
 | topic | what goes there |
 |---|---|
 | `career` | profession, jobs, employers, years in a field |
@@ -56,6 +67,8 @@ before writing any output**, especially the `background` topic list and the
 | `community` | boards, non-profits, volunteering, clubs, coaching, events they organize |
 | `public_service` | elected or appointed office (council, school board, regional district), City committees, deputy mayor terms, and **past runs for office** with the year and result |
 | `local_roots` | how long they've lived in Salmon Arm/the Shuswap, where they came from, why they came |
+| `affiliation` | churches and other faith communities, service clubs, lodges, societies, unions, professional bodies, associations, advisory groups and political parties or slates they belong or have belonged to (name, role, years when known) |
+| `past_activity` | what they did before running: projects they led, causes and campaigns they backed, events they organized, petitions or delegations to council, awards. Past, public and sourced |
 | `other` | a public-life fact that fits nowhere above |
 
 ## Sources, in order
@@ -119,7 +132,23 @@ For each candidate:
    council lists, and the City's past election results for previous runs for
    office.
 
-8. **LinkedIn** (`linkedin`), only if the user is logged in to LinkedIn in
+8. **Past activities and affiliations** -- for every candidate, run a
+   dedicated pass for what they did before this campaign, and file what you
+   find as `past_activity` or `affiliation`:
+   - Search `"<name>" "Salmon Arm"` with terms such as `volunteer`, `board`,
+     `president`, `chair`, `founder`, `organizer`, `petition`, `delegation`,
+     `award`, plus Salmon Arm Observer and Castanet archives.
+   - Check council meeting minutes and agendas on the City site for
+     delegations or letters from them, and rosters of the boards and clubs
+     they name.
+   - Look for religious and other group ties explicitly: church, parish,
+     congregation, temple, mosque, synagogue, faith-based nonprofit, Rotary,
+     Lions, Legion, Elks, Masons, chamber of commerce, union, party.
+   - Same tie rule as rule 2, same effort for everyone. Leave out private-life
+     items (rule 3) and anything you can't tie to them; say in the summary
+     when a candidate has little published.
+
+9. **LinkedIn** (`linkedin`), only if the user is logged in to LinkedIn in
    Chrome:
    - Find the profile through the candidate's own site or socials first;
      otherwise run one LinkedIn search for the name plus "Salmon Arm". Only
