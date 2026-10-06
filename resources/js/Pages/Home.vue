@@ -15,6 +15,9 @@
           <p class="mt-4 text-sm text-gray-500 dark:text-gray-400">
             {{ salmonArm.candidates }} candidate{{ salmonArm.candidates === 1 ? '' : 's' }}<template v-if="salmonArm.votingDay"> · voting day {{ formatDate(salmonArm.votingDay) }}</template>
           </p>
+          <p v-if="unread.updates" class="mt-2 text-sm font-medium text-amber-700 dark:text-amber-400">
+            {{ unread.updates }} unread update{{ unread.updates === 1 ? '' : 's' }} across {{ unread.candidates }} candidate{{ unread.candidates === 1 ? '' : 's' }}
+          </p>
         </Link>
 
         <Link
@@ -34,11 +37,41 @@
 import { Link } from '@inertiajs/vue3'
 import AdminLayout from '@/Layouts/AdminLayout.vue'
 import AdminMobileHeader from '@/Components/Admin/AdminMobileHeader.vue'
+import { computed } from 'vue'
 import { formatDate } from './Partials/format'
+import { toUnix, useSeen } from './Partials/seen'
 
 defineOptions({ layout: (h, page) => h(AdminLayout, { wide: true, hideBreadcrumbOnMobile: true }, () => page) })
 
-defineProps<{
-  salmonArm: { candidates: number; votingDay: string | null }
+const props = defineProps<{
+  salmonArm: {
+    candidates: number
+    votingDay: string | null
+    unread: {
+      candidates: { id: number; slug: string; updated_at: string | null }[]
+      activity: Record<number, number[]>
+      now: number
+    }
+  }
 }>()
+
+// Same rule as the dashboard's "new since your last visit": items added since
+// the viewer last opened each candidate, plus a profile-only change counting
+// as one update. Read from the viewer's seen-cookie once mounted.
+const seen = useSeen(() => props.salmonArm.unread.now)
+const unread = computed(() => {
+  let updates = 0
+  let candidates = 0
+  for (const c of props.salmonArm.unread.candidates) {
+    const since = seen.seenAt(c.slug)
+    if (since === null) continue
+    const items = (props.salmonArm.unread.activity[c.id] ?? []).filter((t) => t > since).length
+    const n = items > 0 ? items : (toUnix(c.updated_at) ?? 0) > since ? 1 : 0
+    if (n > 0) {
+      updates += n
+      candidates++
+    }
+  }
+  return { updates, candidates }
+})
 </script>

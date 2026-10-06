@@ -55,11 +55,12 @@ class BuildElectionDashboard
     /**
      * When each candidate's items went on file -- entries added and articles
      * linked -- as Unix timestamps keyed by candidate id. The page counts how
-     * many are newer than the viewer's last visit (kept in a cookie).
+     * many are newer than the viewer's last visit (kept in a cookie). The
+     * Elections landing page uses it too, for its unread count.
      *
      * @return array<int, array<int, int>>
      */
-    private function activity(): array
+    public function activity(): array
     {
         $rows = Entry::query()->select(['candidate_id', 'created_at'])->get()
             ->map(fn (Entry $e) => [$e->candidate_id, $e->created_at])
