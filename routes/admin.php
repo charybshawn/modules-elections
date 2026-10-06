@@ -2,6 +2,7 @@
 
 use Cultpantry\Elections\Http\Controllers\Admin\ArticleController;
 use Cultpantry\Elections\Http\Controllers\Admin\CandidateController;
+use Cultpantry\Elections\Http\Controllers\Admin\CityFinanceController;
 use Cultpantry\Elections\Http\Controllers\Admin\CityPlanController;
 use Cultpantry\Elections\Http\Controllers\Admin\CommunityPulseController;
 use Cultpantry\Elections\Http\Controllers\Admin\CompareController;
@@ -57,6 +58,7 @@ Route::prefix('admin')->name('admin.')->middleware(['web', 'auth', 'admin'])->gr
         Route::get('plans', [CityPlanController::class, 'index'])->name('plans.index');
         Route::get('plans/{slug}', [CityPlanController::class, 'progress'])->name('plans.progress')->where('slug', '[a-z0-9-]+-progress');
         Route::get('plans/{plan}', [CityPlanController::class, 'show'])->name('plans.show');
+        Route::get('finances', [CityFinanceController::class, 'show'])->name('finances');
 
         Route::get('pulse', [CommunityPulseController::class, 'index'])->name('pulse.index');
         Route::delete('pulse/{snapshot}', [CommunityPulseController::class, 'destroy'])->name('pulse.destroy');
