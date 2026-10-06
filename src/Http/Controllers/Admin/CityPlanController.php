@@ -5,6 +5,7 @@ namespace Cultpantry\Elections\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use Cultpantry\Elections\Http\Controllers\Admin\Concerns\ElectionsAdminMiddleware;
 use Cultpantry\Elections\Models\Candidate;
+use Cultpantry\Elections\Support\CityFinances;
 use Cultpantry\Elections\Support\CityPlans;
 use Cultpantry\Elections\Support\PlanProgress;
 use Illuminate\Routing\Controllers\HasMiddleware;
@@ -29,6 +30,7 @@ class CityPlanController extends Controller implements HasMiddleware
                 fn (array $plan) => array_intersect_key($plan, array_flip(['slug', 'title', 'short', 'status', 'stats'])),
                 CityPlans::all(),
             )),
+            'finances' => array_intersect_key(CityFinances::sheet(), array_flip(['title', 'subtitle', 'stats'])) + ['slug' => CityFinances::SLUG],
             'progress' => array_values(array_map(fn (array $sheet) => PlanProgress::card(), PlanProgress::all())),
         ]);
     }

@@ -4,7 +4,7 @@
 
     <div class="px-4 sm:px-0 max-w-5xl mx-auto">
       <ElectionsNav class="mb-6 print:hidden" />
-      <Link :href="route('admin.elections.plans.index')" class="hidden md:inline-flex tap-target-touch items-center text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white text-sm mb-4 print:hidden">← City plans</Link>
+      <Link :href="route('admin.elections.plans.index')" class="hidden md:inline-flex tap-target-touch items-center text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white text-sm mb-4 print:hidden">← City Plans + Finances</Link>
 
       <article class="overflow-hidden rounded-xl bg-white dark:bg-gray-800 shadow-sm ring-1 ring-gray-900/5 dark:ring-white/10 print:shadow-none print:ring-0">
         <header class="bg-gradient-to-br from-emerald-600 to-teal-600 px-6 py-7 sm:px-8 text-white print:bg-none print:text-gray-900 print:px-0">

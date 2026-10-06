@@ -1,12 +1,12 @@
 <template>
   <div class="pb-24 md:pt-6 md:pb-6">
-    <AdminMobileHeader title="City plans" :href="route('admin.elections.index')" />
+    <AdminMobileHeader title="City Plans + Finances" :href="route('admin.elections.index')" />
 
     <div class="px-4 sm:px-0 max-w-5xl mx-auto">
       <ElectionsNav class="mb-6" />
-      <h1 class="hidden md:block text-2xl font-semibold text-gray-900 dark:text-white">City plans</h1>
+      <h1 class="hidden md:block text-2xl font-semibold text-gray-900 dark:text-white">City Plans + Finances</h1>
       <p class="mt-1 mb-6 text-sm text-gray-600 dark:text-gray-400">
-        The plans council works from, summarized in plain language. Every point links to the page of the City's document it comes from.
+        The plans council works from, summarized in plain language, and where the City's money comes from and goes. Every plan point links to the page of the City's document it comes from.
       </p>
 
       <div class="grid grid-cols-1 gap-5 md:grid-cols-2">
@@ -60,6 +60,29 @@
             <span class="mt-4 inline-block text-sm font-medium text-indigo-600 dark:text-indigo-400 group-hover:underline">Open the scoresheet →</span>
           </div>
         </Link>
+        <Link
+          :href="route('admin.elections.finances')"
+          class="group flex flex-col overflow-hidden rounded-xl bg-white dark:bg-gray-800 shadow-sm transition hover:shadow-md md:col-span-2"
+          :class="updates.financesUnread() ? 'ring-4 ring-orange-400 dark:ring-orange-500' : 'ring-1 ring-gray-900/5 dark:ring-white/10 hover:ring-emerald-300 dark:hover:ring-emerald-500/50'"
+        >
+          <div class="bg-gradient-to-br from-emerald-600 to-teal-700 px-6 py-5 text-white">
+            <p class="flex items-center gap-2 text-xs font-semibold uppercase tracking-widest opacity-80">
+              Finances
+              <span v-if="updates.financesUnread()" class="rounded-full bg-orange-500 px-2 py-0.5 text-xs font-semibold normal-case tracking-normal text-white opacity-100">Updated</span>
+            </p>
+            <h2 class="mt-1 text-xl font-bold">{{ finances.title }}</h2>
+            <p class="mt-1 text-sm opacity-90">{{ finances.subtitle }}</p>
+          </div>
+          <div class="px-6 py-5">
+            <dl class="grid grid-cols-2 gap-3 sm:grid-cols-4">
+              <div v-for="stat in finances.stats.slice(0, 4)" :key="stat.label">
+                <dd class="text-lg font-bold text-gray-900 dark:text-white">{{ stat.value }}</dd>
+                <dt class="text-xs text-gray-500 dark:text-gray-400">{{ stat.label }}</dt>
+              </div>
+            </dl>
+            <span class="mt-4 inline-block text-sm font-medium text-indigo-600 dark:text-indigo-400 group-hover:underline">Open City finances →</span>
+          </div>
+        </Link>
       </div>
     </div>
   </div>
@@ -80,6 +103,7 @@ const updates = useUpdates()
 onMounted(() => updates.ensure())
 
 defineProps<{
+  finances: { title: string; subtitle: string; stats: { value: string; label: string }[] }
   progress: { slug: string; title: string; short: string; status: string; tally: Record<string, number> }[]
   plans: { slug: string; title: string; short: string; status: string; stats: { value: string; label: string }[] }[]
 }>()
