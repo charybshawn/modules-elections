@@ -25,7 +25,7 @@ class CityPlanController extends Controller implements HasMiddleware
 
         return Inertia::render('Vendor/elections/Plans/Index', [
             'plans' => array_values(array_map(
-                fn (array $plan) => array_intersect_key($plan, array_flip(['slug', 'title', 'short', 'status'])),
+                fn (array $plan) => array_intersect_key($plan, array_flip(['slug', 'title', 'short', 'status', 'stats'])),
                 CityPlans::all(),
             )),
         ]);
