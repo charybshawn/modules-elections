@@ -33,7 +33,7 @@
                 <dt class="text-xs text-gray-500 dark:text-gray-400">{{ stat.label }}</dt>
               </div>
             </dl>
-            <span class="mt-5 text-sm font-medium text-indigo-600 dark:text-indigo-400 group-hover:underline">Read the info sheet →</span>
+            <span class="mt-auto pt-5 text-sm font-medium text-indigo-600 dark:text-indigo-400 group-hover:underline">Read the info sheet →</span>
           </div>
         </Link>
 
@@ -41,7 +41,7 @@
           v-for="item in progress"
           :key="item.slug"
           :href="route('admin.elections.plans.progress', item.slug)"
-          class="group flex flex-col overflow-hidden rounded-xl bg-white dark:bg-gray-800 shadow-sm transition hover:shadow-md md:col-span-2"
+          class="group flex flex-col overflow-hidden rounded-xl bg-white dark:bg-gray-800 shadow-sm transition hover:shadow-md"
           :class="updates.planUnread(item.slug) ? 'ring-4 ring-orange-400 dark:ring-orange-500' : 'ring-1 ring-gray-900/5 dark:ring-white/10 hover:ring-emerald-300 dark:hover:ring-emerald-500/50'"
         >
           <div class="bg-gradient-to-br from-amber-600 to-rose-600 px-6 py-5 text-white">
@@ -52,17 +52,17 @@
             <h2 class="mt-1 text-xl font-bold">{{ item.title }}</h2>
             <p class="mt-1 text-sm opacity-90">{{ item.status }}</p>
           </div>
-          <div class="px-6 py-5">
+          <div class="flex flex-1 flex-col px-6 py-5">
             <p class="text-sm text-gray-700 dark:text-gray-300">{{ item.short }}</p>
             <p class="mt-3 text-sm text-gray-600 dark:text-gray-400">
               {{ item.tally.underway }} under way · {{ item.tally.planning }} planning · {{ item.tally.paused }} paused · {{ item.tally.unknown }} with no report found · {{ item.tally.complete }} complete
             </p>
-            <span class="mt-4 inline-block text-sm font-medium text-indigo-600 dark:text-indigo-400 group-hover:underline">Open the scoresheet →</span>
+            <span class="mt-auto pt-5 text-sm font-medium text-indigo-600 dark:text-indigo-400 group-hover:underline">Open the scoresheet →</span>
           </div>
         </Link>
         <Link
           :href="route('admin.elections.finances')"
-          class="group flex flex-col overflow-hidden rounded-xl bg-white dark:bg-gray-800 shadow-sm transition hover:shadow-md md:col-span-2"
+          class="group flex flex-col overflow-hidden rounded-xl bg-white dark:bg-gray-800 shadow-sm transition hover:shadow-md"
           :class="updates.financesUnread() ? 'ring-4 ring-orange-400 dark:ring-orange-500' : 'ring-1 ring-gray-900/5 dark:ring-white/10 hover:ring-emerald-300 dark:hover:ring-emerald-500/50'"
         >
           <div class="bg-gradient-to-br from-emerald-600 to-teal-700 px-6 py-5 text-white">
@@ -73,20 +73,20 @@
             <h2 class="mt-1 text-xl font-bold">{{ finances.title }}</h2>
             <p class="mt-1 text-sm opacity-90">{{ finances.subtitle }}</p>
           </div>
-          <div class="px-6 py-5">
-            <dl class="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <div class="flex flex-1 flex-col px-6 py-5">
+            <dl class="grid grid-cols-2 gap-3">
               <div v-for="stat in finances.stats.slice(0, 4)" :key="stat.label">
                 <dd class="text-lg font-bold text-gray-900 dark:text-white">{{ stat.value }}</dd>
                 <dt class="text-xs text-gray-500 dark:text-gray-400">{{ stat.label }}</dt>
               </div>
             </dl>
-            <span class="mt-4 inline-block text-sm font-medium text-indigo-600 dark:text-indigo-400 group-hover:underline">Open City finances →</span>
+            <span class="mt-auto pt-5 text-sm font-medium text-indigo-600 dark:text-indigo-400 group-hover:underline">Open City finances →</span>
           </div>
         </Link>
 
         <Link
           :href="route('admin.elections.grants')"
-          class="group flex flex-col overflow-hidden rounded-xl bg-white dark:bg-gray-800 shadow-sm transition hover:shadow-md md:col-span-2"
+          class="group flex flex-col overflow-hidden rounded-xl bg-white dark:bg-gray-800 shadow-sm transition hover:shadow-md"
           :class="updates.grantsUnread() ? 'ring-4 ring-orange-400 dark:ring-orange-500' : 'ring-1 ring-gray-900/5 dark:ring-white/10 hover:ring-sky-300 dark:hover:ring-sky-500/50'"
         >
           <div class="bg-gradient-to-br from-sky-600 to-indigo-700 px-6 py-5 text-white">
@@ -97,14 +97,14 @@
             <h2 class="mt-1 text-xl font-bold">{{ grants.title }}</h2>
             <p class="mt-1 text-sm opacity-90">{{ grants.subtitle }}</p>
           </div>
-          <div class="px-6 py-5">
-            <dl class="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <div class="flex flex-1 flex-col px-6 py-5">
+            <dl class="grid grid-cols-2 gap-3">
               <div v-for="stat in grants.stats.slice(0, 4)" :key="stat.label">
                 <dd class="text-lg font-bold text-gray-900 dark:text-white">{{ stat.value }}</dd>
                 <dt class="text-xs text-gray-500 dark:text-gray-400">{{ stat.label }}</dt>
               </div>
             </dl>
-            <span class="mt-4 inline-block text-sm font-medium text-indigo-600 dark:text-indigo-400 group-hover:underline">Open City grants →</span>
+            <span class="mt-auto pt-5 text-sm font-medium text-indigo-600 dark:text-indigo-400 group-hover:underline">Open City grants →</span>
           </div>
         </Link>
       </div>
