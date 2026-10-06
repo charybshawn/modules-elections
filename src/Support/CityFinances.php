@@ -34,7 +34,7 @@ class CityFinances
         return [
             'title' => 'City finances',
             'subtitle' => 'Where Salmon Arm\'s money comes from, where it goes, and the big bills ahead.',
-            'read_on' => '2026-10-05',
+            'read_on' => '2026-10-06',
             'year' => 2025,
 
             'sources' => [
@@ -150,6 +150,58 @@ class CityFinances
                 'rule_of_thumb' => 'Every $1 million of new yearly cost is about a 4.1% property tax increase at 2025 levels ($24.1M raised).',
                 'assumptions' => 'Illustration only: each project fully borrowed over 30 years at 4.54% (the Municipal Finance Authority\'s 10-year rate on Oct. 5, 2026), with no other grants, development cost charges or partners. The ratio uses total 2025 revenue; the regulation uses a narrower "calculation revenue", so real headroom is likely somewhat smaller, though revenue growth would raise it over time.',
                 'sources' => [$fs, 'mfa', 'liabReg'],
+            ],
+
+            // Property tax scenarios: the same level-payment formula as 'scenarios' (4.54%, 30
+            // years), with each yearly payment set against 2025 figures: City property taxes
+            // $24,130,799 (Statement of Operations) and all property taxes collected on the
+            // tax notice $39,240,788 (Note 11, incl. school and regional levies). Active
+            // transportation network payment on $90M: $5,551,269.
+            'tax_scenarios' => [
+                'intro' => 'How much property taxes might have to rise if these projects were borrowed for and paid entirely from property tax, holding everything else at 2025 levels.',
+                'items' => [
+                    [
+                        'label' => 'Sewage plant only',
+                        'projects' => 'Sewage treatment plant ($93M after the $7M grant)',
+                        'borrowed' => 93000000,
+                        'annual' => 5736311,
+                        'city_pct' => 23.8,
+                        'bill_pct' => 14.6,
+                        'per_thousand' => 238,
+                        'servicing_pct' => 16.4,
+                        'note' => 'The plant is more likely to be charged to sewer users through sewer fees and frontage tax than to general taxes. Charged that way, it would mean sewer charges more than doubling: the payments are about 127% of what sewer users paid in 2025.',
+                    ],
+                    [
+                        'label' => 'Sewage plant and recreation centre',
+                        'projects' => 'Sewage plant ($93M) and a pool and recreation centre ($60M)',
+                        'borrowed' => 153000000,
+                        'annual' => 9437157,
+                        'city_pct' => 39.1,
+                        'bill_pct' => 24.0,
+                        'per_thousand' => 391,
+                        'servicing_pct' => 23.9,
+                        'note' => 'This would bring debt payments to just under the 25% provincial cap, leaving almost no room to borrow for anything else.',
+                    ],
+                    [
+                        'label' => 'All four projects',
+                        'projects' => 'Sewage plant ($93M), recreation centre ($60M), West Bay trail ($57M) and the full active transportation network ($90M)',
+                        'borrowed' => 300000000,
+                        'annual' => 18504230,
+                        'city_pct' => 76.7,
+                        'bill_pct' => 47.2,
+                        'per_thousand' => 767,
+                        'servicing_pct' => 42.3,
+                        'note' => 'Debt payments would reach about 42% of revenue, far over the 25% cap, so this could not be borrowed without provincial approval. It shows the scale, not a likely path: these projects depend on grants and would be spread over many years.',
+                    ],
+                ],
+                'how_to_read' => 'To estimate your own increase, find the City of Salmon Arm (municipal) line on your tax notice: each $1,000 you pay there would rise by the amount shown. School, hospital and regional levies are not affected.',
+                'caveats' => [
+                    'Grants, development cost charges and partners would lower these numbers; so would spreading projects over more years.',
+                    'Growth spreads the cost: new homes and businesses add to the tax base, so the increase per existing household would be smaller over time.',
+                    'Interest rates, construction costs and the final project scopes are all still moving; the sewage plant estimate has already risen from $78.5M to about $100M in a year.',
+                    'Increases from other pressures (wages, policing, road maintenance) would come on top of these.',
+                ],
+                'sources' => ['fs2025', 'mfa', 'obsWpcc', 'castRec', 'castWestBay', 'ocp', 'liabReg'],
             ],
 
             // AI-assisted analysis, built only on the facts above.

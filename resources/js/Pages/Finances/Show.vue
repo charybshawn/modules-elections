@@ -139,6 +139,56 @@
             <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">{{ f.scenarios.assumptions }}</p>
           </section>
 
+          <!-- Property tax scenarios -->
+          <section class="break-inside-avoid">
+            <div class="flex flex-wrap items-center gap-2">
+              <SectionHeading>What it could mean for your property taxes</SectionHeading>
+              <span class="rounded-full bg-indigo-100 dark:bg-indigo-500/20 px-2 py-0.5 text-xs font-medium text-indigo-800 dark:text-indigo-200">Scenarios</span>
+            </div>
+            <p class="mt-1 text-sm text-gray-600 dark:text-gray-400">{{ f.tax_scenarios.intro }} <Cite :keys="f.tax_scenarios.sources" :index="sourceIndex" /></p>
+
+            <!-- One bar per scenario: the rise in the City's share of property tax. -->
+            <div class="mt-4 space-y-3">
+              <div v-for="s in f.tax_scenarios.items" :key="s.label" class="grid grid-cols-[minmax(0,14rem)_1fr_auto] items-center gap-3 text-sm" :title="`${s.label}: City property taxes up about ${s.city_pct}%`">
+                <span class="font-medium text-gray-900 dark:text-white">{{ s.label }}</span>
+                <span class="h-6 rounded-r bg-gray-100 dark:bg-gray-900/50"><span class="block h-6 rounded-r bg-[#eb6834] dark:bg-[#d95926]" :style="{ width: `${(s.city_pct / taxScaleMax) * 100}%` }" /></span>
+                <span class="w-20 text-right tabular-nums text-lg font-bold text-gray-900 dark:text-white">+{{ s.city_pct }}%</span>
+              </div>
+              <p class="text-xs text-gray-500 dark:text-gray-400 sm:pl-[14.75rem]">Rise in the City's share of property taxes, on top of everything else.</p>
+            </div>
+
+            <div class="mt-5 grid grid-cols-1 gap-3 md:grid-cols-3">
+              <div v-for="s in f.tax_scenarios.items" :key="s.label" class="flex flex-col rounded-lg bg-gray-50 dark:bg-gray-900/40 p-4 ring-1 ring-gray-900/5 dark:ring-white/5">
+                <h3 class="text-sm font-semibold text-gray-900 dark:text-white">{{ s.label }}</h3>
+                <p class="mt-0.5 text-xs text-gray-600 dark:text-gray-400">{{ s.projects }}</p>
+                <dl class="mt-3 grid grid-cols-2 gap-x-3 gap-y-2 text-sm">
+                  <div class="col-span-2 rounded-md bg-white dark:bg-gray-800 px-3 py-2 ring-1 ring-orange-200 dark:ring-orange-400/30">
+                    <dd class="text-xl font-bold text-gray-900 dark:text-white">+${{ s.per_thousand }}</dd>
+                    <dt class="text-xs text-gray-600 dark:text-gray-400">a year for every $1,000 you now pay the City</dt>
+                  </div>
+                  <div><dd class="font-semibold tabular-nums text-gray-900 dark:text-white">+{{ s.bill_pct }}%</dd><dt class="text-xs text-gray-600 dark:text-gray-400">on the whole tax bill</dt></div>
+                  <div><dd class="font-semibold tabular-nums text-gray-900 dark:text-white">{{ money(s.annual) }}</dd><dt class="text-xs text-gray-600 dark:text-gray-400">a year in payments on {{ money(s.borrowed) }}</dt></div>
+                  <div class="col-span-2">
+                    <dd :class="['font-semibold tabular-nums', s.servicing_pct > f.scenarios.limit_pct ? 'text-[#d03b3b]' : 'text-gray-900 dark:text-white']">
+                      {{ s.servicing_pct }}% of revenue<span v-if="s.servicing_pct > f.scenarios.limit_pct" class="ml-1 text-xs font-medium">⚠ over the {{ f.scenarios.limit_pct }}% cap</span>
+                    </dd>
+                    <dt class="text-xs text-gray-600 dark:text-gray-400">total yearly debt payments</dt>
+                  </div>
+                </dl>
+                <p class="mt-3 text-xs leading-snug text-gray-700 dark:text-gray-300">{{ s.note }}</p>
+              </div>
+            </div>
+
+            <p class="mt-4 rounded-lg bg-orange-50 dark:bg-orange-500/10 px-4 py-3 text-sm text-gray-800 dark:text-gray-200 ring-1 ring-orange-200 dark:ring-orange-400/20">
+              <span class="font-semibold">Reading your own notice:</span> {{ f.tax_scenarios.how_to_read }}
+            </p>
+            <h3 class="mt-4 text-sm font-semibold text-gray-900 dark:text-white">Why the real numbers would likely differ</h3>
+            <ul class="mt-2 list-disc space-y-1 pl-5 text-sm text-gray-700 dark:text-gray-300">
+              <li v-for="c in f.tax_scenarios.caveats" :key="c">{{ c }}</li>
+            </ul>
+            <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">{{ f.scenarios.assumptions }}</p>
+          </section>
+
           <!-- Analysis -->
           <section class="break-inside-avoid rounded-xl ring-1 ring-indigo-200 dark:ring-indigo-400/30 bg-indigo-50/50 dark:bg-indigo-500/5 p-5">
             <div class="flex flex-wrap items-center gap-2">
@@ -224,6 +274,12 @@ const props = defineProps<{
       rule_of_thumb: string
       assumptions: string
     } & Cited
+    tax_scenarios: {
+      intro: string
+      items: { label: string; projects: string; borrowed: number; annual: number; city_pct: number; bill_pct: number; per_thousand: number; servicing_pct: number; note: string }[]
+      how_to_read: string
+      caveats: string[]
+    } & Cited
     analysis: ({ heading: string; text: string } & Cited)[]
     questions: string[]
     gaps: string[]
@@ -243,6 +299,7 @@ const sourceOrder = computed(() => {
   x.budget_2026.forEach((s) => add(s.sources))
   x.projects.items.forEach((s) => add(s.sources))
   add(x.scenarios.sources)
+  add(x.tax_scenarios.sources)
   x.analysis.forEach((s) => add(s.sources))
   Object.keys(x.sources).forEach((k) => add([k]))
   return seen
@@ -257,6 +314,7 @@ const maxExpense = computed(() => Math.max(...f.value.expenses.items.map((i) => 
 const maxProject = computed(() => Math.max(...f.value.projects.items.map((i) => i.amount)))
 
 const scenarioRows = computed(() => [f.value.scenarios.current, ...f.value.scenarios.steps])
+const taxScaleMax = computed(() => Math.max(...f.value.tax_scenarios.items.map((s) => s.city_pct)) * 1.1)
 const scaleMax = computed(() => Math.max(35, ...scenarioRows.value.map((r) => r.pct)) + 2)
 
 // Categorical slots in fixed order (validated light and dark; values always shown beside them).
