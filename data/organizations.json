@@ -1,0 +1,296 @@
+{
+  "about": "Local organizations whose own public pages (leadership, board, staff, member or newsletter pages) may name Salmon Arm election candidates. Organizations only -- never people. Scanned by `php artisan elections:scan-organizations`. Not included on purpose: political party associations. Known gaps: Downtown Salmon Arm and Roots and Blues board pages not yet located; Legion Branch 62, Kin Club and Masonic lodge have no site found; the Salmon Arm Lions Club disbanded.",
+  "organizations": [
+    {
+      "name": "Legacy Bible Church",
+      "type": "church",
+      "url": "https://legacybiblechurch.ca/",
+      "pages": [
+        "https://legacybiblechurch.ca/leadership"
+      ],
+      "slug": "legacy-bible-church"
+    },
+    {
+      "name": "Broadview Church",
+      "type": "church",
+      "url": "http://broadviewchurch.ca",
+      "slug": "broadview-church"
+    },
+    {
+      "name": "Grace Church Salmon Arm",
+      "type": "church",
+      "url": "http://gracechurchsa.ca",
+      "slug": "grace-church-salmon-arm"
+    },
+    {
+      "name": "St. Andrew's Presbyterian Church",
+      "type": "church",
+      "url": "http://pccweb.ca/standrews-salmonarm/",
+      "slug": "st-andrew-s-presbyterian-church"
+    },
+    {
+      "name": "River of Life Community Church",
+      "type": "church",
+      "url": "http://riveroflifecc.ca/",
+      "slug": "river-of-life-community-church"
+    },
+    {
+      "name": "Five Corners Church",
+      "type": "church",
+      "url": "http://www.fivecornerschurch.ca/",
+      "slug": "five-corners-church"
+    },
+    {
+      "name": "Lakeside Community Church",
+      "type": "church",
+      "url": "http://www.lakesidecommunitychurch.ca/",
+      "slug": "lakeside-community-church"
+    },
+    {
+      "name": "Living Waters Church",
+      "type": "church",
+      "url": "https://www.livingwaterschurch.ca/",
+      "slug": "living-waters-church"
+    },
+    {
+      "name": "New Life Outreach Church",
+      "type": "church",
+      "url": "http://www.newlifeoutreach.ca/",
+      "slug": "new-life-outreach-church"
+    },
+    {
+      "name": "Salmon Arm Church of Christ",
+      "type": "church",
+      "url": "http://www.sa4christ.com/",
+      "slug": "salmon-arm-church-of-christ"
+    },
+    {
+      "name": "Cornerstone Christian Reformed Church",
+      "type": "church",
+      "url": "http://www.sacrc.ca/",
+      "slug": "cornerstone-christian-reformed-church"
+    },
+    {
+      "name": "First United Church (First Community)",
+      "type": "church",
+      "url": "https://firstcommunity.ca",
+      "slug": "first-united-church-first-community"
+    },
+    {
+      "name": "Calvary Chapel Shuswap",
+      "type": "church",
+      "url": "https://www.ccshuswap.com/",
+      "slug": "calvary-chapel-shuswap"
+    },
+    {
+      "name": "St. Joseph's Catholic Church",
+      "type": "church",
+      "url": "https://stjosephssalmonarm.com/",
+      "slug": "st-joseph-s-catholic-church"
+    },
+    {
+      "name": "Salmon Arm Seventh-day Adventist Church",
+      "type": "church",
+      "url": "https://www.salmonarmadventist.ca/",
+      "slug": "salmon-arm-seventh-day-adventist-church"
+    },
+    {
+      "name": "A Place to Belong",
+      "type": "church",
+      "url": "https://www.aplacetobelong.ca/",
+      "slug": "a-place-to-belong"
+    },
+    {
+      "name": "Little Mountain Bible Chapel",
+      "type": "church",
+      "url": "https://littlemountainbiblechapel.com/",
+      "slug": "little-mountain-bible-chapel"
+    },
+    {
+      "name": "Mountain View Baptist Church",
+      "type": "church",
+      "url": "https://mountainviewbaptistchurch.ca/",
+      "slug": "mountain-view-baptist-church"
+    },
+    {
+      "name": "Sicamous Alliance Bible Church",
+      "type": "church",
+      "url": "http://www.sicamousbiblechurch.com/",
+      "slug": "sicamous-alliance-bible-church"
+    },
+    {
+      "name": "The Chapel (Enderby)",
+      "type": "church",
+      "url": "http://enderbychapel.com/",
+      "slug": "the-chapel-enderby"
+    },
+    {
+      "name": "King's Christian School",
+      "type": "church",
+      "url": "http://www.kingschristianschool.com/",
+      "slug": "king-s-christian-school"
+    },
+    {
+      "name": "Salmon Arm Daybreak Rotary Club",
+      "type": "service_club",
+      "url": "https://sadaybreakrotary.com/",
+      "slug": "salmon-arm-daybreak-rotary-club"
+    },
+    {
+      "name": "Rotary Club of Salmon Arm",
+      "type": "service_club",
+      "url": "https://salmonarmrotary.org/",
+      "slug": "rotary-club-of-salmon-arm"
+    },
+    {
+      "name": "Salmon Arm Elks Lodge 455",
+      "type": "service_club",
+      "url": "https://www.salmonarmelks.ca/",
+      "slug": "salmon-arm-elks-lodge-455"
+    },
+    {
+      "name": "Salmon Arm Chamber of Commerce",
+      "type": "business",
+      "url": "https://sachamber.bc.ca/",
+      "slug": "salmon-arm-chamber-of-commerce"
+    },
+    {
+      "name": "Downtown Salmon Arm",
+      "type": "business",
+      "url": "https://www.salmonarmdowntown.ca/",
+      "slug": "downtown-salmon-arm"
+    },
+    {
+      "name": "Salmon Arm Economic Development Society",
+      "type": "business",
+      "url": "https://www.saeds.ca/",
+      "slug": "salmon-arm-economic-development-society"
+    },
+    {
+      "name": "Community Futures Shuswap",
+      "type": "business",
+      "url": "http://www.futureshuswap.com",
+      "slug": "community-futures-shuswap"
+    },
+    {
+      "name": "Salmon Arm Folk Music Society (Roots and Blues)",
+      "type": "society",
+      "url": "https://rootsandblues.ca/",
+      "slug": "salmon-arm-folk-music-society-roots-and-blues"
+    },
+    {
+      "name": "Shuswap Hospice Society",
+      "type": "society",
+      "url": "https://shuswaphospice.ca/",
+      "slug": "shuswap-hospice-society"
+    },
+    {
+      "name": "Shuswap Community Foundation",
+      "type": "society",
+      "url": "https://www.shuswapfoundation.ca/",
+      "slug": "shuswap-community-foundation"
+    },
+    {
+      "name": "Shuswap Hospital Foundation",
+      "type": "society",
+      "url": "https://www.shuswaphospitalfoundation.ca/",
+      "slug": "shuswap-hospital-foundation"
+    },
+    {
+      "name": "Shuswap Family Centre",
+      "type": "society",
+      "url": "https://familyresource.bc.ca/",
+      "slug": "shuswap-family-centre"
+    },
+    {
+      "name": "Literacy Alliance of the Shuswap Society",
+      "type": "society",
+      "url": "https://www.shuswapliteracy.ca/",
+      "slug": "literacy-alliance-of-the-shuswap-society"
+    },
+    {
+      "name": "Neighbour Link Shuswap",
+      "type": "society",
+      "url": "https://neighbourlinkshuswap.ca/",
+      "slug": "neighbour-link-shuswap"
+    },
+    {
+      "name": "Salmon Arm Arts Centre",
+      "type": "society",
+      "url": "https://www.salmonarmartscentre.ca/",
+      "slug": "salmon-arm-arts-centre"
+    },
+    {
+      "name": "Shuswap Theatre Society",
+      "type": "society",
+      "url": "http://shuswaptheatre.com/",
+      "slug": "shuswap-theatre-society"
+    },
+    {
+      "name": "Salmon Arm Recreation Society",
+      "type": "society",
+      "url": "https://www.salmonarmrecreation.ca/",
+      "slug": "salmon-arm-recreation-society"
+    },
+    {
+      "name": "Salmon Arm Fall Fair",
+      "type": "society",
+      "url": "http://www.salmonarmfair.com/",
+      "slug": "salmon-arm-fall-fair"
+    },
+    {
+      "name": "R. J. Haney Heritage Village and Salmon Arm Museum",
+      "type": "society",
+      "url": "http://www.salmonarmmuseum.org/",
+      "slug": "r-j-haney-heritage-village-and-salmon-arm-museum"
+    },
+    {
+      "name": "Adams River Salmon Society",
+      "type": "society",
+      "url": "http://www.salmonsociety.com",
+      "slug": "adams-river-salmon-society"
+    },
+    {
+      "name": "Shuswap Trail Alliance",
+      "type": "society",
+      "url": "http://www.shuswaptrailalliance.com/",
+      "slug": "shuswap-trail-alliance"
+    },
+    {
+      "name": "Larch Hills Nordic Society",
+      "type": "society",
+      "url": "http://www.skilarchhills.ca/",
+      "slug": "larch-hills-nordic-society"
+    },
+    {
+      "name": "SAFE Society",
+      "type": "society",
+      "url": "http://www.safesociety.ca",
+      "slug": "safe-society"
+    },
+    {
+      "name": "Shuswap Children's Association",
+      "type": "society",
+      "url": "http://www.shuswapchildrens.ca",
+      "slug": "shuswap-children-s-association"
+    },
+    {
+      "name": "Salmon Arm Minor Hockey Association",
+      "type": "sports",
+      "url": "https://www.salmonarmminorhockey.com/",
+      "slug": "salmon-arm-minor-hockey-association"
+    },
+    {
+      "name": "Salmon Arm Silverbacks",
+      "type": "sports",
+      "url": "http://www.sasilverbacks.com",
+      "slug": "salmon-arm-silverbacks"
+    },
+    {
+      "name": "Salmon Arm Top 20 Under 40",
+      "type": "business",
+      "url": "https://salmonarmtop20.ca/",
+      "slug": "salmon-arm-top-20-under-40"
+    }
+  ]
+}

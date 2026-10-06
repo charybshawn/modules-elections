@@ -141,6 +141,17 @@ For each candidate:
    - Check council meeting minutes and agendas on the City site for
      delegations or letters from them, and rosters of the boards and clubs
      they name.
+   - **Scan the organization registry first.** `php artisan elections:scan-organizations --candidate="<exact name>"`
+     (run in the cultpantry app) searches the public pages of the local
+     churches, service clubs, societies and business groups listed in the
+     module's `data/organizations.json` for the candidate's name, and caches
+     those pages in the app's storage for 14 days. Every hit is a lead, not a
+     fact: open the page, confirm the role is theirs under rule 2 (common names
+     collide), then record it as an `affiliation` sourced to that page. The
+     registry holds organizations only, never people; add a newly found
+     organization to it (name, type, url, and any roster `pages`). It leaves
+     political party associations out on purpose. An organization that can't
+     be fetched is listed as unreachable; read it in Chrome instead.
    - Look for religious and other group ties explicitly: church, parish,
      congregation, temple, mosque, synagogue, faith-based nonprofit, Rotary,
      Lions, Legion, Elks, Masons, chamber of commerce, union, party.

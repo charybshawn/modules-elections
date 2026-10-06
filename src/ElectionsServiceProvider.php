@@ -6,6 +6,7 @@ use App\Support\AdminNav;
 use Cultpantry\Elections\Console\ImportElectionCommand;
 use Cultpantry\Elections\Console\ImportPendingCommand;
 use Cultpantry\Elections\Console\NotifyUpdatesCommand;
+use Cultpantry\Elections\Console\ScanOrganizationsCommand;
 use Cultpantry\Elections\Models\Article;
 use Cultpantry\Elections\Models\Candidate;
 use Cultpantry\Elections\Models\ElectionEvent;
@@ -73,7 +74,7 @@ class ElectionsServiceProvider extends ServiceProvider
         //     aren't in the ledger yet; it runs from the deploy script and
         //     hourly as a safety net.
         if ($this->app->runningInConsole()) {
-            $this->commands([ImportElectionCommand::class, ImportPendingCommand::class, NotifyUpdatesCommand::class]);
+            $this->commands([ImportElectionCommand::class, ImportPendingCommand::class, NotifyUpdatesCommand::class, ScanOrganizationsCommand::class]);
         }
         $this->callAfterResolving(Schedule::class, function (Schedule $schedule) {
             $schedule->command('elections:import-pending')->hourly()->withoutOverlapping();
