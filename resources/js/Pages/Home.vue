@@ -65,6 +65,7 @@ const unread = computed(() => {
   const subjects = updates.sectionUnread('subjects')
   const plans = updates.plansUnread()
   const finances = updates.financesUnread()
+  const grants = updates.grantsUnread()
 
   const where = [
     candidates.items ? `${candidates.items} on ${candidates.candidates} candidate${candidates.candidates === 1 ? '' : 's'}` : '',
@@ -73,11 +74,12 @@ const unread = computed(() => {
     subjects ? 'Browse by subject' : '',
     plans ? `${plans} City plan${plans === 1 ? '' : 's'}` : '',
     finances ? 'City finances' : '',
+    grants ? 'City grants' : '',
   ].filter(Boolean)
 
   return {
     // Subjects counts distinct arrival times, not records, so it adds 1 however much was tagged.
-    total: candidates.items + events + pulse + (subjects ? 1 : 0) + plans + (finances ? 1 : 0),
+    total: candidates.items + events + pulse + (subjects ? 1 : 0) + plans + (finances ? 1 : 0) + (grants ? 1 : 0),
     where: where.join(' · '),
   }
 })

@@ -3,6 +3,7 @@
 namespace Cultpantry\Elections\Actions;
 
 use Cultpantry\Elections\Support\CityFinances;
+use Cultpantry\Elections\Support\CityGrants;
 use Cultpantry\Elections\Support\CityPlans;
 use Cultpantry\Elections\Support\PlanProgress;
 use Cultpantry\Elections\Support\UpdateTabs;
@@ -131,6 +132,7 @@ class BuildUpdateFeed
         }
 
         $plans[CityFinances::SLUG] = Carbon::parse(CityFinances::sheet()['read_on'], config('app.timezone'))->startOfDay()->getTimestamp();
+        $plans[CityGrants::SLUG] = Carbon::parse(CityGrants::sheet()['read_on'], config('app.timezone'))->startOfDay()->getTimestamp();
 
         return $plans;
     }

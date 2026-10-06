@@ -83,6 +83,30 @@
             <span class="mt-4 inline-block text-sm font-medium text-indigo-600 dark:text-indigo-400 group-hover:underline">Open City finances →</span>
           </div>
         </Link>
+
+        <Link
+          :href="route('admin.elections.grants')"
+          class="group flex flex-col overflow-hidden rounded-xl bg-white dark:bg-gray-800 shadow-sm transition hover:shadow-md md:col-span-2"
+          :class="updates.grantsUnread() ? 'ring-4 ring-orange-400 dark:ring-orange-500' : 'ring-1 ring-gray-900/5 dark:ring-white/10 hover:ring-sky-300 dark:hover:ring-sky-500/50'"
+        >
+          <div class="bg-gradient-to-br from-sky-600 to-indigo-700 px-6 py-5 text-white">
+            <p class="flex items-center gap-2 text-xs font-semibold uppercase tracking-widest opacity-80">
+              Grants
+              <span v-if="updates.grantsUnread()" class="rounded-full bg-orange-500 px-2 py-0.5 text-xs font-semibold normal-case tracking-normal text-white opacity-100">Updated</span>
+            </p>
+            <h2 class="mt-1 text-xl font-bold">{{ grants.title }}</h2>
+            <p class="mt-1 text-sm opacity-90">{{ grants.subtitle }}</p>
+          </div>
+          <div class="px-6 py-5">
+            <dl class="grid grid-cols-2 gap-3 sm:grid-cols-4">
+              <div v-for="stat in grants.stats.slice(0, 4)" :key="stat.label">
+                <dd class="text-lg font-bold text-gray-900 dark:text-white">{{ stat.value }}</dd>
+                <dt class="text-xs text-gray-500 dark:text-gray-400">{{ stat.label }}</dt>
+              </div>
+            </dl>
+            <span class="mt-4 inline-block text-sm font-medium text-indigo-600 dark:text-indigo-400 group-hover:underline">Open City grants →</span>
+          </div>
+        </Link>
       </div>
     </div>
   </div>
@@ -104,6 +128,7 @@ onMounted(() => updates.ensure())
 
 defineProps<{
   finances: { title: string; subtitle: string; stats: { value: string; label: string }[] }
+  grants: { title: string; subtitle: string; stats: { value: string; label: string }[] }
   progress: { slug: string; title: string; short: string; status: string; tally: Record<string, number> }[]
   plans: { slug: string; title: string; short: string; status: string; stats: { value: string; label: string }[] }[]
 }>()

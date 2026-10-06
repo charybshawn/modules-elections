@@ -61,6 +61,6 @@ const sections = computed(() => [
   { name: 'admin.elections.index', title: 'Candidates', icon: icons.candidates, active: route().current('admin.elections.index') || route().current('admin.elections.candidates.*') || route().current('admin.elections.compare'), unread: updates.candidatesUnread().items + updates.sectionUnread('events') > 0 },
   { name: 'admin.elections.tags.index', title: 'Browse by subject', icon: icons.subjects, active: route().current('admin.elections.tags.*'), unread: updates.sectionUnread('subjects') > 0 },
   { name: 'admin.elections.pulse.index', title: 'Community Pulse', icon: icons.pulse, active: route().current('admin.elections.pulse.*'), unread: updates.sectionUnread('pulse') > 0 },
-  { name: 'admin.elections.plans.index', title: 'City Plans + Finances', icon: icons.plans, active: route().current('admin.elections.plans.*') || route().current('admin.elections.finances'), unread: updates.plansUnread() > 0 || updates.financesUnread() },
+  { name: 'admin.elections.plans.index', title: 'City Plans + Finances', icon: icons.plans, active: route().current('admin.elections.plans.*') || route().current('admin.elections.finances') || route().current('admin.elections.grants'), unread: updates.plansUnread() > 0 || updates.financesUnread() || updates.grantsUnread() },
 ])
 </script>

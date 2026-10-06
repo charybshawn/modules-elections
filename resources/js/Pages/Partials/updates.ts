@@ -10,7 +10,7 @@ import { usePage } from '@inertiajs/vue3'
 //
 //   c:<slug>:<tab>   one tab of one candidate's page (about, platform, news...)
 //   events | pulse | subjects
-//   plans:<slug>     one City plan sheet or scoresheet; plans:city-finances is the finances page
+//   plans:<slug>     one City plan sheet or scoresheet; plans:city-finances and plans:city-grants are those pages
 //
 // Looking at a thing marks only that thing seen: opening a candidate on About
 // does not clear their Platform tab. A scope with no mark of its own falls back
@@ -148,12 +148,15 @@ const planUnread = (slug: string): boolean => {
   return at !== undefined && since !== null && at > since
 }
 
-/** The City finances page sits in the plans feed under its own key; it has its own tab. */
+/** The City finances and City grants pages sit in the plans feed under their own keys. */
 const FINANCES = 'city-finances'
+const GRANTS = 'city-grants'
 
-const plansUnread = (): number => Object.keys(feed.value?.sections.plans ?? {}).filter((slug) => slug !== FINANCES && planUnread(slug)).length
+const plansUnread = (): number => Object.keys(feed.value?.sections.plans ?? {}).filter((slug) => slug !== FINANCES && slug !== GRANTS && planUnread(slug)).length
 
 const financesUnread = (): boolean => planUnread(FINANCES)
+
+const grantsUnread = (): boolean => planUnread(GRANTS)
 
 // ---- marking ----
 
@@ -213,6 +216,7 @@ export const useUpdates = () => {
     planUnread,
     plansUnread,
     financesUnread,
+    grantsUnread,
   }
 }
 

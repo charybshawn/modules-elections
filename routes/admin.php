@@ -64,6 +64,7 @@ Route::prefix('admin')->name('admin.')->middleware(['web', 'auth', 'admin'])->gr
         Route::get('plans/{slug}', [CityPlanController::class, 'progress'])->name('plans.progress')->where('slug', '[a-z0-9-]+-progress');
         Route::get('plans/{plan}', [CityPlanController::class, 'show'])->name('plans.show');
         Route::get('finances', [CityFinanceController::class, 'show'])->name('finances');
+        Route::get('grants', [CityFinanceController::class, 'grants'])->name('grants');
 
         Route::get('pulse', [CommunityPulseController::class, 'index'])->name('pulse.index');
         Route::delete('pulse/{snapshot}', [CommunityPulseController::class, 'destroy'])->name('pulse.destroy');
