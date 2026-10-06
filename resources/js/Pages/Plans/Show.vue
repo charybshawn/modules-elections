@@ -2,7 +2,7 @@
   <div class="pb-24 md:pt-6 md:pb-6">
     <AdminMobileHeader :title="plan.title" :href="route('admin.elections.plans.index')" />
 
-    <div class="px-4 sm:px-0 max-w-4xl mx-auto">
+    <div class="px-4 sm:px-0">
       <ElectionsNav class="mb-6 print:hidden" />
       <Link :href="route('admin.elections.plans.index')" class="hidden md:inline-flex tap-target-touch items-center text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white text-sm mb-4 print:hidden">← City Plans + Finances</Link>
 

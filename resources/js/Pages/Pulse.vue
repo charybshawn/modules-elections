@@ -2,7 +2,7 @@
   <div class="pb-24 md:pt-6 md:pb-6">
     <AdminMobileHeader title="Community Pulse" :href="route('admin.elections.index')" />
 
-    <div class="px-4 sm:px-0 max-w-5xl mx-auto">
+    <div class="px-4 sm:px-0">
       <ElectionsNav class="mb-6" />
       <div class="md:flex md:items-start md:justify-between gap-6 mb-6">
         <div>

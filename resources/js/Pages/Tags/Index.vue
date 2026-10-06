@@ -2,7 +2,7 @@
   <div class="pb-24 md:pt-6 md:pb-6">
     <AdminMobileHeader title="Browse by subject" :href="route('admin.elections.index')" />
 
-    <div class="px-4 sm:px-0 max-w-5xl mx-auto">
+    <div class="px-4 sm:px-0">
       <ElectionsNav class="mb-6" />
       <h1 class="hidden md:block text-2xl font-semibold text-gray-900 dark:text-white">Browse by subject</h1>
       <div class="mt-1 flex flex-wrap items-end justify-between gap-3">

@@ -2,7 +2,7 @@
   <div class="pb-24 md:pt-6 md:pb-6">
     <AdminMobileHeader title="City finances" :href="route('admin.elections.index')" />
 
-    <div class="px-4 sm:px-0 max-w-5xl mx-auto">
+    <div class="px-4 sm:px-0">
       <ElectionsNav class="mb-6 print:hidden" />
 
       <article class="overflow-hidden rounded-xl bg-white dark:bg-gray-800 shadow-sm ring-1 ring-gray-900/5 dark:ring-white/10 print:shadow-none print:ring-0">

@@ -2,7 +2,7 @@
   <div class="pb-24 md:pt-6 md:pb-6">
     <AdminMobileHeader title="City Plans + Finances" :href="route('admin.elections.index')" />
 
-    <div class="px-4 sm:px-0 max-w-5xl mx-auto">
+    <div class="px-4 sm:px-0">
       <ElectionsNav class="mb-6" />
       <h1 class="hidden md:block text-2xl font-semibold text-gray-900 dark:text-white">City Plans + Finances</h1>
       <p class="mt-1 mb-6 text-sm text-gray-600 dark:text-gray-400">
