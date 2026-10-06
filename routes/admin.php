@@ -2,6 +2,7 @@
 
 use Cultpantry\Elections\Http\Controllers\Admin\ArticleController;
 use Cultpantry\Elections\Http\Controllers\Admin\CandidateController;
+use Cultpantry\Elections\Http\Controllers\Admin\CityPlanController;
 use Cultpantry\Elections\Http\Controllers\Admin\CommunityPulseController;
 use Cultpantry\Elections\Http\Controllers\Admin\CompareController;
 use Cultpantry\Elections\Http\Controllers\Admin\ElectionEventController;
@@ -48,6 +49,9 @@ Route::prefix('admin')->name('admin.')->middleware(['web', 'auth', 'admin'])->gr
 
         Route::get('tags', [TagController::class, 'index'])->name('tags.index');
         Route::get('tags/{tag}', [TagController::class, 'show'])->name('tags.show');
+
+        Route::get('plans', [CityPlanController::class, 'index'])->name('plans.index');
+        Route::get('plans/{plan}', [CityPlanController::class, 'show'])->name('plans.show');
 
         Route::get('pulse', [CommunityPulseController::class, 'index'])->name('pulse.index');
         Route::delete('pulse/{snapshot}', [CommunityPulseController::class, 'destroy'])->name('pulse.destroy');
