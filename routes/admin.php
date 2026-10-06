@@ -8,6 +8,7 @@ use Cultpantry\Elections\Http\Controllers\Admin\CommunityPulseController;
 use Cultpantry\Elections\Http\Controllers\Admin\CompareController;
 use Cultpantry\Elections\Http\Controllers\Admin\ElectionEventController;
 use Cultpantry\Elections\Http\Controllers\Admin\ElectionHubController;
+use Cultpantry\Elections\Http\Controllers\Admin\ElectionInvitationController;
 use Cultpantry\Elections\Http\Controllers\Admin\EntryController;
 use Cultpantry\Elections\Http\Controllers\Admin\PlankController;
 use Cultpantry\Elections\Http\Controllers\Admin\SearchIndexController;
@@ -36,6 +37,10 @@ Route::prefix('admin')->name('admin.')->middleware(['web', 'auth', 'admin'])->gr
         Route::get('/', [ElectionHubController::class, 'home'])->name('home');
         Route::get('salmon-arm', [CandidateController::class, 'index'])->name('index');
         Route::get('provincial', [ElectionHubController::class, 'provincial'])->name('provincial');
+        // The one write invited viewers may make (see AdminMiddleware::allowViewerWrite
+        // in the service provider): invite someone else to Elections. Throttled per user.
+        Route::post('invitations', [ElectionInvitationController::class, 'store'])
+            ->middleware('throttle:10,60')->name('invitations.store');
         Route::post('import', [CandidateController::class, 'import'])->name('import');
         Route::get('export', [CandidateController::class, 'export'])->name('export');
 

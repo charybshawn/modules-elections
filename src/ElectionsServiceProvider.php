@@ -57,6 +57,13 @@ class ElectionsServiceProvider extends ServiceProvider
         Gate::policy(ElectionEvent::class, AdminWritePolicy::class);
         Gate::policy(Tag::class, AdminWritePolicy::class);
 
+        // 4a. The one exception to "viewers are read-only": anyone with
+        //     Elections access may invite someone else to Elections. Guarded
+        //     so an older host without the allowlist simply keeps it admin-only.
+        if (method_exists(\App\Http\Middleware\AdminMiddleware::class, 'allowViewerWrite')) {
+            \App\Http\Middleware\AdminMiddleware::allowViewerWrite('admin.elections.invitations.store');
+        }
+
         // 4b. Short, stable names for tagged records in elections_taggables,
         //     so stored rows don't depend on PHP class names. Prefixed so
         //     they can't collide with the host's or another module's.
