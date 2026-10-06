@@ -45,6 +45,8 @@ class CityFinances
                 'pentWpcc' => ['label' => 'Penticton Western News: sewage plant upgrade now estimated at $78M', 'url' => 'https://pentictonwesternnews.com/2025/07/22/salmon-arm-sewage-treatment-plan-upgrade-now-estimated-to-cost-78m/', 'date' => '2025-07-22'],
                 'obsWpcc' => ['label' => 'Salmon Arm Observer: $7M design contract for the sewage plant upgrade', 'url' => 'https://saobserver.net/2026/09/25/salmon-arm-looking-at-7m-bill-for-engineering-design-works-for-sewage-plant-upgrade/', 'date' => '2026-09-25'],
                 'castWestBay' => ['label' => 'Castanet: West Bay Connector Trail estimated at $57 million', 'url' => 'https://www.castanet.net/news/Salmon-Arm/553441/Preliminary-estimate-for-West-Bay-Connector-Trail-puts-it-at-57-million', 'date' => '2025-05-31'],
+                'castWestBayGrant' => ['label' => 'Castanet: Salmon Arm city council agrees to put $500K toward federal grant application for West Bay Connector Trail', 'url' => 'https://www.castanet.net/news/Salmon-Arm/537930/Salmon-Arm-city-council-agrees-to-put-500K-toward-federal-grant-application-for-West-Bay-Connector-Trail', 'date' => '2025-03-12'],
+                'cityWestBay' => ['label' => 'City of Salmon Arm: West Bay Connector Trail', 'url' => 'https://www.salmonarm.ca/475/West-Bay-Connector-Trail', 'date' => null],
                 'castRec' => ['label' => 'Castanet: council hears 22% of recreation facility users live outside the city', 'url' => 'https://www.castanet.net/news/Salmon-Arm/540619/Salmon-Arm-council-eyes-differential-pricing-upon-hearing-22-of-facility-users-hail-from-outside-city', 'date' => '2025-03-26'],
                 'evnRec' => ['label' => 'Eagle Valley News: mayor says now is not the time to build a new recreation facility', 'url' => 'https://eaglevalleynews.com/2026/02/09/salmon-arm-mayor-says-now-is-not-the-time-to-build-new-recreation-facility/', 'date' => '2026-02-09'],
                 'ocp' => ['label' => 'Official Community Plan Bylaw 4707, p. 60 (active transportation costs)', 'url' => 'https://salmonarm.ca/DocumentCenter/View/52#page=60', 'date' => '2025-12-08'],
@@ -125,7 +127,7 @@ class CityFinances
                 'items' => [
                     ['label' => 'Sewage treatment plant (WPCC Stage IV)', 'amount' => 100000000, 'term' => 'Short term in the strategic plan', 'detail' => 'About $100M early estimate (Sept. 2026), up from $78.5M (July 2025) and $14M (2004). A $7M grant application is in; long-term borrowing is planned for the rest.', 'sources' => ['obsWpcc', 'pentWpcc']],
                     ['label' => 'Pool and recreation centre', 'amount' => 60000000, 'term' => 'Medium term', 'detail' => 'A councillor put new pools at "about $60 million" (March 2025); no City estimate has been published. In February 2026 the mayor paused talks on a new indoor recreation facility, saying the City must "focus on core infrastructure needs".', 'sources' => ['castRec', 'evnRec']],
-                    ['label' => 'West Bay Connector Trail', 'amount' => 57000000, 'term' => 'Medium term', 'detail' => 'Preliminary estimate $57M (May 2025); the mayor said the City cannot afford it without federal and provincial money.', 'sources' => ['castWestBay']],
+                    ['label' => 'West Bay Connector Trail', 'amount' => 57000000, 'term' => 'Medium term', 'detail' => 'Preliminary estimate $57M (May 2025). A partnership with Neskonlith and Adams Lake, not a City-only project: the City has put $500,000 from reserves toward a federal grant bid, and the mayor said it gets built only "by everybody pitching in". It is left out of the borrowing scenarios below for that reason.', 'sources' => ['castWestBay', 'castWestBayGrant', 'cityWestBay']],
                     ['label' => 'Active transportation network (full plan)', 'amount' => 90000000, 'term' => 'Years to decades', 'detail' => 'The OCP puts the whole walking and cycling network at over $90M (2022 costs), to be built over many years.', 'sources' => ['ocp']],
                 ],
                 'note' => 'Other plan projects (Lakeshore Road, the Auto Road Connector, the 4 Avenue Connector, a downtown parkade) have no published total cost. See City plans → Strategic Plan progress for the project-by-project record.',
@@ -140,12 +142,12 @@ class CityFinances
                 'steps' => [
                     ['label' => '+ sewage plant ($93M after the $7M grant)', 'annual' => 8070247, 'pct' => 16.4],
                     ['label' => '+ recreation centre ($60M)', 'annual' => 11771094, 'pct' => 23.9],
-                    ['label' => '+ West Bay trail ($57M)', 'annual' => 15286897, 'pct' => 31.0],
+                    ['label' => '+ active transportation network ($90M)', 'annual' => 17322362, 'pct' => 35.1],
                 ],
                 'payments' => [
                     ['label' => 'Sewage plant, $93M', 'annual' => 5736311, 'compare' => 'about 127% of everything the sewer utility collected in 2025 ($4.5M)'],
                     ['label' => 'Recreation centre, $60M', 'annual' => 3700846, 'compare' => 'about a 15% property tax increase at 2025 levels'],
-                    ['label' => 'West Bay trail, $57M', 'annual' => 3515804, 'compare' => 'about a 15% property tax increase at 2025 levels'],
+                    ['label' => 'Active transportation network, $90M', 'annual' => 5551269, 'compare' => 'about a 23% property tax increase at 2025 levels'],
                 ],
                 'rule_of_thumb' => 'Every $1 million of new yearly cost is about a 4.1% property tax increase at 2025 levels ($24.1M raised).',
                 'assumptions' => 'Illustration only: each project fully borrowed over 30 years at 4.54% (the Municipal Finance Authority\'s 10-year rate on Oct. 5, 2026), with no other grants, development cost charges or partners. The ratio uses total 2025 revenue; the regulation uses a narrower "calculation revenue", so real headroom is likely somewhat smaller, though revenue growth would raise it over time.',
@@ -156,7 +158,8 @@ class CityFinances
             // years), with each yearly payment set against 2025 figures: City property taxes
             // $24,130,799 (Statement of Operations) and all property taxes collected on the
             // tax notice $39,240,788 (Note 11, incl. school and regional levies). Active
-            // transportation network payment on $90M: $5,551,269.
+            // transportation network payment on $90M: $5,551,269. The West Bay trail is excluded:
+            // it is a partnership project that depends on senior-government money.
             'tax_scenarios' => [
                 'intro' => 'How much property taxes might have to rise if these projects were borrowed for and paid entirely from property tax, holding everything else at 2025 levels.',
                 'items' => [
@@ -183,15 +186,15 @@ class CityFinances
                         'note' => 'This would bring debt payments to just under the 25% provincial cap, leaving almost no room to borrow for anything else.',
                     ],
                     [
-                        'label' => 'All four projects',
-                        'projects' => 'Sewage plant ($93M), recreation centre ($60M), West Bay trail ($57M) and the full active transportation network ($90M)',
-                        'borrowed' => 300000000,
-                        'annual' => 18504230,
-                        'city_pct' => 76.7,
-                        'bill_pct' => 47.2,
-                        'per_thousand' => 767,
-                        'servicing_pct' => 42.3,
-                        'note' => 'Debt payments would reach about 42% of revenue, far over the 25% cap, so this could not be borrowed without provincial approval. It shows the scale, not a likely path: these projects depend on grants and would be spread over many years.',
+                        'label' => 'All City-led projects',
+                        'projects' => 'Sewage plant ($93M), recreation centre ($60M) and the full active transportation network ($90M). The West Bay trail is left out: it is a partnership with Neskonlith and Adams Lake that depends on federal and provincial money, so the City would not borrow its full cost.',
+                        'borrowed' => 243000000,
+                        'annual' => 14988426,
+                        'city_pct' => 62.1,
+                        'bill_pct' => 38.2,
+                        'per_thousand' => 621,
+                        'servicing_pct' => 35.1,
+                        'note' => 'Debt payments would reach about 35% of revenue, over the 25% cap, so this could not be borrowed without provincial approval. It shows the scale, not a likely path: the network is built a piece at a time over many years, usually with grants.',
                     ],
                 ],
                 'how_to_read' => 'To estimate your own increase, find the City of Salmon Arm (municipal) line on your tax notice: each $1,000 you pay there would rise by the amount shown. School, hospital and regional levies are not affected.',
@@ -201,14 +204,14 @@ class CityFinances
                     'Interest rates, construction costs and the final project scopes are all still moving; the sewage plant estimate has already risen from $78.5M to about $100M in a year.',
                     'Increases from other pressures (wages, policing, road maintenance) would come on top of these.',
                 ],
-                'sources' => ['fs2025', 'mfa', 'obsWpcc', 'castRec', 'castWestBay', 'ocp', 'liabReg'],
+                'sources' => ['fs2025', 'mfa', 'obsWpcc', 'castRec', 'castWestBayGrant', 'ocp', 'liabReg'],
             ],
 
             // AI-assisted analysis, built only on the facts above.
             'analysis' => [
                 ['heading' => 'Not bankruptcy, but trade-offs', 'text' => 'A B.C. city cannot run a deficit budget: its yearly financial plan must balance by law, and its yearly debt payments are capped at 25% of revenue unless the Province approves more. So "solvency" pressure does not show up as default. It shows up as higher taxes and utility fees, projects delayed or shrunk, maintenance put off, and reserves drawn down.', 'sources' => ['charter', 'liabReg']],
                 ['heading' => 'The sewage plant is the defining bill', 'text' => 'At about $100M, the plant upgrade costs nearly six times today\'s entire debt. Borrowed in full, its payments would exceed everything sewer users paid in 2025, so sewer rates and frontage taxes would likely have to rise substantially unless grants, development cost charges or senior-government money cover a large share. Cost and funding are still being worked out, and the estimate has risen sharply since 2022.', 'sources' => ['obsWpcc', 'pentWpcc', $fs]],
-                ['heading' => 'The big projects cannot all be borrowed at once', 'text' => 'Borrowing for the plant, a new recreation centre and the West Bay trail together would push debt payments from about 5% of revenue to about 31%, over the provincial cap. In practice that means sequencing (the mayor has already paused talks on a new indoor recreation facility to "focus on core infrastructure needs"), and that grants decide what gets built.', 'sources' => ['evnRec', 'liabReg']],
+                ['heading' => 'The big projects cannot all be borrowed at once', 'text' => 'Borrowing for the plant, a new recreation centre and the full active transportation network together would push debt payments from about 5% of revenue to about 35%, over the provincial cap. In practice that means sequencing (the mayor has already paused talks on a new indoor recreation facility to "focus on core infrastructure needs"), and that grants decide what gets built.', 'sources' => ['evnRec', 'liabReg']],
                 ['heading' => 'Pressure on the day-to-day budget is already visible', 'text' => 'The 2026 budget needed an 11% increase before cuts and one-time reserve money brought it to 3.88%. One-time money cannot be reused, investment income is falling, policing costs are rising, and the mayor says road paving is underfunded. These pressures arrive before any big borrowing.', 'sources' => ['obsBudget', 'castBudget', 'obsFiveYear', $fs]],
                 ['heading' => 'The starting position is relatively strong', 'text' => 'Debt is low and falling, the City ran surpluses in 2024 and 2025, and it holds sizeable investments and reserves. That gives room to borrow for one major project. The question for the next council is less "can the City pay" than "which projects, in what order, and how much will taxes and utility rates rise to pay for them".', 'sources' => [$fs]],
             ],
