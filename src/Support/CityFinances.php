@@ -34,7 +34,7 @@ class CityFinances
         return [
             'title' => 'City finances',
             'subtitle' => 'Where Salmon Arm\'s money comes from, where it goes, and the big bills ahead.',
-            'read_on' => '2026-10-06',
+            'read_on' => '2026-10-05',
             'year' => 2025,
 
             'sources' => [
