@@ -44,13 +44,15 @@
 
             <div class="mt-3 space-y-3">
               <details v-for="project in group.projects" :key="project.name" class="group rounded-lg ring-1 ring-gray-900/10 dark:ring-white/10 open:bg-gray-50/60 dark:open:bg-gray-900/30" :open="hasDetail(project) && openAll">
-                <summary class="flex cursor-pointer list-none flex-wrap items-start gap-x-3 gap-y-1 px-4 py-3">
-                  <span :class="['mt-0.5 shrink-0 rounded-full px-2.5 py-0.5 text-xs font-semibold', tone(project.status).chip]">{{ label(project.status) }}</span>
-                  <span v-if="project.timing === 'behind'" class="mt-0.5 shrink-0 rounded-full bg-rose-100 px-2 py-0.5 text-xs font-medium text-rose-800 dark:bg-rose-500/20 dark:text-rose-200">Behind plan window</span>
-                  <span v-else-if="project.timing === 'within'" class="mt-0.5 shrink-0 rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-800 dark:bg-emerald-500/20 dark:text-emerald-200">Within window</span>
+                <summary class="flex cursor-pointer list-none items-start gap-3 px-4 py-3">
                   <span class="min-w-0 flex-1">
                     <span class="block text-sm font-semibold text-gray-900 dark:text-white">{{ project.name }} <span class="ml-1 text-xs font-normal text-gray-500 dark:text-gray-400">{{ project.tag }}</span></span>
                     <span class="block text-sm text-gray-700 dark:text-gray-300">{{ project.headline }}</span>
+                  </span>
+                  <span class="flex shrink-0 flex-col items-end gap-1 sm:flex-row sm:items-start">
+                    <span v-if="project.timing === 'behind'" class="rounded-full bg-rose-100 px-2 py-0.5 text-xs font-medium text-rose-800 dark:bg-rose-500/20 dark:text-rose-200">Behind plan window</span>
+                    <span v-else-if="project.timing === 'within'" class="rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-800 dark:bg-emerald-500/20 dark:text-emerald-200">Within window</span>
+                    <span :class="['rounded-full px-2.5 py-0.5 text-xs font-semibold', tone(project.status).chip]">{{ label(project.status) }}</span>
                   </span>
                 </summary>
 
