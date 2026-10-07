@@ -9,6 +9,8 @@ use Cultpantry\Elections\Actions\ExportElectionToXml;
 use Cultpantry\Elections\Actions\ImportElectionFromXml;
 use Cultpantry\Elections\Http\Controllers\Admin\Concerns\ElectionsAdminMiddleware;
 use Cultpantry\Elections\Models\Candidate;
+use Cultpantry\Elections\Models\Tag;
+use Cultpantry\Elections\Support\Audit;
 use Cultpantry\Elections\Support\Options;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -16,7 +18,6 @@ use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Support\Carbon;
 use Inertia\Inertia;
 use Inertia\Response;
-use Cultpantry\Elections\Models\Tag;
 
 /**
  * The dashboard, candidate portfolios, and the XML import/export that is
@@ -69,8 +70,12 @@ class CandidateController extends Controller implements HasMiddleware
         $this->authorize('delete', $candidate);
 
         $name = $candidate->name;
+        $counts = ['entries' => $candidate->entries()->count(), 'planks' => $candidate->planks()->count()];
         $candidate->delete();
         Tag::pruneOrphans();
+        Audit::record('elections.candidate_deleted', "Candidate deleted with everything on file: {$name}", $candidate, [
+            'office' => $candidate->office, ...$counts,
+        ], 'warning');
 
         return redirect()
             ->route('admin.elections.index')
@@ -86,7 +91,7 @@ class CandidateController extends Controller implements HasMiddleware
         ]);
 
         try {
-            $result = $importElectionFromXml->handle($validated['file']);
+            $result = $importElectionFromXml->handle($validated['file'], $validated['file']->getClientOriginalName());
         } catch (\RuntimeException $e) {
             return redirect()->route('admin.elections.index')->with('error', $e->getMessage());
         }

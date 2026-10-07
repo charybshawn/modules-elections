@@ -5,9 +5,10 @@ namespace Cultpantry\Elections\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use Cultpantry\Elections\Http\Controllers\Admin\Concerns\ElectionsAdminMiddleware;
 use Cultpantry\Elections\Models\Article;
+use Cultpantry\Elections\Models\Tag;
+use Cultpantry\Elections\Support\Audit;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Routing\Controllers\HasMiddleware;
-use Cultpantry\Elections\Models\Tag;
 
 /**
  * Articles only arrive by XML import; this is just the way to drop one that
@@ -23,6 +24,7 @@ class ArticleController extends Controller implements HasMiddleware
 
         $article->delete();
         Tag::pruneOrphans();
+        Audit::record('elections.article_deleted', "Article removed: {$article->title}", $article, ['url' => $article->url, 'outlet' => $article->outlet], 'warning');
 
         return redirect()->back()->with('success', 'Article removed.');
     }

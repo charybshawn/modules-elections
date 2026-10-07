@@ -72,7 +72,7 @@ class ImportPendingCommand extends Command
 
             DB::beginTransaction();
             try {
-                $result = $import->handleString((string) file_get_contents($path));
+                $result = $import->handleString((string) file_get_contents($path), $name);
                 if (! $dryRun) {
                     ImportRecord::create([
                         'filename' => $name,

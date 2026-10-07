@@ -6,6 +6,7 @@ use App\Models\User;
 use Cultpantry\Elections\Actions\BuildUpdateDigest;
 use Cultpantry\Elections\Models\UpdateDigest;
 use Cultpantry\Elections\Notifications\ElectionsUpdateNotification;
+use Cultpantry\Elections\Support\Audit;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Notification;
 
@@ -55,6 +56,10 @@ class NotifyUpdatesCommand extends Command
         }
 
         Notification::send($recipients, new ElectionsUpdateNotification($digest));
+        Audit::record('elections.update_digest_sent', "Elections update email sent to {$recipients->count()} recipient(s)", null, [
+            'items' => $digest['total'],
+            'recipients' => $recipients->pluck('email')->all(),
+        ]);
         UpdateDigest::create([
             'covers_through' => $until,
             'counts' => [

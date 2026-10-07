@@ -6,10 +6,11 @@ use App\Http\Controllers\Controller;
 use Cultpantry\Elections\Http\Controllers\Admin\Concerns\ElectionsAdminMiddleware;
 use Cultpantry\Elections\Models\Candidate;
 use Cultpantry\Elections\Models\Plank;
+use Cultpantry\Elections\Models\Tag;
+use Cultpantry\Elections\Support\Audit;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Support\Facades\DB;
-use Cultpantry\Elections\Models\Tag;
 
 /**
  * Planks only arrive by XML import; this is how a wrong one comes off a
@@ -24,11 +25,15 @@ class PlankController extends Controller implements HasMiddleware
         abort_unless($plank->candidate_id === $candidate->id, 404);
         $this->authorize('delete', $plank);
 
+        $statements = $plank->entries()->count();
         DB::transaction(function () use ($plank) {
             $plank->entries()->delete();
             $plank->delete();
         });
         Tag::pruneOrphans();
+        Audit::record('elections.plank_deleted', "Plank deleted from {$candidate->name}: {$plank->title}", $plank, [
+            'candidate' => $candidate->name, 'key' => $plank->key, 'statements_deleted' => $statements,
+        ], 'warning');
 
         return redirect()
             ->route('admin.elections.candidates.show', ['candidate' => $candidate, 'tab' => 'platform'])

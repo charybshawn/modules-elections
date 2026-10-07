@@ -14,6 +14,7 @@ use Cultpantry\Elections\Models\ScorecardAnswer;
 use Cultpantry\Elections\Models\ScorecardItem;
 use Cultpantry\Elections\Models\ScorecardResponse;
 use Cultpantry\Elections\Models\Tag;
+use Cultpantry\Elections\Support\Audit;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -60,15 +61,15 @@ class ImportElectionFromXml
     /**
      * @return array{candidates: array{created: int, updated: int, unchanged: int}, entries: array{created: int, updated: int, unchanged: int}, planks: array{created: int, updated: int, unchanged: int}, articles: array{created: int, updated: int, unchanged: int}, events: array{created: int, updated: int, unchanged: int}, problems: array<int, string>}
      */
-    public function handle(UploadedFile $file): array
+    public function handle(UploadedFile $file, ?string $source = null): array
     {
-        return $this->handleString((string) file_get_contents($file->getRealPath()));
+        return $this->handleString((string) file_get_contents($file->getRealPath()), $source ?? $file->getClientOriginalName());
     }
 
     /**
      * @return array{candidates: array{created: int, updated: int, unchanged: int}, entries: array{created: int, updated: int, unchanged: int}, planks: array{created: int, updated: int, unchanged: int}, articles: array{created: int, updated: int, unchanged: int}, events: array{created: int, updated: int, unchanged: int}, problems: array<int, string>}
      */
-    public function handleString(string $contents): array
+    public function handleString(string $contents, ?string $source = null): array
     {
         libxml_use_internal_errors(true);
         $xml = simplexml_load_string($contents);
@@ -139,6 +140,15 @@ class ImportElectionFromXml
         Tag::pruneOrphans();
 
         $result['problems'] = $this->problems;
+
+        // One audit entry per import (not per record). Inside a dry run's
+        // transaction it's rolled back with everything else.
+        Audit::record('elections.import', 'Elections research imported'.($source ? ": {$source}" : ''), null, [
+            'file' => $source,
+            'hash' => hash('sha256', $contents),
+            'summary' => $this->summarize([...$result, 'problems' => []]),
+            'problems' => count($result['problems']),
+        ], $result['problems'] === [] ? 'info' : 'warning');
 
         return $result;
     }

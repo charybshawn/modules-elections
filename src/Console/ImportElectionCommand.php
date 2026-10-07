@@ -37,7 +37,7 @@ class ImportElectionCommand extends Command
 
             DB::beginTransaction();
             try {
-                $result = $import->handleString((string) file_get_contents($path));
+                $result = $import->handleString((string) file_get_contents($path), basename($path));
             } catch (RuntimeException $e) {
                 DB::rollBack();
                 $this->error('  '.$e->getMessage());

@@ -7,13 +7,14 @@ use Cultpantry\Elections\Actions\BuildCommunityPulse;
 use Cultpantry\Elections\Http\Controllers\Admin\Concerns\ElectionsAdminMiddleware;
 use Cultpantry\Elections\Models\PulseIssue;
 use Cultpantry\Elections\Models\PulseSnapshot;
+use Cultpantry\Elections\Models\Tag;
+use Cultpantry\Elections\Support\Audit;
 use Cultpantry\Elections\Support\Options;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Inertia\Inertia;
 use Inertia\Response;
-use Cultpantry\Elections\Models\Tag;
 
 /**
  * The Community Pulse page: our summary of what residents are discussing,
@@ -44,6 +45,7 @@ class CommunityPulseController extends Controller implements HasMiddleware
 
         $snapshot->delete();
         Tag::pruneOrphans();
+        Audit::record('elections.pulse_deleted', 'Community Pulse snapshot deleted ('.($snapshot->taken_on?->toDateString() ?? "#{$snapshot->id}").')', $snapshot, [], 'warning');
 
         return redirect()->route('admin.elections.pulse.index')->with('success', 'Pulse snapshot deleted.');
     }
