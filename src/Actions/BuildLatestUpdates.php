@@ -16,17 +16,20 @@ class BuildLatestUpdates
 {
     public const LIMIT = 40;
 
+    /** Singular and plural labels for each entry kind; the update email uses them too. */
+    public const KIND_LABELS = [
+        'plank' => ['platform statement', 'platform statements'],
+        'statement' => ['statement', 'statements'],
+        'qa_answer' => ['Q&A answer', 'Q&A answers'],
+        'prior_record' => ['council-record item', 'council-record items'],
+        'background' => ['background fact', 'background facts'],
+        'endorsement' => ['endorsement', 'endorsements'],
+        'finance' => ['finance record', 'finance records'],
+    ];
+
     public function handle(): array
     {
-        $kindLabels = [
-            'plank' => ['platform statement', 'platform statements'],
-            'statement' => ['statement', 'statements'],
-            'qa_answer' => ['Q&A answer', 'Q&A answers'],
-            'prior_record' => ['council-record item', 'council-record items'],
-            'background' => ['background fact', 'background facts'],
-            'endorsement' => ['endorsement', 'endorsements'],
-            'finance' => ['finance record', 'finance records'],
-        ];
+        $kindLabels = self::KIND_LABELS;
 
         $entries = Entry::query()->whereNotNull('created_at')
             ->with('candidate:id,name,slug,photo_url,status')

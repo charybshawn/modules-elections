@@ -12,7 +12,7 @@ class ElectionsUpdateNotification extends Notification implements ShouldQueue
     use Queueable;
 
     /**
-     * @param  array{articles: int, events: int, candidates: int, total: int, top: array<int, array{label: string, text: string, url: ?string}>}  $digest
+     * @param  array{articles: int, events: int, candidates: int, total: int, top: array<int, array{label: string, text: string, url: ?string}>, more?: int}  $digest
      */
     public function __construct(public array $digest) {}
 
@@ -45,8 +45,10 @@ class ElectionsUpdateNotification extends Notification implements ShouldQueue
             $text = $this->escape($item['text']);
             $message->line('- **'.$this->escape($item['label']).':** '.($item['url'] ? "[{$text}]({$item['url']})" : $text));
         }
-        if ($total > count($top)) {
-            $message->line('...and '.($total - count($top)).' more.');
+        // Lines are grouped, so "more" counts remaining lines, not raw items.
+        $more = $this->digest['more'] ?? max(0, $total - count($top));
+        if ($more > 0) {
+            $message->line('...and '.$more.' more.');
         }
 
         return $message
