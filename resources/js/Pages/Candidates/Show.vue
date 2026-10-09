@@ -63,18 +63,32 @@
       <p v-if="newSummary" class="text-sm font-medium text-amber-800 dark:text-amber-300">{{ newSummary }}</p>
 
       <!-- Tabs: each is its own URL (?tab=), like Customers' views. Underline
-           tabs from md up; a native picker on phones, where seven tabs
-           wouldn't fit across. -->
+           tabs from md up; on phones, where seven tabs wouldn't fit across,
+           a native picker dressed as a menu button so it reads as navigation. -->
       <div>
-        <label for="candidate-tab" class="sr-only">Section</label>
-        <select
-          id="candidate-tab"
-          :value="activeTab"
-          class="md:hidden block w-full rounded-md border-gray-300 text-base dark:border-gray-600 dark:bg-gray-700 dark:text-white"
-          @change="switchTab(($event.target as HTMLSelectElement).value)"
-        >
-          <option v-for="tab in tabs" :key="tab.id" :value="tab.id">{{ tab.title }}{{ tab.count ? ` (${tab.count})` : '' }}{{ tab.newCount ? ` · ${tab.newCount} new` : '' }}</option>
-        </select>
+        <div class="md:hidden">
+          <label for="candidate-tab" class="block mb-1.5 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Sections</label>
+          <div class="relative">
+            <svg class="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5" :class="otherNewCount ? 'text-orange-600 dark:text-orange-400' : 'text-indigo-600 dark:text-indigo-300'" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
+            <select
+              id="candidate-tab"
+              :value="activeTab"
+              :class="otherNewCount
+                ? 'border-orange-500 bg-orange-50 text-orange-900 focus:border-orange-500 focus:ring-orange-500 dark:border-orange-400 dark:bg-orange-900/30 dark:text-white'
+                : 'border-indigo-500 bg-indigo-50 text-indigo-900 focus:border-indigo-500 focus:ring-indigo-500 dark:border-indigo-400 dark:bg-indigo-900/40 dark:text-white'"
+              class="block w-full appearance-none bg-none rounded-lg border-2 py-3 pl-11 pr-10 text-base font-semibold shadow-sm"
+              @change="switchTab(($event.target as HTMLSelectElement).value)"
+            >
+              <option v-for="tab in tabs" :key="tab.id" :value="tab.id">{{ tab.title }}{{ tab.count ? ` (${tab.count})` : '' }}{{ tab.newCount ? ` · ${tab.newCount} new` : '' }}</option>
+            </select>
+            <svg class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5" :class="otherNewCount ? 'text-orange-600 dark:text-orange-400' : 'text-indigo-600 dark:text-indigo-300'" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l4-4 4 4m0 6l-4 4-4-4" />
+            </svg>
+          </div>
+          <p v-if="otherNewCount" class="mt-1.5 text-sm font-medium text-orange-700 dark:text-orange-300">{{ otherNewCount }} new in other sections -- tap above to switch.</p>
+        </div>
 
         <nav class="hidden md:flex gap-1 overflow-x-auto scrollbar-hide border-b border-gray-200 dark:border-gray-700" aria-label="Candidate sections">
           <Link
@@ -479,6 +493,9 @@ const tabHref = (id: string): string => {
 const switchTab = (id: string) => {
   if (id !== props.activeTab) router.get(tabHref(id), {}, { preserveState: true, preserveScroll: true })
 }
+
+// New items outside the open section: turns the phone menu orange.
+const otherNewCount = computed(() => tabs.value.reduce((n, tab) => n + (tab.id === props.activeTab ? 0 : tab.newCount), 0))
 
 // ---- Entries ----
 const deleteEntry = async (entry: Entry) => {
