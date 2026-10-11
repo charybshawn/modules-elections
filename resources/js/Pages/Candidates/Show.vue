@@ -363,6 +363,9 @@ const backgroundDescriptions: Record<string, string> = {
   local_roots: 'Their time in Salmon Arm and the Shuswap.',
   affiliation: 'Faith communities, clubs, societies, associations and parties they belong or have belonged to.',
   past_activity: 'What they have done before running: projects, campaigns, events and causes.',
+  corporate_roles: 'Company boards, directorships and officer roles, from the public registry and company filings.',
+  holdings: 'Property, shares, company ownership and other assets, from public records and mandated disclosures.',
+  political_giving: 'Donations they have made to parties, candidates and campaigns, from public filings.',
 }
 
 // ---- New since last visit (per viewer, per tab) ----

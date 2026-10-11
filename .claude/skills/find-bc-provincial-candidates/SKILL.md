@@ -69,14 +69,11 @@ before anything else, then branch:
    that are new or missing and status changes, and write only those. Spell every
    returning candidate exactly as on file.
 
-2. **Web search** for the race ("Salmon Arm-Shuswap MLA candidates", "Salmon
-   Arm-Shuswap BC election candidate nomination", "BC election 2028 Salmon
-   Arm-Shuswap") to find the pages to open in the next steps. Confirm first
-   that the riding is still called Salmon Arm-Shuswap (boundaries and names can
-   change before an election); if it has changed, stop and tell the user.
-
-3. **Elections BC** (elections.bc.ca), the authority on status. Read it
-   through `browserless_smartscraper` or a Browserless session:
+2. **Elections BC** (elections.bc.ca), **opened first**, in a browser, before
+   any search: it is the authority on status and tells you which stage the
+   race is at. Read it through Browserless
+   (`browserless_smartscraper` or a session) or, if Browserless is out of
+   units, `playwright-fetch.cjs` (see browser-access.md):
    - Its candidate list (the `Salmon Arm-Shuswap` rows of the table; the CSV link
      on that page is the whole province, so don't download it). Everyone on its
      official list is `nominated`.
@@ -89,6 +86,16 @@ before anything else, then branch:
      the riding's rows (place, address, dates) go in the advance voting event's
      `<description>`. Read PDFs with `browserless_smartscraper` and `rawText`;
      one at a time, since a burst gets a 429.
+
+3. **Web search, only after the authority pages are open,** for the race ("Salmon Arm-Shuswap MLA candidates", "Salmon
+   Arm-Shuswap BC election candidate nomination", "BC election 2028 Salmon
+   Arm-Shuswap") to find the pages to open in the next steps. Confirm first
+   that the riding is still called Salmon Arm-Shuswap (boundaries and names can
+   change before an election); if it has changed, stop and tell the user.
+   The search tool is US-indexed and has returned stale pages, dead links, and
+   flat wrong claims (that no election exists). Treat results as leads only and
+   search through the browser (Browserless, or the Playwright fallback) where
+   you can.
 
 4. **The sitting MLA** (BC Legislature member page, leg.bc.ca): the person
    holding the seat now is `is_incumbent` = `true` *if they are running again*.

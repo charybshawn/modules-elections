@@ -67,8 +67,10 @@ class Entry extends Model
 
     /**
      * What a background entry is about -- who the candidate is rather than
-     * what they stand for, so it gets its own list instead of TOPICS. Kept to
-     * their public life: nothing about family, health or home.
+     * what they stand for, so it gets its own list instead of TOPICS. Public,
+     * sourced fact only: nothing about family (children, partners, divorces)
+     * or health. Holdings, corporate roles and political giving are public
+     * records and are in.
      */
     public const BACKGROUND_TOPICS = [
         'career' => 'Career',
@@ -79,6 +81,9 @@ class Entry extends Model
         'local_roots' => 'Local roots',
         'affiliation' => 'Affiliations and memberships',
         'past_activity' => 'Past activities',
+        'corporate_roles' => 'Corporate roles and boards',
+        'holdings' => 'Assets, ownership and holdings',
+        'political_giving' => 'Political donations',
         'other' => 'Other',
     ];
 
@@ -86,7 +91,7 @@ class Entry extends Model
      * The background topics shown on the candidate's "Background &
      * Affiliations" tab; the rest stay on About.
      */
-    public const AFFILIATION_TOPICS = ['community', 'public_service', 'affiliation', 'past_activity'];
+    public const AFFILIATION_TOPICS = ['community', 'public_service', 'affiliation', 'past_activity', 'corporate_roles', 'holdings', 'political_giving'];
 
     public const SOURCE_TYPES = [
         'candidate_site' => 'Candidate website',
