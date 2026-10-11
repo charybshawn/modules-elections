@@ -73,6 +73,8 @@ export interface Article {
   tags: TagRef[]
   title: string
   url: string
+  /** The story's URL, with a text fragment that marks the candidate's name where supported. */
+  link: string
   outlet: string | null
   published_on: string | null
   summary: string | null
@@ -268,6 +270,15 @@ export interface PulseSnapshot {
 }
 
 /** One row of the dashboard's Latest updates: a candidate's day of additions, or a news story. */
+export interface UpdateItem {
+  label: string
+  /** Singular kind label, e.g. "statement". */
+  kind: string
+  tab: string
+  /** plank-<key> or entry-<id>: the element the candidate page scrolls to and marks. */
+  focus: string
+}
+
 export interface CandidateUpdate {
   type: 'candidate'
   id: string
@@ -282,6 +293,9 @@ export interface CandidateUpdate {
   /** The first new plank title that day (the rest are counted in more_planks). */
   planks: string[]
   more_planks: number
+  /** The new content itself (capped); each opens the candidate's page on it. */
+  items: UpdateItem[]
+  more_items: number
   /** Candidate tab to open, or null for the default. */
   tab: string | null
 }

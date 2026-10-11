@@ -4,22 +4,28 @@
 
     <TransitionGroup tag="ol" class="mt-3 divide-y divide-gray-100 dark:divide-gray-700" enter-from-class="opacity-0 -translate-y-1" enter-active-class="transition duration-200">
       <li v-for="u in shown" :key="u.id" class="py-2.5 first:pt-0 last:pb-0">
-        <!-- A candidate's day of additions. -->
-        <Link v-if="u.type === 'candidate'" :href="candidateHref(u)" class="group flex gap-3">
+        <!-- A candidate's day of additions: the name opens their page, each new item opens it on that item. -->
+        <div v-if="u.type === 'candidate'" class="flex gap-3">
           <CandidatePhoto :name="u.name" :url="u.photo_url" class="h-8 w-8 shrink-0 rounded-full text-xs" />
           <span class="min-w-0 flex-1">
             <span class="flex items-baseline justify-between gap-2">
-              <span class="truncate text-sm font-medium text-gray-900 group-hover:underline dark:text-white">{{ u.name }}</span>
+              <Link :href="candidateHref(u)" class="truncate text-sm font-medium text-gray-900 hover:underline dark:text-white">{{ u.name }}</Link>
               <time :datetime="u.at" :title="formatDateTime(u.at) ?? undefined" class="shrink-0 text-xs text-gray-400 dark:text-gray-500">{{ ago(u.at) }}</time>
             </span>
             <span class="block text-xs text-gray-600 dark:text-gray-300">{{ u.total }} new: {{ u.counts.join(', ') }}</span>
-            <span v-for="title in u.planks" :key="title" class="mt-0.5 block truncate text-xs text-indigo-700 dark:text-indigo-300">New plank: {{ title }}</span>
-            <span v-if="u.more_planks" class="block text-xs text-gray-500 dark:text-gray-400">+{{ u.more_planks }} more new planks</span>
+            <ul v-if="u.items.length" class="mt-1 space-y-0.5">
+              <li v-for="item in u.items" :key="item.focus" class="min-w-0">
+                <Link :href="itemHref(u, item)" class="block truncate text-xs text-indigo-700 hover:underline dark:text-indigo-300" :title="item.label">
+                  <span class="text-gray-500 dark:text-gray-400">{{ item.kind }}:</span> {{ item.label }}
+                </Link>
+              </li>
+            </ul>
+            <Link v-if="u.more_items" :href="candidateHref(u)" class="block text-xs text-gray-500 hover:underline dark:text-gray-400">+{{ u.more_items }} more</Link>
           </span>
-        </Link>
+        </div>
 
         <!-- A news story. -->
-        <a v-else :href="u.url" target="_blank" rel="noopener noreferrer" class="group flex gap-3">
+        <a v-else :href="u.link" target="_blank" rel="noopener noreferrer" class="group flex gap-3">
           <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-300" aria-hidden="true">
             <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z" /></svg>
           </span>
@@ -51,7 +57,7 @@ import { Link } from '@inertiajs/vue3'
 import CandidatePhoto from './CandidatePhoto.vue'
 import { sectionHeadingClass } from './classes'
 import { formatDateTime } from './format'
-import type { CandidateUpdate, LatestUpdate } from './types'
+import type { CandidateUpdate, LatestUpdate, UpdateItem } from './types'
 
 const props = defineProps<{
   updates: LatestUpdate[]
@@ -66,6 +72,7 @@ const candidateHref = (u: CandidateUpdate): string => {
   if (u.tab) params.tab = u.tab
   return route('admin.elections.candidates.show', params)
 }
+const itemHref = (u: CandidateUpdate, item: UpdateItem): string => route('admin.elections.candidates.show', { candidate: u.slug, tab: item.tab, focus: item.focus })
 const count = ref(PAGE)
 const shown = computed(() => props.updates.slice(0, count.value))
 

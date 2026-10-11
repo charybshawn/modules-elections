@@ -27,7 +27,14 @@ describe('Latest updates', function () {
                 $today = $updates->first(fn ($u) => $u['type'] === 'candidate' && $u['slug'] === $jane->slug && $u['total'] === 2);
                 $older = $updates->first(fn ($u) => $u['type'] === 'candidate' && $u['slug'] === $jane->slug && $u['total'] !== 2);
 
+                $entryIds = $jane->entries()->where('summary', 'like', 'One.')->orWhere('summary', 'Two.')->orderBy('id')->pluck('id')->all();
+
                 expect($today['counts'])->toBe(['2 statements'])
+                    ->and(collect($today['items'])->pluck('focus')->all())->toBe(array_map(fn ($id) => 'entry-'.$id, $entryIds))
+                    ->and($today['items'][0])->toMatchArray(['label' => 'One.', 'kind' => 'statement', 'tab' => 'words'])
+                    ->and($today['more_items'])->toBe(0)
+                    ->and(collect($older['items'])->pluck('focus')->all())->toContain('plank-'.$jane->planks()->where('title', 'More shelter beds')->value('key'))
+                    ->and($updates->firstWhere('type', 'article')['link'])->toBe('https://news.example/fresh#:~:text=Example')
                     ->and($older['planks'])->toBe(['More shelter beds'])
                     ->and($older['tab'])->toBe('platform')
                     ->and($updates->firstWhere('type', 'article')['title'])->toBe('Fresh story')

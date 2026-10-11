@@ -1,5 +1,5 @@
 <template>
-  <article class="group relative">
+  <article :id="`entry-${entry.id}`" class="group relative scroll-mt-32" :class="focus === `entry-${entry.id}` ? [focusClass, 'p-2'] : ''">
     <p v-if="entry.question" class="text-sm text-gray-500 dark:text-gray-400">
       <span class="font-medium text-gray-700 dark:text-gray-300">Asked:</span> {{ entry.question }}
     </p>
@@ -38,10 +38,11 @@
 
 <script setup lang="ts">
 import TagChips from './TagChips.vue'
+import { focusClass, useFocus } from './focus'
 import type { Entry, Options } from './types'
 import { formatDate, hostOf, isHttpUrl } from './format'
 
-defineProps<{
+const props = defineProps<{
   entry: Entry
   options: Options
   editable?: boolean
@@ -52,4 +53,6 @@ defineProps<{
 }>()
 
 defineEmits<{ delete: [entry: Entry] }>()
+
+const focus = useFocus()
 </script>

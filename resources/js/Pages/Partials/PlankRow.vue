@@ -5,7 +5,7 @@
       type="button"
       :aria-expanded="open"
       :aria-controls="`plank-body-${plank.key}`"
-      :class="open ? 'bg-gray-50 dark:bg-gray-700/40' : 'hover:bg-gray-50 dark:hover:bg-gray-700/30'"
+      :class="[open ? 'bg-gray-50 dark:bg-gray-700/40' : 'hover:bg-gray-50 dark:hover:bg-gray-700/30', focus === `plank-${plank.key}` ? focusClass : '']"
       class="tap-target-touch flex w-full items-start gap-3 rounded-lg px-2 py-2.5 text-left transition-colors"
       @click="$emit('toggle')"
     >
@@ -102,6 +102,7 @@ import AnalysisPanel from './AnalysisPanel.vue'
 import StatementLine from './StatementLine.vue'
 import TagChips from './TagChips.vue'
 import { newPillClass } from './classes'
+import { focusClass, useFocus } from './focus'
 import { formatDate, hostOf, isHttpUrl } from './format'
 import type { Entry, Options, Plank } from './types'
 
@@ -140,7 +141,8 @@ const checkChipClass = computed(() =>
         : 'bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-300',
 )
 const showHistory = ref(false)
-const allSources = ref(false)
+const focus = useFocus()
+const allSources = ref(props.plank.sources.slice(SOURCES_SHOWN).some((e) => focus.value === `entry-${e.id}`))
 const shownSources = computed(() => (allSources.value ? props.plank.sources : props.plank.sources.slice(0, SOURCES_SHOWN)))
 
 // Compared with where it stood before its latest change: rank first, then tier.

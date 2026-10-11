@@ -293,8 +293,8 @@
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, onMounted, reactive, ref, watch } from 'vue'
-import { Link, router, useRemember } from '@inertiajs/vue3'
+import { computed, nextTick, onMounted, provide, reactive, ref, watch } from 'vue'
+import { Link, router, useRemember, usePage } from '@inertiajs/vue3'
 import AdminLayout from '@/Layouts/AdminLayout.vue'
 import AdminMobileHeader from '@/Components/Admin/AdminMobileHeader.vue'
 import AdminShowShell from '@/Components/Admin/AdminShowShell.vue'
@@ -309,6 +309,7 @@ import QuickSearch from '../Partials/QuickSearch.vue'
 import ScorecardView from '../Partials/ScorecardView.vue'
 import TagChips from '../Partials/TagChips.vue'
 import { newPillClass } from '../Partials/classes'
+import { focusKey } from '../Partials/focus'
 import { formatDate, hostOf, isHttpUrl, useReadOnly } from '../Partials/format'
 import { tabScope, toUnix, useUpdates } from '../Partials/updates'
 import type { Article, Entry, Options, Plank, Portfolio } from '../Partials/types'
@@ -445,6 +446,33 @@ onMounted(() => {
   if (!openPlanks.ids.includes(plank.id)) openPlanks.ids = [...openPlanks.ids, plank.id]
   nextTick(() => document.getElementById(`plank-${plank.key}`)?.scrollIntoView({ block: 'start' }))
 })
+
+// ?focus=plank-<key> or entry-<id> (from the dashboard's Latest updates): open
+// whatever holds that item, scroll to it and mark it. Read from the page URL so
+// the cards know at first render.
+const page = usePage()
+const focusFromUrl = (): string | null => new URL(page.url, 'http://local').searchParams.get('focus')
+const focus = ref<string | null>(focusFromUrl())
+provide(focusKey, focus)
+
+const revealFocus = () => {
+  const target = focus.value
+  if (!target) return
+  const plank = target.startsWith('plank-')
+    ? allPlanks.value.find((p) => `plank-${p.key}` === target)
+    : allPlanks.value.find((p) => p.sources.some((e) => `entry-${e.id}` === target))
+  if (plank && !openPlanks.ids.includes(plank.id)) openPlanks.ids = [...openPlanks.ids, plank.id]
+  // Twice: once for the plank to open, once for its statements to render.
+  nextTick(() => nextTick(() => document.getElementById(target)?.scrollIntoView({ block: 'center', behavior: 'smooth' })))
+}
+onMounted(revealFocus)
+watch(
+  () => page.url,
+  () => {
+    focus.value = focusFromUrl()
+    revealFocus()
+  },
+)
 
 const filteredPlankCount = computed(() => filteredTiers.value.reduce((n, g) => n + g.planks.length, 0))
 

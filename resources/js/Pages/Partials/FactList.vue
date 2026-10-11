@@ -1,7 +1,7 @@
 <template>
   <!-- Background facts as a plain bulleted list, each with its source under it. -->
   <ul class="space-y-3">
-    <li v-for="entry in entries" :key="entry.id" class="flex gap-3">
+    <li v-for="entry in entries" :id="`entry-${entry.id}`" :key="entry.id" class="flex scroll-mt-32 gap-3" :class="focus === `entry-${entry.id}` ? [focusClass, 'p-2'] : ''">
       <span class="mt-2.5 h-1.5 w-1.5 shrink-0 rounded-full bg-amber-500" aria-hidden="true" />
       <div class="min-w-0">
         <p class="text-sm sm:text-base leading-relaxed text-gray-900 dark:text-gray-100">
@@ -28,6 +28,7 @@
 <script setup lang="ts">
 import type { Entry } from './types'
 import { newPillClass } from './classes'
+import { focusClass, useFocus } from './focus'
 import { formatDate, hostOf, isHttpUrl } from './format'
 
 defineProps<{
@@ -37,4 +38,6 @@ defineProps<{
 }>()
 
 defineEmits<{ delete: [entry: Entry] }>()
+
+const focus = useFocus()
 </script>

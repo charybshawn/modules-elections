@@ -2,7 +2,7 @@
   <!-- One statement, compact: the quote (or summary) clipped to three lines
        and its source; tap to see the full statement. -->
   <div>
-    <button v-if="!open" type="button" class="group block w-full text-left" :aria-expanded="false" @click="open = true">
+    <button v-if="!open" :id="`entry-${entry.id}`" type="button" class="group block w-full text-left" :aria-expanded="false" @click="open = true">
       <span class="line-clamp-3 text-sm text-gray-800 group-hover:text-gray-950 dark:text-gray-200 dark:group-hover:text-white" :class="entry.quote ? 'italic' : ''">
         {{ entry.quote ? `“${entry.quote}”` : entry.summary }}
       </span>
@@ -22,12 +22,14 @@
 
 <script setup lang="ts">
 import { ref } from 'vue'
+import { useFocus } from './focus'
 import EntryCard from './EntryCard.vue'
 import { formatDate, hostOf } from './format'
 import type { Entry, Options } from './types'
 
-defineProps<{ entry: Entry; options: Options; editable?: boolean; isNew?: boolean }>()
+const props = defineProps<{ entry: Entry; options: Options; editable?: boolean; isNew?: boolean }>()
 defineEmits<{ delete: [entry: Entry] }>()
 
-const open = ref(false)
+const focus = useFocus()
+const open = ref(focus.value === `entry-${props.entry.id}`)
 </script>
