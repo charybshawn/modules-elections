@@ -2,9 +2,9 @@
   <!-- The module's own sections. They share the one Elections sidebar entry
        (and its viewer permission), so they're tabs here rather than sidebar
        items. -->
-  <div class="flex items-center gap-3">
+  <div class="flex items-center justify-end gap-3 md:justify-start">
     <nav
-      class="flex min-w-0 flex-1 gap-1 overflow-x-auto rounded-xl bg-gray-100 p-1 ring-1 ring-inset ring-gray-900/5 scrollbar-hide dark:bg-gray-800/80 dark:ring-white/10"
+      class="hidden min-w-0 flex-1 gap-1 overflow-x-auto rounded-xl md:flex bg-gray-100 p-1 ring-1 ring-inset ring-gray-900/5 scrollbar-hide dark:bg-gray-800/80 dark:ring-white/10"
       aria-label="Elections sections"
     >
       <Link
@@ -34,6 +34,34 @@
       </Link>
     </nav>
     <QuickSearch />
+
+    <!-- Phones: the sections as always-visible buttons in a fixed bottom bar,
+         dressed like the other admin pages' bottom drawers. The search stays up top. -->
+    <nav
+      class="fixed inset-x-0 bottom-0 z-40 grid grid-cols-4 border-t border-gray-200 bg-white pb-[env(safe-area-inset-bottom)] shadow-[inset_0_1px_0_rgba(255,255,255,0.6),0_-4px_14px_rgba(0,0,0,0.18)] md:hidden dark:border-gray-600 dark:bg-gray-700 dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_-4px_14px_rgba(0,0,0,0.45)]"
+      aria-label="Elections sections"
+    >
+      <Link
+        v-for="section in sections"
+        :key="section.name"
+        :href="route(section.name)"
+        :aria-current="section.active ? 'page' : undefined"
+        :class="[
+          'tap-target-touch relative flex min-w-0 flex-col items-center justify-center gap-1.5 px-1 pt-3.5 pb-3.5 text-[11px] font-medium leading-tight',
+          section.active ? 'text-indigo-600 dark:text-indigo-400' : 'text-gray-500 dark:text-gray-400',
+        ]"
+      >
+        <span class="relative">
+          <svg :class="[section.tone, 'h-6 w-6']" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+            <path v-for="d in section.solid" :key="d" fill-rule="evenodd" clip-rule="evenodd" :d="d" />
+          </svg>
+          <span v-if="section.unread" class="absolute -right-1 -top-0.5 h-2.5 w-2.5 rounded-full bg-orange-500 ring-2 ring-white dark:ring-gray-700" aria-hidden="true" />
+        </span>
+        <span class="max-w-full truncate">{{ section.short }}</span>
+        <span v-if="section.unread" class="sr-only">(new)</span>
+        <span v-if="section.active" class="absolute bottom-0 left-1/2 h-0.5 w-1/2 -translate-x-1/2 rounded-full bg-indigo-600 dark:bg-indigo-400" />
+      </Link>
+    </nav>
   </div>
 </template>
 
@@ -57,10 +85,25 @@ const icons = {
   plans: 'M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 0 1 3 19.875v-6.75ZM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 0 1-1.125-1.125V8.625ZM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 0 1-1.125-1.125V4.125Z',
 }
 
+// The same icons, filled in, for the phone bar (Heroicons solid, MIT).
+const solid = {
+  candidates: [
+    'M8.25 6.75a3.75 3.75 0 1 1 7.5 0 3.75 3.75 0 0 1-7.5 0ZM15.75 9.75a3 3 0 1 1 6 0 3 3 0 0 1-6 0ZM2.25 9.75a3 3 0 1 1 6 0 3 3 0 0 1-6 0ZM6.31 15.117A6.745 6.745 0 0 1 12 12a6.745 6.745 0 0 1 6.709 7.498.75.75 0 0 1-.372.568A12.696 12.696 0 0 1 12 21.75c-2.305 0-4.47-.612-6.337-1.684a.75.75 0 0 1-.372-.568 6.787 6.787 0 0 1 1.019-4.38Z',
+    'M5.082 14.254a8.287 8.287 0 0 0-1.308 5.135 9.687 9.687 0 0 1-1.764-.44l-.115-.04a.563.563 0 0 1-.373-.487l-.01-.121a3.75 3.75 0 0 1 3.57-4.047ZM20.226 19.389a8.287 8.287 0 0 0-1.308-5.135 3.75 3.75 0 0 1 3.57 4.047l-.01.121a.563.563 0 0 1-.373.486l-.115.04c-.567.2-1.156.349-1.764.441Z',
+  ],
+  subjects: ['M5.25 2.25a3 3 0 0 0-3 3v4.318a3 3 0 0 0 .879 2.121l9.58 9.581c.92.92 2.39 1.186 3.548.428a18.849 18.849 0 0 0 5.441-5.44c.758-1.16.492-2.629-.428-3.548l-9.58-9.581a3 3 0 0 0-2.122-.879H5.25ZM6.375 7.5a1.125 1.125 0 1 0 0-2.25 1.125 1.125 0 0 0 0 2.25Z'],
+  pulse: [
+    'M4.913 2.658c2.075-.27 4.19-.408 6.337-.408 2.147 0 4.262.139 6.337.408 1.922.25 3.291 1.861 3.405 3.727a4.403 4.403 0 0 0-1.032-.211 50.89 50.89 0 0 0-8.42 0c-2.358.196-4.04 2.19-4.04 4.434v4.286a4.47 4.47 0 0 0 2.433 3.984L7.28 21.53A.75.75 0 0 1 6 21v-4.03a48.527 48.527 0 0 1-1.087-.128C2.905 16.58 1.5 14.833 1.5 12.862V6.638c0-1.97 1.405-3.718 3.413-3.979Z',
+    'M15.75 7.5c-1.376 0-2.739.057-4.086.169C10.124 7.797 9 9.103 9 10.609v4.285c0 1.507 1.128 2.814 2.67 2.94 1.243.102 2.5.157 3.768.165l2.782 2.781a.75.75 0 0 0 1.28-.53v-2.39l.33-.026c1.542-.125 2.67-1.433 2.67-2.94v-4.286c0-1.505-1.125-2.811-2.664-2.94A49.392 49.392 0 0 0 15.75 7.5Z',
+  ],
+  plans: ['M18.375 2.25c-1.035 0-1.875.84-1.875 1.875v15.75c0 1.035.84 1.875 1.875 1.875h.75c1.035 0 1.875-.84 1.875-1.875V4.125c0-1.036-.84-1.875-1.875-1.875h-.75ZM9.75 8.625c0-1.036.84-1.875 1.875-1.875h.75c1.036 0 1.875.84 1.875 1.875v11.25c0 1.035-.84 1.875-1.875 1.875h-.75a1.875 1.875 0 0 1-1.875-1.875V8.625ZM3 13.125c0-1.036.84-1.875 1.875-1.875h.75c1.036 0 1.875.84 1.875 1.875v6.75c0 1.035-.84 1.875-1.875 1.875h-.75A1.875 1.875 0 0 1 3 19.875v-6.75Z'],
+}
+
 const sections = computed(() => [
-  { name: 'admin.elections.index', title: 'Candidates', icon: icons.candidates, active: route().current('admin.elections.index') || route().current('admin.elections.candidates.*') || route().current('admin.elections.compare'), unread: updates.candidatesUnread().items + updates.sectionUnread('events') > 0 },
-  { name: 'admin.elections.tags.index', title: 'Browse by subject', icon: icons.subjects, active: route().current('admin.elections.tags.*'), unread: updates.sectionUnread('subjects') > 0 },
-  { name: 'admin.elections.pulse.index', title: 'Community Pulse', icon: icons.pulse, active: route().current('admin.elections.pulse.*'), unread: updates.sectionUnread('pulse') > 0 },
-  { name: 'admin.elections.plans.index', title: 'City Plans + Finances', icon: icons.plans, active: route().current('admin.elections.plans.*') || route().current('admin.elections.finances') || route().current('admin.elections.grants'), unread: updates.plansUnread() > 0 || updates.financesUnread() || updates.grantsUnread() },
+  { name: 'admin.elections.index', title: 'Candidates', short: 'Candidates', tone: 'text-indigo-500 dark:text-indigo-400', icon: icons.candidates, solid: solid.candidates, active: route().current('admin.elections.index') || route().current('admin.elections.candidates.*') || route().current('admin.elections.compare'), unread: updates.candidatesUnread().items + updates.sectionUnread('events') > 0 },
+  { name: 'admin.elections.tags.index', title: 'Browse by subject', short: 'Subjects', tone: 'text-amber-500 dark:text-amber-400', icon: icons.subjects, solid: solid.subjects, active: route().current('admin.elections.tags.*'), unread: updates.sectionUnread('subjects') > 0 },
+  { name: 'admin.elections.pulse.index', title: 'Community Pulse', short: 'Pulse', tone: 'text-rose-500 dark:text-rose-400', icon: icons.pulse, solid: solid.pulse, active: route().current('admin.elections.pulse.*'), unread: updates.sectionUnread('pulse') > 0 },
+  { name: 'admin.elections.plans.index', title: 'City Plans + Finances', short: 'City Plans', tone: 'text-emerald-600 dark:text-emerald-400', icon: icons.plans, solid: solid.plans, active: route().current('admin.elections.plans.*') || route().current('admin.elections.finances') || route().current('admin.elections.grants'), unread: updates.plansUnread() > 0 || updates.financesUnread() || updates.grantsUnread() },
 ])
+
 </script>
