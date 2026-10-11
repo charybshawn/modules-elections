@@ -7,32 +7,17 @@
       <div class="md:flex md:items-start md:justify-between gap-6 mb-6">
         <div>
           <h1 class="hidden md:block text-2xl font-semibold text-gray-900 dark:text-white">Salmon Arm Election 2026</h1>
-          <p class="mt-1 text-sm text-gray-600 dark:text-gray-400">
-            Mayor, six councillors and School District 83 trustees. Every item on a candidate's page links to where it came from.
-          </p>
-          <p v-if="votingDay" class="mt-2 text-sm font-medium text-amber-700 dark:text-amber-400">
+          <p v-if="votingDay" class="mt-1 text-lg font-bold text-amber-700 sm:text-xl dark:text-amber-400">
             General voting day {{ formatDateTime(votingDay.starts_at) }}<template v-if="votingDayIn > 0"> · {{ votingDayIn }} day{{ votingDayIn === 1 ? '' : 's' }} away</template><template v-else-if="votingDayIn === 0"> · today</template>
           </p>
         </div>
 
         <div class="mt-4 md:mt-0 flex flex-wrap gap-2 shrink-0">
-          <template v-if="!readOnly">
-            <input ref="fileInput" type="file" accept=".xml,text/xml,application/xml" class="hidden" @change="handleFileChange" />
-            <button
-              type="button"
-              :disabled="importForm.processing"
-              title="Imports a research XML file. Re-importing updates what's already on file instead of duplicating it."
-              :class="secondaryButtonClass"
-              @click="fileInput?.click()"
-            >{{ importForm.processing ? 'Importing...' : 'Import XML' }}</button>
-            <!-- Plain <a>, not <Link>: Inertia would intercept the file download. -->
-            <a :href="route('admin.elections.export')" :class="secondaryButtonClass">Export XML</a>
-          </template>
+          <!-- Plain <a>, not <Link>: Inertia would intercept the file download. Admins only (the policy enforces it too). -->
+          <a v-if="isAdmin" :href="route('admin.elections.export')" :class="secondaryButtonClass">Export XML</a>
           <InviteButton />
         </div>
       </div>
-
-      <FormErrorSummary v-if="Object.keys(importForm.errors).length" :errors="importForm.errors" class="mb-6" />
 
       <dl class="grid grid-cols-3 gap-3 mb-8">
         <div class="rounded-lg bg-white dark:bg-gray-800 shadow-sm p-4">
@@ -162,7 +147,7 @@
           </p>
 
           <p v-if="candidates.length === 0" class="rounded-lg bg-white dark:bg-gray-800 shadow-sm p-6 text-sm text-gray-500 dark:text-gray-400">
-            No candidates on file yet.<template v-if="!readOnly"> Import a research XML file to get started.</template>
+            No candidates on file yet.
           </p>
 
           <section v-if="recentArticles.length">
@@ -274,10 +259,9 @@ import { cellOf, tierBadgeClass, tierShortLabel, tierWeight, type SubjectCoverag
 import ElectionsNav from './Partials/ElectionsNav.vue'
 import InviteButton from './Partials/InviteButton.vue'
 import { computed, nextTick, onMounted, ref, reactive } from 'vue'
-import { Link, router, useForm, useRemember } from '@inertiajs/vue3'
+import { Link, router, usePage, useRemember } from '@inertiajs/vue3'
 import AdminLayout from '@/Layouts/AdminLayout.vue'
 import AdminMobileHeader from '@/Components/Admin/AdminMobileHeader.vue'
-import FormErrorSummary from '@/Components/Admin/FormErrorSummary.vue'
 import { useConfirmDialog } from '@/composables/useConfirmDialog'
 import CandidatePhoto from './Partials/CandidatePhoto.vue'
 import EventItem from './Partials/EventItem.vue'
@@ -306,6 +290,8 @@ const props = defineProps<{
 }>()
 
 const readOnly = useReadOnly()
+// The XML export is the whole dataset: admins only (CandidatePolicy::export).
+const isAdmin = computed(() => ['admin', 'super_admin'].includes((usePage().props.auth as { user?: { role?: string } } | undefined)?.user?.role ?? ''))
 const { confirmDialog } = useConfirmDialog()
 
 // ---- Find a candidate (remembered in history state, so Back keeps it) ----
@@ -449,27 +435,5 @@ const deleteEvent = async (event: ElectionEvent) => {
     variant: 'danger',
   })
   if (confirmed) router.delete(route('admin.elections.events.destroy', event.id), { preserveScroll: true })
-}
-
-// ---- XML import ----
-// A plain useForm: a File can't be persisted, and a draft selection
-// wouldn't survive a reload anyway.
-const importForm = useForm<{ file: File | null }>({ file: null })
-const fileInput = ref<HTMLInputElement | null>(null)
-
-const handleFileChange = (event: Event) => {
-  const file = (event.target as HTMLInputElement).files?.[0] ?? null
-  if (!file) return
-
-  importForm.file = file
-  importForm.post(route('admin.elections.import'), {
-    forceFormData: true,
-    preserveScroll: true,
-    onSuccess: () => importForm.reset(),
-    // Cleared either way, so picking the same file again still fires 'change'.
-    onFinish: () => {
-      if (fileInput.value) fileInput.value.value = ''
-    },
-  })
 }
 </script>

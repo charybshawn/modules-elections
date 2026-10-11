@@ -5,11 +5,10 @@
     <div class="px-4 sm:px-0">
       <ElectionsNav class="mb-6" />
       <h1 class="hidden md:block text-2xl font-semibold text-gray-900 dark:text-white">Browse by subject</h1>
-      <div class="mt-1 flex flex-wrap items-end justify-between gap-3">
-        <p class="max-w-2xl text-sm text-gray-600 dark:text-gray-400">Every subject the election research files things under, and who campaigns on what. Open a subject to see where each candidate stands, what residents are raising and the coverage.</p>
-        <div v-if="headings.length" class="inline-flex shrink-0 rounded-lg bg-gray-100 p-0.5 dark:bg-gray-700" role="group" aria-label="View">
+      <div class="mt-1 flex flex-wrap items-end justify-end gap-3">
+        <div v-if="headings.length" class="hidden shrink-0 md:inline-flex rounded-lg bg-gray-100 p-0.5 dark:bg-gray-700" role="group" aria-label="View">
           <button
-            v-for="v in (['matrix', 'list'] as const)"
+            v-for="v in (['list', 'matrix'] as const)"
             :key="v"
             type="button"
             :aria-pressed="view.mode === v"
@@ -24,7 +23,7 @@
         No subjects yet. The tag vocabulary arrives with a research import (Elections → Import XML).
       </p>
 
-      <SubjectMatrix v-else-if="view.mode === 'matrix'" :candidates="candidates" :coverage="coverage" class="mt-6" />
+      <SubjectMatrix v-else-if="showMatrix" :candidates="candidates" :coverage="coverage" class="mt-6" />
 
       <template v-else>
         <section v-if="mostCovered.length" class="mt-8">
@@ -61,7 +60,8 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, reactive } from 'vue'
+import { computed, onMounted, reactive } from 'vue'
+import { useMediaQuery } from '@vueuse/core'
 import ElectionsNav from '../Partials/ElectionsNav.vue'
 import { Link, useRemember } from '@inertiajs/vue3'
 import AdminLayout from '@/Layouts/AdminLayout.vue'
@@ -100,5 +100,9 @@ defineProps<{
 }>()
 
 // useRemember returns a reactive object only when given one (a plain object comes back as a ref).
-const view = useRemember(reactive<{ mode: 'matrix' | 'list' }>({ mode: 'matrix' }), 'elections-subjects-view') as { mode: 'matrix' | 'list' }
+const view = useRemember(reactive<{ mode: 'matrix' | 'list' }>({ mode: 'list' }), 'elections-subjects-view') as { mode: 'matrix' | 'list' }
+
+// "Who campaigns on what" is a wide grid: desktop only. Phones always get the subject list.
+const isDesktop = useMediaQuery('(min-width: 768px)')
+const showMatrix = computed(() => isDesktop.value && view.mode === 'matrix')
 </script>
