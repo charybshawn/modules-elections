@@ -5,17 +5,7 @@
     <div class="px-4 sm:px-0">
       <ElectionsNav class="mb-6" />
       <Link :href="route('admin.elections.tags.index')" class="hidden md:inline-flex tap-target-touch items-center text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white text-sm">&larr; All subjects</Link>
-      <p class="mt-2 text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">{{ tag.heading }}</p>
-      <h1 class="hidden md:block text-2xl font-semibold text-gray-900 dark:text-white">{{ tag.name }}</h1>
-      <p v-if="tag.description" class="mt-1 text-sm text-gray-600 dark:text-gray-400">{{ tag.description }}</p>
-
-      <ul v-if="related.length" class="mt-3 flex flex-wrap items-center gap-1.5 text-xs" aria-label="Related subjects">
-        <li class="text-gray-500 dark:text-gray-400">Often discussed with:</li>
-        <li v-for="r in related" :key="r.slug">
-          <Link :href="route('admin.elections.tags.show', r.slug)" class="inline-flex rounded-full border border-gray-200 px-2 py-0.5 text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700">{{ r.name }}</Link>
-        </li>
-      </ul>
-
+      <h1 class="hidden md:block mt-2 text-2xl font-semibold text-gray-900 dark:text-white">{{ tag.name }}</h1>
       <!-- Where each candidate stands: their own planks on it, in their own emphasis, and their scorecard answers. -->
       <section class="mt-8">
         <h2 :class="sectionHeadingClass">Where candidates stand</h2>

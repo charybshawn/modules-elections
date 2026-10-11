@@ -29,26 +29,6 @@
       </p>
 
       <template v-else>
-        <!-- How this was made: always first, so the conclusions are read in context. -->
-        <section class="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-200 mb-8">
-          <h2 class="font-semibold">How this was made</h2>
-          <p class="mt-1">
-            Read {{ snapshot.threads_read }} discussion thread{{ snapshot.threads_read === 1 ? '' : 's' }} with {{ snapshot.commenters }} different people commenting<template v-if="snapshot.sources"> in {{ snapshot.sources }}</template><template v-if="snapshot.period_from && snapshot.period_to">, {{ formatDate(snapshot.period_from) }} to {{ formatDate(snapshot.period_to) }}</template>.
-            Issues are weighted by how many different people raised them, not by how many comments. This is a summary of one online conversation, not a poll; no resident is named or quoted, and the summaries are AI-assisted.
-          </p>
-          <p v-if="snapshot.method_note" class="mt-2 whitespace-pre-line">{{ snapshot.method_note }}</p>
-        </section>
-
-        <section v-if="snapshot.conclusions.length" class="mb-10">
-          <h2 :class="sectionHeadingClass">What stands out</h2>
-          <ol class="mt-3 space-y-3 list-decimal pl-5 marker:font-semibold marker:text-amber-700 dark:marker:text-amber-400">
-            <li v-for="(c, i) in snapshot.conclusions" :key="i" class="text-base leading-relaxed text-gray-900 dark:text-gray-100">
-              {{ c.text }}
-              <a v-if="c.issue && issueKeys.has(c.issue)" :href="`#issue-${c.issue}`" class="ml-1 text-sm text-indigo-600 hover:underline dark:text-indigo-400">See the issue &darr;</a>
-            </li>
-          </ol>
-        </section>
-
         <section class="mb-10">
           <h2 :class="sectionHeadingClass">Issues residents are raising</h2>
           <p v-if="snapshot.previous_taken_on" class="mt-1 text-xs text-gray-500 dark:text-gray-400">Changes are compared with the {{ formatDate(snapshot.previous_taken_on) }} snapshot.</p>
@@ -137,7 +117,7 @@
 
 <script setup lang="ts">
 import ElectionsNav from './Partials/ElectionsNav.vue'
-import { computed, onMounted } from 'vue'
+import { onMounted } from 'vue'
 import { Link, router } from '@inertiajs/vue3'
 import AdminLayout from '@/Layouts/AdminLayout.vue'
 import AdminMobileHeader from '@/Components/Admin/AdminMobileHeader.vue'
@@ -168,7 +148,6 @@ onMounted(async () => {
 })
 const { confirmDialog } = useConfirmDialog()
 
-const issueKeys = computed(() => new Set(props.snapshot?.issues.map((i) => i.key) ?? []))
 
 const showDate = (date: string) => router.get(route('admin.elections.pulse.index'), { date }, { preserveScroll: true })
 
