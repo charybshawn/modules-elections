@@ -59,6 +59,17 @@ describe('news tags', function () {
             ->toBe(['housing', 'news-legislative']);
     });
 
+    it('renders the dashboard and its heat map when a recent story carries a news tag', function () {
+        // The story from beforeEach is new today and carries housing plus a news tag.
+        $this->actingAs($this->admin)->get(route('admin.elections.index'))
+            ->assertOk()
+            ->assertInertia(function ($page) {
+                $heat = $page->toArray()['props']['heat'];
+                $slugs = collect($heat['headings'])->pluck('tags')->flatten(1)->pluck('slug')->merge(collect($heat['heatingUp'])->pluck('slug'))->unique()->values()->all();
+                expect($slugs)->toBe(['housing']);
+            });
+    });
+
     it('keeps news tags out of every subject view', function () {
         $admin = $this->actingAs($this->admin);
 

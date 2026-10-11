@@ -89,7 +89,8 @@ class BuildTagHeat
         // Biggest rise this week over last week, among tags talked about this week.
         $heatingUp = collect($thisWeek)
             ->map(fn ($n, $id) => ['id' => $id, 'rise' => $n - ($lastWeek[$id] ?? 0)])
-            ->filter(fn ($r) => $r['rise'] > 0)
+            // Subject tags only: articles also carry news-type tags, which have no heat.
+            ->filter(fn ($r) => $r['rise'] > 0 && $tags->has($r['id']))
             ->sortByDesc('rise')
             ->take(5)
             ->map(fn ($r) => ['slug' => $tags[$r['id']]->slug, 'name' => $tags[$r['id']]->name])
