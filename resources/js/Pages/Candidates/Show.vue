@@ -162,8 +162,8 @@
              own emphasis into tiers, each plank with the statements behind it. -->
         <div v-else-if="activeTab === 'platform' && portfolio.platform" class="divide-y divide-gray-200 dark:divide-gray-700">
           <!-- Filter by subject, in place: the chips here and on each plank. -->
-          <div v-if="platformSubjects.length > 1" class="py-4">
-            <div class="-mx-4 flex gap-1.5 overflow-x-auto px-4 pb-1 scrollbar-hide sm:mx-0 sm:flex-wrap sm:px-0" role="group" aria-label="Filter planks by subject">
+          <div v-if="platformSubjects.length > 1" class="pb-4 pt-8 md:pt-6">
+            <div class="-mx-4 flex gap-1.5 overflow-x-auto px-4 py-1 scrollbar-hide sm:mx-0 sm:flex-wrap sm:px-0" role="group" aria-label="Filter planks by subject">
               <button
                 type="button"
                 :aria-pressed="platformFilter.tag === null"

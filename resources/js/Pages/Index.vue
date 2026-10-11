@@ -59,7 +59,7 @@
                 placeholder="Search by name or occupation"
                 class="w-full rounded-md border-gray-300 text-base sm:max-w-xs sm:text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-white"
               />
-              <div class="-mx-4 flex gap-1.5 overflow-x-auto px-4 scrollbar-hide sm:mx-0 sm:px-0" role="group" aria-label="Office">
+              <div class="-mx-4 -my-1 flex gap-1.5 overflow-x-auto px-4 py-1 scrollbar-hide sm:mx-0 sm:px-0" role="group" aria-label="Office">
                 <button
                   v-for="o in officeChoices"
                   :key="o.value"
