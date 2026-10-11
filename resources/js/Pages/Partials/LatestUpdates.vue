@@ -12,11 +12,11 @@
               <Link :href="candidateHref(u)" class="truncate text-sm font-medium text-gray-900 hover:underline dark:text-white">{{ u.name }}</Link>
               <time :datetime="u.at" :title="formatDateTime(u.at) ?? undefined" class="shrink-0 text-xs text-gray-400 dark:text-gray-500">{{ ago(u.at) }}</time>
             </span>
-            <span class="block text-xs text-gray-600 dark:text-gray-300">{{ u.total }} new: {{ u.counts.join(', ') }}</span>
-            <ul v-if="u.items.length" class="mt-1 space-y-0.5">
+            <ul v-if="u.items.length" class="mt-1 space-y-1.5">
               <li v-for="item in u.items" :key="item.focus" class="min-w-0">
-                <Link :href="itemHref(u, item)" class="block truncate text-xs text-indigo-700 hover:underline dark:text-indigo-300" :title="item.label">
-                  <span class="text-gray-500 dark:text-gray-400">{{ item.kind }}:</span> {{ item.label }}
+                <Link :href="itemHref(u, item)" class="group/item block" :title="item.label">
+                  <span class="block truncate text-xs text-indigo-700 group-hover/item:underline dark:text-indigo-300">{{ item.label }}</span>
+                  <span class="block text-[11px] capitalize leading-tight text-gray-500 dark:text-gray-400">{{ item.kind }}</span>
                 </Link>
               </li>
             </ul>

@@ -38,7 +38,7 @@ class BuildLatestUpdates
 
         $entries = Entry::query()->whereNotNull('created_at')
             ->with('candidate:id,name,slug,photo_url,status')
-            ->get(['id', 'candidate_id', 'plank_id', 'kind', 'topic', 'question', 'quote', 'summary', 'created_at']);
+            ->get(['id', 'candidate_id', 'plank_id', 'kind', 'topic', 'question', 'quote', 'summary', 'published_on', 'created_at']);
         $allPlanks = Plank::query()->get(['id', 'candidate_id', 'key', 'title', 'created_at']);
         $planks = $allPlanks->whereNotNull('created_at');
         $planksById = $allPlanks->keyBy('id');
