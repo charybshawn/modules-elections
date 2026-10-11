@@ -4,6 +4,7 @@ namespace Cultpantry\Elections\Actions;
 
 use Cultpantry\Elections\Models\Article;
 use Cultpantry\Elections\Models\Candidate;
+use Cultpantry\Elections\Models\Election;
 use Cultpantry\Elections\Models\ElectionEvent;
 use Cultpantry\Elections\Models\Entry;
 use Cultpantry\Elections\Models\Plank;
@@ -49,7 +50,7 @@ use SimpleXMLElement;
 class ImportElectionFromXml
 {
     private const CANDIDATE_FIELDS = [
-        'occupation', 'bio', 'bio_source_url', 'website', 'facebook_url',
+        'party', 'occupation', 'bio', 'bio_source_url', 'website', 'facebook_url',
         'instagram_url', 'email', 'phone', 'photo_url', 'photo_credit', 'notes',
     ];
 
@@ -57,6 +58,9 @@ class ImportElectionFromXml
 
     /** @var array<int, string> */
     private array $problems = [];
+
+    /** The election this file is for: its root's id, else the municipal one every file was before. */
+    private Election $election;
 
     /**
      * @return array{candidates: array{created: int, updated: int, unchanged: int}, entries: array{created: int, updated: int, unchanged: int}, planks: array{created: int, updated: int, unchanged: int}, articles: array{created: int, updated: int, unchanged: int}, events: array{created: int, updated: int, unchanged: int}, problems: array<int, string>}
@@ -83,6 +87,10 @@ class ImportElectionFromXml
         if ($xml->getName() !== 'election') {
             throw new RuntimeException("Invalid XML: expected an <election> root element, found <{$xml->getName()}>.");
         }
+
+        $id = trim((string) $xml['id']);
+        $this->election = $id === '' ? Election::municipal() : (Election::bySlug($id)
+            ?? throw new RuntimeException("Unknown election id \"{$id}\" on the <election> element."));
 
         $this->problems = [];
         $counts = fn () => ['created' => 0, 'updated' => 0, 'unchanged' => 0];
@@ -116,11 +124,18 @@ class ImportElectionFromXml
             foreach ($xml->events->event ?? [] as $node) {
                 $this->importEvent($node, $result);
             }
-            foreach ($xml->pulse ?? [] as $node) {
-                $this->importPulse($node, $result);
-            }
-            foreach ($xml->scorecards->scorecard ?? [] as $node) {
-                $this->importScorecard($node, $result);
+            // Pulse snapshots and scorecards are municipal-only for now.
+            if ($this->election->isProvincial()) {
+                if (isset($xml->pulse) || isset($xml->scorecards)) {
+                    $this->problems[] = '<pulse> and <scorecards> are not supported for the provincial election yet -- skipped.';
+                }
+            } else {
+                foreach ($xml->pulse ?? [] as $node) {
+                    $this->importPulse($node, $result);
+                }
+                foreach ($xml->scorecards->scorecard ?? [] as $node) {
+                    $this->importScorecard($node, $result);
+                }
             }
             foreach ($xml->tagging ?? [] as $node) {
                 $this->importTagging($node, $result);
@@ -192,10 +207,10 @@ class ImportElectionFromXml
             return;
         }
 
-        $candidate = Candidate::where('name', $name)->first() ?? new Candidate(['name' => $name]);
+        $candidate = Candidate::forElection($this->election)->where('name', $name)->first() ?? new Candidate(['name' => $name, 'election_id' => $this->election->id]);
 
         $office = $this->text($node, 'office');
-        if ($office !== null && ! array_key_exists($office, Candidate::OFFICES)) {
+        if ($office !== null && ! array_key_exists($office, $this->election->offices())) {
             $this->problems[] = "{$name}: unknown office \"{$office}\".";
             $office = null;
         }
@@ -203,7 +218,7 @@ class ImportElectionFromXml
             $candidate->office = $office;
         }
         if (! $candidate->exists && $candidate->office === null) {
-            $this->problems[] = "Skipped new candidate {$name}: no valid <office> (mayor, councillor or trustee).";
+            $this->problems[] = "Skipped new candidate {$name}: no valid <office> (".implode(', ', array_keys($this->election->offices())).").";
 
             return;
         }
@@ -394,7 +409,7 @@ class ImportElectionFromXml
             return;
         }
 
-        $article = Article::where('url_hash', Article::hashFor($url))->first() ?? new Article(['url' => $url]);
+        $article = Article::forElection($this->election)->where('url_hash', Article::hashFor($url))->first() ?? new Article(['url' => $url, 'election_id' => $this->election->id]);
         $article->fill([
             'title' => $title,
             'outlet' => $this->text($node, 'outlet') ?? $article->outlet,
@@ -413,7 +428,7 @@ class ImportElectionFromXml
         $ids = [];
         foreach ($node->candidates->candidate ?? [] as $nameNode) {
             $name = trim((string) $nameNode);
-            $id = Candidate::where('name', $name)->value('id');
+            $id = Candidate::forElection($this->election)->where('name', $name)->value('id');
             if ($id === null) {
                 $this->problems[] = "Article \"{$title}\" names {$name}, who isn't on file -- not linked.";
 
@@ -456,8 +471,8 @@ class ImportElectionFromXml
             $url = null;
         }
 
-        $event = ElectionEvent::where('title', $title)->where('starts_at', $startsAt)->first()
-            ?? new ElectionEvent(['title' => $title, 'starts_at' => $startsAt]);
+        $event = ElectionEvent::forElection($this->election)->where('title', $title)->where('starts_at', $startsAt)->first()
+            ?? new ElectionEvent(['title' => $title, 'starts_at' => $startsAt, 'election_id' => $this->election->id]);
 
         $event->fill([
             'kind' => $kind,
@@ -555,7 +570,7 @@ class ImportElectionFromXml
 
         foreach ($node->mentions->mention ?? [] as $m) {
             $name = $this->text($m, 'candidate');
-            $candidateId = $name === null ? null : Candidate::where('name', $name)->value('id');
+            $candidateId = $name === null ? null : Candidate::forElection($this->election)->where('name', $name)->value('id');
             if ($candidateId === null) {
                 $this->problems[] = "Pulse {$takenOn}: mention of \"{$name}\", who isn't on file -- skipped.";
 
@@ -692,7 +707,7 @@ class ImportElectionFromXml
     private function importScorecardResponse(Scorecard $scorecard, SimpleXMLElement $node, array $categories, array $items, array &$result): void
     {
         $name = $this->text($node, 'candidate');
-        $candidateId = $name === null ? null : Candidate::where('name', $name)->value('id');
+        $candidateId = $name === null ? null : Candidate::forElection($this->election)->where('name', $name)->value('id');
         if ($candidateId === null) {
             $this->problems[] = "Scorecard {$scorecard->key}: response from \"{$name}\", who isn't on file -- skipped.";
 
@@ -835,9 +850,9 @@ class ImportElectionFromXml
         foreach ($node->children() as $ref) {
             $a = fn (string $name) => trim((string) $ref[$name]);
             $model = match ($ref->getName()) {
-                'plank' => Plank::whereHas('candidate', fn ($q) => $q->where('name', $a('candidate')))->where('key', $a('key'))->first(),
-                'entry' => Entry::whereHas('candidate', fn ($q) => $q->where('name', $a('candidate')))->where('match_hash', $a('hash'))->first(),
-                'article' => Article::where('url_hash', Article::hashFor($a('url')))->first(),
+                'plank' => Plank::whereHas('candidate', fn ($q) => $q->forElection($this->election)->where('name', $a('candidate')))->where('key', $a('key'))->first(),
+                'entry' => Entry::whereHas('candidate', fn ($q) => $q->forElection($this->election)->where('name', $a('candidate')))->where('match_hash', $a('hash'))->first(),
+                'article' => Article::forElection($this->election)->where('url_hash', Article::hashFor($a('url')))->first(),
                 'issue' => PulseIssue::whereHas('snapshot', fn ($q) => $q->whereDate('taken_on', $a('taken_on')))->where('key', $a('key'))->first(),
                 'item' => ScorecardItem::whereHas('category.scorecard', fn ($q) => $q->where('key', $a('scorecard')))->where('key', $a('key'))->first(),
                 default => false,
@@ -979,7 +994,7 @@ class ImportElectionFromXml
     {
         $name = trim((string) $node['candidate']);
         $key = trim((string) $node['key']);
-        $plank = Plank::whereHas('candidate', fn ($q) => $q->where('name', $name))->where('key', $key)->first();
+        $plank = Plank::whereHas('candidate', fn ($q) => $q->forElection($this->election)->where('name', $name))->where('key', $key)->first();
         if ($plank === null) {
             $this->problems[] = "<analyses>: no plank \"{$key}\" for \"{$name}\" on file -- skipped.";
 
@@ -998,7 +1013,7 @@ class ImportElectionFromXml
     {
         $name = trim((string) $node['candidate']);
         $key = trim((string) $node['key']);
-        $plank = Plank::whereHas('candidate', fn ($q) => $q->where('name', $name))->where('key', $key)->first();
+        $plank = Plank::whereHas('candidate', fn ($q) => $q->forElection($this->election)->where('name', $name))->where('key', $key)->first();
         if ($plank === null) {
             $this->problems[] = "<plans>: no plank \"{$key}\" for \"{$name}\" on file -- skipped.";
 
@@ -1030,7 +1045,7 @@ class ImportElectionFromXml
     {
         foreach ($changes->children() as $node) {
             $name = trim((string) $node['candidate']);
-            $candidate = Candidate::where('name', $name)->first();
+            $candidate = Candidate::forElection($this->election)->where('name', $name)->first();
             if ($candidate === null) {
                 $this->problems[] = "<changes>: no candidate \"{$name}\" on file -- skipped <{$node->getName()}>.";
 

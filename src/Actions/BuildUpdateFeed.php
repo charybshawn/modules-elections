@@ -6,6 +6,7 @@ use Cultpantry\Elections\Support\CityFinances;
 use Cultpantry\Elections\Support\CityGrants;
 use Cultpantry\Elections\Support\CityPlans;
 use Cultpantry\Elections\Support\PlanProgress;
+use Cultpantry\Elections\Models\Election;
 use Cultpantry\Elections\Support\UpdateTabs;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -30,8 +31,10 @@ use Illuminate\Support\Facades\DB;
  */
 class BuildUpdateFeed
 {
-    public function handle(bool $includeNotes): array
+    public function handle(bool $includeNotes, ?Election $election = null): array
     {
+        $election ??= Election::municipal();
+
         $candidates = [];
         $add = function (?int $candidateId, ?string $tab, mixed $at) use (&$candidates, &$slugs) {
             $slug = $slugs[$candidateId] ?? null;
@@ -43,7 +46,7 @@ class BuildUpdateFeed
         };
 
         $slugs = [];
-        foreach (DB::table('elections_candidates')->get(['id', 'slug', 'created_at', 'profile_changed_at', 'notes_changed_at', 'notes']) as $row) {
+        foreach (DB::table('elections_candidates')->where('election_id', $election->id)->get(['id', 'slug', 'created_at', 'profile_changed_at', 'notes_changed_at', 'notes']) as $row) {
             $slugs[$row->id] = $row->slug;
             // Every candidate has an About tab, so a profile change (or a new candidate) lands there.
             $add($row->id, 'about', $this->latest($row->created_at, $row->profile_changed_at));
@@ -82,10 +85,11 @@ class BuildUpdateFeed
             'now' => now()->getTimestamp(),
             'candidates' => $candidates,
             'sections' => [
-                'events' => $this->times(DB::table('elections_events')->get(['created_at', 'updated_at']), fn ($r) => $this->latest($r->created_at, $r->updated_at)),
-                'pulse' => $this->pulse(),
-                'subjects' => $this->subjects(),
-                'plans' => $this->plans(),
+                'events' => $this->times(DB::table('elections_events')->where('election_id', $election->id)->get(['created_at', 'updated_at']), fn ($r) => $this->latest($r->created_at, $r->updated_at)),
+                // Pulse, subjects and the City plan sheets are municipal-only for now.
+                'pulse' => $election->isProvincial() ? [] : $this->pulse(),
+                'subjects' => $election->isProvincial() ? [] : $this->subjects(),
+                'plans' => $election->isProvincial() ? [] : $this->plans(),
             ],
         ];
     }

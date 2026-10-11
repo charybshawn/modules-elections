@@ -2,6 +2,7 @@
 
 namespace Cultpantry\Elections\Models;
 
+use Cultpantry\Elections\Models\Concerns\BelongsToElection;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 
@@ -22,6 +23,8 @@ use Illuminate\Database\Eloquent\Model;
  */
 class ElectionEvent extends Model
 {
+    use BelongsToElection;
+
     protected $table = 'elections_events';
 
     public const KINDS = [
@@ -33,6 +36,7 @@ class ElectionEvent extends Model
     ];
 
     protected $fillable = [
+        'election_id',
         'title',
         'kind',
         'starts_at',

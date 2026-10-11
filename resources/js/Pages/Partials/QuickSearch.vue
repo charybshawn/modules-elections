@@ -81,6 +81,9 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, shallowRef, watch } from 'vue'
 import { router } from '@inertiajs/vue3'
 
+/** The election to search (its slug); the municipal one when left out. */
+const props = defineProps<{ election?: string }>()
+
 interface SearchIndex {
   candidates: { name: string; slug: string; office: string; occupation: string | null; status: string }[]
   subjects: { slug: string; name: string; heading: string }[]
@@ -114,7 +117,7 @@ const loadIndex = async () => {
   loading.value = true
   failed.value = false
   try {
-    const response = await fetch(route('admin.elections.search-index'), { headers: { Accept: 'application/json' }, credentials: 'same-origin' })
+    const response = await fetch(route('admin.elections.search-index', props.election ? { election: props.election } : {}), { headers: { Accept: 'application/json' }, credentials: 'same-origin' })
     if (!response.ok) throw new Error(String(response.status))
     index.value = (await response.json()) as SearchIndex
   } catch {
@@ -162,7 +165,7 @@ const ranked = <T,>(items: T[], text: (item: T) => string, title: (item: T) => s
     .slice(0, limit)
     .map((x) => x.item)
 
-const officeLabel: Record<string, string> = { mayor: 'Mayor', councillor: 'Council', trustee: 'School trustee' }
+const officeLabel: Record<string, string> = { mayor: 'Mayor', councillor: 'Council', trustee: 'School trustee', mla: 'MLA' }
 const tierLabel: Record<string, string> = { top: 'top priority', also: 'also stated', mentioned: 'mentioned' }
 
 const groups = computed(() => {

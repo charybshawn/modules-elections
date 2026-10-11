@@ -4,6 +4,7 @@ namespace Cultpantry\Elections\Actions;
 
 use Cultpantry\Elections\Models\Article;
 use Cultpantry\Elections\Models\Candidate;
+use Cultpantry\Elections\Models\Election;
 use Cultpantry\Elections\Models\ElectionEvent;
 use Cultpantry\Elections\Models\Entry;
 use Cultpantry\Elections\Models\Plank;
@@ -21,13 +22,16 @@ use SimpleXMLElement;
 class ExportElectionToXml
 {
     private const CANDIDATE_FIELDS = [
-        'name', 'office', 'status', 'occupation', 'bio', 'bio_source_url', 'website',
+        'name', 'office', 'status', 'party', 'occupation', 'bio', 'bio_source_url', 'website',
         'facebook_url', 'instagram_url', 'email', 'phone', 'photo_url', 'photo_credit', 'notes',
     ];
 
-    public function handle(): string
+    /** One election's data, as the XML the import reads (the municipal election when none is given). */
+    public function handle(?Election $election = null): string
     {
+        $election ??= Election::municipal();
         $xml = new SimpleXMLElement('<?xml version="1.0" encoding="UTF-8"?><election></election>');
+        $xml->addAttribute('id', $election->slug);
 
         $tags = Tag::orderBy('topic')->orderBy('name')->get();
         if ($tags->isNotEmpty()) {
@@ -41,7 +45,7 @@ class ExportElectionToXml
         }
 
         $candidatesNode = $xml->addChild('candidates');
-        foreach (Candidate::with(['entries.tags', 'planks.tags', 'planks.entries.tags'])->orderBy('name')->get() as $candidate) {
+        foreach (Candidate::forElection($election)->with(['entries.tags', 'planks.tags', 'planks.entries.tags'])->orderBy('name')->get() as $candidate) {
             $node = $candidatesNode->addChild('candidate');
             foreach (self::CANDIDATE_FIELDS as $field) {
                 $this->addChild($node, $field, $candidate->{$field});
@@ -66,7 +70,7 @@ class ExportElectionToXml
         }
 
         $articlesNode = $xml->addChild('articles');
-        foreach (Article::with(['candidates', 'tags'])->orderBy('published_on')->orderBy('id')->get() as $article) {
+        foreach (Article::forElection($election)->with(['candidates', 'tags'])->orderBy('published_on')->orderBy('id')->get() as $article) {
             $node = $articlesNode->addChild('article');
             $this->addChild($node, 'title', $article->title);
             $this->addChild($node, 'url', $article->url);
@@ -83,7 +87,7 @@ class ExportElectionToXml
         }
 
         $eventsNode = $xml->addChild('events');
-        foreach (ElectionEvent::orderBy('starts_at')->get() as $event) {
+        foreach (ElectionEvent::forElection($election)->orderBy('starts_at')->get() as $event) {
             $node = $eventsNode->addChild('event');
             $this->addChild($node, 'title', $event->title);
             $this->addChild($node, 'kind', $event->kind);
@@ -94,7 +98,9 @@ class ExportElectionToXml
             $this->addChild($node, 'description', $event->description);
         }
 
-        foreach (PulseSnapshot::with(['issues.tags', 'mentions.candidate'])->orderBy('taken_on')->get() as $snapshot) {
+        // Pulse snapshots and scorecards are municipal-only for now.
+        $pulse = $election->isProvincial() ? collect() : PulseSnapshot::with(['issues.tags', 'mentions.candidate'])->orderBy('taken_on')->get();
+        foreach ($pulse as $snapshot) {
             $node = $xml->addChild('pulse');
             $this->addChild($node, 'taken_on', $snapshot->taken_on->toDateString());
             $this->addChild($node, 'period_from', $snapshot->period_from?->toDateString());
@@ -140,7 +146,7 @@ class ExportElectionToXml
             }
         }
 
-        $scorecards = Scorecard::with(['categories.items.tags', 'responses.candidate', 'responses.answers', 'responses.takeaways'])->orderBy('key')->get();
+        $scorecards = $election->isProvincial() ? collect() : Scorecard::with(['categories.items.tags', 'responses.candidate', 'responses.answers', 'responses.takeaways'])->orderBy('key')->get();
         if ($scorecards->isNotEmpty()) {
             $scorecardsNode = $xml->addChild('scorecards');
             foreach ($scorecards as $scorecard) {

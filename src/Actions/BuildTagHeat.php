@@ -2,6 +2,7 @@
 
 namespace Cultpantry\Elections\Actions;
 
+use Cultpantry\Elections\Models\Election;
 use Cultpantry\Elections\Models\Article;
 use Cultpantry\Elections\Models\Entry;
 use Cultpantry\Elections\Models\Tag;
@@ -51,13 +52,13 @@ class BuildTagHeat
         };
 
         // Statements carry their own tags or, filed under a plank, the plank's.
-        Entry::with(['tags:id', 'plank.tags:id'])->where('kind', '!=', 'background')->get()
+        Entry::forElection(Election::municipal())->with(['tags:id', 'plank.tags:id'])->where('kind', '!=', 'background')->get()
             ->each(fn (Entry $e) => $add(
                 $e->tags->pluck('id')->merge($e->plank?->tags->pluck('id') ?? []),
                 $e->published_on ?? $e->created_at,
             ));
 
-        Article::with('tags:id')->get()
+        Article::forElection(Election::municipal())->with('tags:id')->get()
             ->each(fn (Article $a) => $add($a->tags->pluck('id'), $a->published_on ?? $a->created_at));
 
         $max = max($score ?: [0]);

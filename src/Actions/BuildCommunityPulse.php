@@ -2,6 +2,7 @@
 
 namespace Cultpantry\Elections\Actions;
 
+use Cultpantry\Elections\Models\Election;
 use Cultpantry\Elections\Http\Resources\TagResource;
 use Cultpantry\Elections\Models\Plank;
 use Cultpantry\Elections\Models\PulseIssue;
@@ -33,7 +34,7 @@ class BuildCommunityPulse
             ->orderByDesc('taken_on')
             ->first();
 
-        $planks = Plank::with(['candidate:id,name,slug', 'tags:id'])->get();
+        $planks = Plank::forElection(Election::municipal())->with(['candidate:id,name,slug', 'tags:id'])->get();
         $planksByTopic = $planks->groupBy('topic');
 
         return [

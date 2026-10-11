@@ -22,6 +22,7 @@ class ScanOrganizationsCommand extends Command
 {
     protected $signature = 'elections:scan-organizations
         {--candidate= : Only this candidate (exact name on file)}
+        {--election= : Only the candidates of this election (its slug)}
         {--org= : Only organizations whose name or slug contains this}
         {--refresh : Re-fetch pages even when cached}
         {--max-age=14 : Days a cached page is reused}
@@ -50,6 +51,7 @@ class ScanOrganizationsCommand extends Command
             ->values();
 
         $candidates = Candidate::query()
+            ->when($this->option('election'), fn ($q, $slug) => $q->whereHas('election', fn ($e) => $e->where('slug', $slug)))
             ->when($this->option('candidate'), fn ($q, $name) => $q->where('name', $name))
             ->pluck('name');
         if ($candidates->isEmpty()) {

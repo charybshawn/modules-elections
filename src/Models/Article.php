@@ -2,6 +2,7 @@
 
 namespace Cultpantry\Elections\Models;
 
+use Cultpantry\Elections\Models\Concerns\BelongsToElection;
 use Cultpantry\Elections\Models\Concerns\HasTags;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -20,11 +21,13 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
  */
 class Article extends Model
 {
+    use BelongsToElection;
     use HasTags;
 
     protected $table = 'elections_articles';
 
     protected $fillable = [
+        'election_id',
         'title',
         'url',
         'outlet',

@@ -2,22 +2,25 @@
 
 namespace Cultpantry\Elections\Models;
 
+use Cultpantry\Elections\Models\Concerns\BelongsToElection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Str;
 
 /**
- * Someone seeking a seat in the Salmon Arm 2026 general local election.
- * One election only, so the name alone identifies a candidate (and is the
- * XML import's match key).
+ * Someone seeking a seat in one of the elections the module tracks (the
+ * Salmon Arm 2026 local election or the BC provincial election). Within an
+ * election the name identifies a candidate, and is the XML import's match key.
  *
  * @property int $id
+ * @property int $election_id
  * @property string $name
  * @property string $slug
  * @property string $office one of Candidate::OFFICES
  * @property string $status one of Candidate::STATUSES
  * @property bool $is_incumbent
+ * @property string|null $party the party on the ballot (provincial only), as Elections BC prints it
  * @property string|null $occupation
  * @property string|null $bio
  * @property string|null $bio_source_url
@@ -33,16 +36,19 @@ use Illuminate\Support\Str;
  */
 class Candidate extends Model
 {
+    use BelongsToElection;
+
     protected $table = 'elections_candidates';
 
     public const OFFICES = [
         'mayor' => 'Mayor',
         'councillor' => 'Councillor',
         'trustee' => 'School trustee',
+        'mla' => 'MLA',
     ];
 
-    /** SQL that sorts mayor, then council, then school trustees. */
-    public const OFFICE_ORDER_SQL = "case office when 'mayor' then 0 when 'councillor' then 1 else 2 end";
+    /** SQL that sorts mayor (or MLA), then council, then school trustees. */
+    public const OFFICE_ORDER_SQL = "case office when 'mayor' then 0 when 'mla' then 0 when 'councillor' then 1 else 2 end";
 
     public const STATUSES = [
         'declared' => 'Declared',
@@ -51,10 +57,12 @@ class Candidate extends Model
     ];
 
     protected $fillable = [
+        'election_id',
         'name',
         'office',
         'status',
         'is_incumbent',
+        'party',
         'occupation',
         'bio',
         'bio_source_url',

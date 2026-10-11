@@ -19,6 +19,7 @@ class CandidateResource extends JsonResource
             'office' => $this->office,
             'status' => $this->status,
             'is_incumbent' => $this->is_incumbent,
+            'party' => $this->party,
             'occupation' => $this->occupation,
             'bio' => $this->bio,
             'bio_source_url' => $this->bio_source_url,

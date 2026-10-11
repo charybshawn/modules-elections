@@ -2,6 +2,7 @@
 
 namespace Cultpantry\Elections\Actions;
 
+use Cultpantry\Elections\Models\Election;
 use Cultpantry\Elections\Models\Candidate;
 use Cultpantry\Elections\Models\Plank;
 use Cultpantry\Elections\Models\Tag;
@@ -17,7 +18,7 @@ class BuildSubjectCoverage
     public function handle(): array
     {
         $tierOrder = array_flip(array_keys(Plank::TIERS));
-        $planks = Plank::with(['tags:id,slug', 'candidate:id,status'])
+        $planks = Plank::forElection(Election::municipal())->with(['tags:id,slug', 'candidate:id,status'])
             ->get()
             ->filter(fn (Plank $p) => $p->candidate?->status !== 'withdrawn')
             ->sortBy(fn (Plank $p) => [$tierOrder[$p->tier] ?? 9, $p->rank]);

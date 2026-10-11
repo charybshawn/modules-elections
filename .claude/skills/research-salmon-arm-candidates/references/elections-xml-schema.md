@@ -6,6 +6,20 @@ lists below are validated server-side against the constants on
 `Cultpantry\Elections\Models\Candidate`, `Entry` and `ElectionEvent` — don't
 invent new values.
 
+## Which election
+
+The module tracks two elections side by side: the Salmon Arm municipal election
+(`salmon-arm-2026`) and the BC provincial election in the Salmon Arm-Shuswap
+riding (`bc-provincial-salmon-arm-shuswap`). The root says which one a file is
+for with an `id` attribute: `<election id="bc-provincial-salmon-arm-shuswap">`.
+**No `id` means `salmon-arm-2026`**, so every municipal file works unchanged.
+An unknown `id` is rejected. Candidates, articles and events belong to the
+election named on their file, and every by-name reference in the file (article
+candidate lists, plans, analyses, tagging, `<changes>`) is looked up within
+that same election, so the same name can stand in both. `<pulse>` and
+`<scorecards>` are municipal-only for now; a provincial file that carries them
+is skipped with a note.
+
 ## Shape
 
 ```xml
@@ -17,6 +31,7 @@ invent new values.
       <office>councillor</office>               <!-- required for a new candidate -->
       <status>nominated</status>
       <is_incumbent>false</is_incumbent>
+      <party>BC NDP</party>                     <!-- provincial only: the party on the ballot, as Elections BC prints it -->
       <occupation>Small business owner</occupation>
       <bio>Two or three neutral sentences.</bio>
       <bio_source_url>https://janeexample.ca/about</bio_source_url>
@@ -93,7 +108,8 @@ inside an element doesn't matter. Write `&amp;` for `&` in URLs.
 
 | Field | Values |
 |---|---|
-| `office` | `mayor`, `councillor`, `trustee` (a School District 83 trustee seat Salmon Arm voters elect) |
+| `office` | Municipal election: `mayor`, `councillor`, `trustee` (a School District 83 trustee seat Salmon Arm voters elect). Provincial election: `mla`. An office from the other election is rejected |
+| `party` | Free text, provincial candidates only: the ballot affiliation exactly as Elections BC prints it (`BC NDP`, `Conservative Party`, `BC Green Party`, `OneBC`, `CentreBC`, `Independent`, ...). The pages colour the badge for the parties they know and show any other name in grey |
 | `status` | `declared` (announced, not yet on the City's official list), `nominated` (on the City's official nominations list), `withdrawn` |
 | `kind` | `background` (who they are: career, business, education, community roles, public service, local roots -- written by `backfill-salmon-arm-backgrounds`), `plank` (a platform commitment or position they campaign on), `statement` (something they said that isn't a formal plank), `qa_answer` (an answer to a question: media questionnaire, forum, Facebook comment reply), `prior_record` (incumbents: a council vote, motion or public action in the current/past term), `endorsement` (who endorses them, or whom they endorse), `finance` (campaign finance disclosure facts) |
 | `topic` (every kind except `background`) | `housing`, `taxes_budget`, `infrastructure`, `downtown_development`, `transportation`, `environment`, `public_safety`, `recreation_parks`, `economy_business`, `social_services`, `governance_transparency`, `education` (schools and the school district; mostly trustees), `other` |

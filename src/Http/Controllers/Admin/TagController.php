@@ -2,6 +2,7 @@
 
 namespace Cultpantry\Elections\Http\Controllers\Admin;
 
+use Cultpantry\Elections\Models\Election;
 use App\Http\Controllers\Controller;
 use Cultpantry\Elections\Actions\BuildSubjectCoverage;
 use Cultpantry\Elections\Actions\BuildTagDirectory;
@@ -28,7 +29,7 @@ class TagController extends Controller implements HasMiddleware
     {
         $this->authorize('viewAny', Tag::class);
 
-        $candidates = Candidate::where('status', '!=', 'withdrawn')
+        $candidates = Candidate::forElection(Election::municipal())->where('status', '!=', 'withdrawn')
             ->orderByRaw(Candidate::OFFICE_ORDER_SQL)
             ->orderBy('name')
             ->get();

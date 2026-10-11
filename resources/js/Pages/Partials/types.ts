@@ -8,6 +8,8 @@ export interface Candidate {
   office: string
   status: string
   is_incumbent: boolean
+  /** The party on the ballot (provincial candidates), e.g. "BC NDP". */
+  party: string | null
   occupation: string | null
   bio: string | null
   bio_source_url: string | null
@@ -270,6 +272,16 @@ export interface PulseSnapshot {
 }
 
 /** One row of the dashboard's Latest updates: a candidate's day of additions, or a news story. */
+/** One election the module tracks (Election::toPage). */
+export interface ElectionInfo {
+  slug: string
+  name: string
+  kind: 'municipal' | 'provincial'
+  riding: string | null
+  /** The offices open in it, value => label. */
+  offices: Record<string, string>
+}
+
 export interface UpdateItem {
   label: string
   /** Singular kind label, e.g. "statement". */

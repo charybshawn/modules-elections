@@ -2,6 +2,7 @@
 
 namespace Cultpantry\Elections\Http\Controllers\Admin;
 
+use Cultpantry\Elections\Models\Election;
 use App\Http\Controllers\Controller;
 use Cultpantry\Elections\Actions\BuildCandidateComparison;
 use Cultpantry\Elections\Http\Controllers\Admin\Concerns\ElectionsAdminMiddleware;
@@ -32,12 +33,12 @@ class CompareController extends Controller implements HasMiddleware
             ->values();
 
         // Keep the picked order, not the database's.
-        $picked = Candidate::whereIn('slug', $slugs)->get()->sortBy(fn (Candidate $c) => $slugs->search($c->slug))->values();
+        $picked = Candidate::forElection(Election::municipal())->whereIn('slug', $slugs)->get()->sortBy(fn (Candidate $c) => $slugs->search($c->slug))->values();
         foreach ($picked as $candidate) {
             $this->authorize('view', $candidate);
         }
 
-        $everyone = Candidate::where('status', '!=', 'withdrawn')
+        $everyone = Candidate::forElection(Election::municipal())->where('status', '!=', 'withdrawn')
             ->orderByRaw(Candidate::OFFICE_ORDER_SQL)
             ->orderBy('name')
             ->get(['id', 'slug', 'name', 'office']);

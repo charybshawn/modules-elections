@@ -2,6 +2,7 @@
 
 namespace Cultpantry\Elections\Actions;
 
+use Cultpantry\Elections\Models\Election;
 use Cultpantry\Elections\Models\Article;
 use Cultpantry\Elections\Models\Entry;
 use Cultpantry\Elections\Models\Plank;
@@ -32,14 +33,15 @@ class BuildLatestUpdates
         'finance' => ['finance record', 'finance records'],
     ];
 
-    public function handle(): array
+    public function handle(?Election $election = null): array
     {
+        $election ??= Election::municipal();
         $kindLabels = self::KIND_LABELS;
 
-        $entries = Entry::query()->whereNotNull('created_at')
+        $entries = Entry::forElection($election)->whereNotNull('created_at')
             ->with('candidate:id,name,slug,photo_url,status')
             ->get(['id', 'candidate_id', 'plank_id', 'kind', 'topic', 'question', 'quote', 'summary', 'published_on', 'created_at']);
-        $allPlanks = Plank::query()->get(['id', 'candidate_id', 'key', 'title', 'created_at']);
+        $allPlanks = Plank::forElection($election)->get(['id', 'candidate_id', 'key', 'title', 'created_at']);
         $planks = $allPlanks->whereNotNull('created_at');
         $planksById = $allPlanks->keyBy('id');
 
@@ -75,7 +77,7 @@ class BuildLatestUpdates
                 ];
             });
 
-        $articleUpdates = Article::query()->whereNotNull('created_at')->withCount('candidates')->with('candidates:id,name')->get()
+        $articleUpdates = Article::forElection($election)->whereNotNull('created_at')->withCount('candidates')->with('candidates:id,name')->get()
             ->map(fn (Article $a) => [
                 'type' => 'article',
                 'id' => 'a-'.$a->id,

@@ -1,12 +1,13 @@
 <template>
-  <div :class="compare.slugs.length ? 'pb-36 md:pb-28' : 'pb-24 md:pb-6'" class="md:pt-6">
-    <AdminMobileHeader title="Salmon Arm Elections" :href="route('admin.elections.home')" />
+  <div :class="showCompare && compare.slugs.length ? 'pb-36 md:pb-28' : 'pb-24 md:pb-6'" class="md:pt-6">
+    <AdminMobileHeader :title="isProvincial ? election.name : 'Salmon Arm Elections'" :href="route('admin.elections.home')" />
 
     <div class="px-4 sm:px-0">
-      <ElectionsNav class="mb-6" />
+      <ElectionsNav class="mb-6" :election="election.slug" />
       <div class="md:flex md:items-start md:justify-between gap-6 mb-6">
         <div>
-          <h1 class="hidden md:block text-2xl font-semibold text-gray-900 dark:text-white">Salmon Arm Election 2026</h1>
+          <h1 class="hidden md:block text-2xl font-semibold text-gray-900 dark:text-white">{{ election.name }}</h1>
+          <p v-if="election.riding" class="mt-1 text-sm text-gray-600 dark:text-gray-400">{{ election.riding }} riding</p>
           <p v-if="votingDay" class="mt-1 text-lg font-bold text-amber-700 sm:text-xl dark:text-amber-400">
             General voting day {{ formatDateTime(votingDay.starts_at) }}<template v-if="votingDayIn > 0"> · {{ votingDayIn }} day{{ votingDayIn === 1 ? '' : 's' }} away</template><template v-else-if="votingDayIn === 0"> · today</template>
           </p>
@@ -14,7 +15,7 @@
 
         <div class="mt-4 md:mt-0 flex flex-wrap gap-2 shrink-0">
           <!-- Plain <a>, not <Link>: Inertia would intercept the file download. Admins only (the policy enforces it too). -->
-          <a v-if="isAdmin" :href="route('admin.elections.export')" :class="secondaryButtonClass">Export XML</a>
+          <a v-if="isAdmin" :href="route('admin.elections.export', { election: election.slug })" :class="secondaryButtonClass">Export XML</a>
           <InviteButton />
         </div>
       </div>
@@ -40,7 +41,7 @@
       <div class="grid grid-cols-1 gap-8 lg:grid-cols-3 lg:grid-rows-[auto_auto_1fr]">
         <LatestUpdates :updates="latestUpdates" :now="now" class="lg:col-start-3 lg:row-start-1" />
 
-        <TagHeatList :heat="heat" :selected="filters.tag" :matching-count="matchingCount" class="lg:col-start-3 lg:row-start-2" @select="selectSubject" />
+        <TagHeatList v-if="!isProvincial" :heat="heat" :selected="filters.tag" :matching-count="matchingCount" class="lg:col-start-3 lg:row-start-2" @select="selectSubject" />
 
         <div id="candidate-list" class="min-w-0 space-y-8 lg:col-span-2 lg:col-start-1 lg:row-span-3 lg:row-start-1">
           <p v-if="newCandidateCount" class="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-md bg-orange-500 px-4 py-3 text-sm font-semibold text-white dark:bg-orange-600">
@@ -88,7 +89,7 @@
               <li v-for="candidate in group.candidates" :key="candidate.id" class="relative">
                 <Link
                   :href="route('admin.elections.candidates.show', candidate.slug)"
-                  class="tap-target-touch flex items-center gap-4 rounded-lg shadow-sm p-4 pr-24 hover:ring-2 hover:ring-amber-400/60 transition-opacity"
+                  class="tap-target-touch relative flex h-full items-center gap-4 overflow-hidden rounded-lg shadow-sm p-4 pr-24 hover:ring-2 hover:ring-amber-400/60 transition-opacity"
                   :class="[
                     // Anything unread tints the whole card orange; the tabs that changed are named inside.
                     newFor(candidate) ? 'bg-orange-50 ring-2 ring-orange-400 dark:bg-orange-500/10 dark:ring-orange-500/70' : 'bg-white dark:bg-gray-800',
@@ -97,7 +98,9 @@
                     selectedTag && tagCell(candidate) ? 'ring-1 ring-indigo-300 dark:ring-indigo-500/50' : '',
                   ]"
                 >
-                  <CandidatePhoto :name="candidate.name" :url="candidate.photo_url" class="h-14 w-14 shrink-0 rounded-full text-lg" />
+                  <!-- A stripe of the party's colour down the card's left edge, inside the card so it can't outgrow it. -->
+                  <span v-if="partyStyle(candidate.party)" :class="partyStyle(candidate.party)!.bar" class="pointer-events-none absolute inset-y-0 left-0 w-2" aria-hidden="true" />
+                  <PartyPhoto :name="candidate.name" :url="candidate.photo_url" :party="candidate.party" photo-class="h-28 w-28 shrink-0 rounded-full text-3xl sm:h-32 sm:w-32" />
                   <div class="min-w-0 flex-1">
                     <div class="flex items-center gap-2">
                       <span class="font-medium text-gray-900 dark:text-white truncate">{{ candidate.name }}</span>
@@ -106,7 +109,11 @@
                         class="shrink-0 rounded-full bg-orange-500 px-2 py-0.5 text-xs font-semibold text-white dark:bg-orange-600"
                       >{{ newFor(candidate) }}</span>
                     </div>
-                    <div class="text-sm text-gray-500 dark:text-gray-400 truncate">
+                    <!-- The party, loud: it's what voters sort candidates by in a provincial race. -->
+                    <div v-if="partyStyle(candidate.party)" class="mt-1">
+                      <span :class="partyStyle(candidate.party)!.solid" class="inline-block max-w-full truncate rounded-md px-2.5 py-1 align-middle text-sm font-extrabold uppercase leading-none tracking-wide shadow-sm">{{ candidate.party }}</span>
+                    </div>
+                    <div class="text-sm text-gray-500 dark:text-gray-400 truncate" :class="partyStyle(candidate.party) ? 'mt-1' : ''">
                       <span v-if="candidate.is_incumbent" class="font-medium text-amber-700 dark:text-amber-400">Incumbent</span>
                       <span v-if="candidate.is_incumbent && candidate.occupation"> · </span>
                       <span>{{ candidate.occupation }}</span>
@@ -124,7 +131,7 @@
                 </Link>
                 <!-- Compare toggle: a sibling of the card link, so tapping it never opens the profile. -->
                 <button
-                  v-if="candidate.status !== 'withdrawn'"
+                  v-if="showCompare && candidate.status !== 'withdrawn'"
                   type="button"
                   :aria-pressed="isPicked(candidate)"
                   :aria-label="isPicked(candidate) ? `Remove ${candidate.name} from comparison` : `Compare ${candidate.name}`"
@@ -224,7 +231,7 @@
          phones (the app's bottom-bar look), a floating pill on larger screens. -->
     <Transition enter-from-class="translate-y-full opacity-0" enter-active-class="transition duration-300 ease-out" leave-to-class="translate-y-full opacity-0" leave-active-class="transition duration-200 ease-in">
       <div
-        v-if="compare.slugs.length"
+        v-if="showCompare && compare.slugs.length"
         class="fixed inset-x-0 bottom-[calc(4.75rem+env(safe-area-inset-bottom))] z-40 border-t border-gray-200 bg-white px-4 py-3 shadow-[0_-4px_14px_rgba(0,0,0,0.18)] md:inset-x-auto md:bottom-4 md:left-1/2 md:w-[min(40rem,calc(100%-2rem))] md:-translate-x-1/2 md:rounded-xl md:border md:pb-3 lg:ml-32 dark:border-gray-600 dark:bg-gray-700"
         role="region"
         aria-label="Compare candidates"
@@ -263,12 +270,13 @@ import { Link, router, usePage, useRemember } from '@inertiajs/vue3'
 import AdminLayout from '@/Layouts/AdminLayout.vue'
 import AdminMobileHeader from '@/Components/Admin/AdminMobileHeader.vue'
 import { useConfirmDialog } from '@/composables/useConfirmDialog'
-import CandidatePhoto from './Partials/CandidatePhoto.vue'
+import PartyPhoto from './Partials/PartyPhoto.vue'
+import { partyStyle } from './Partials/party'
 import EventItem from './Partials/EventItem.vue'
 import { secondaryButtonClass, sectionHeadingClass } from './Partials/classes'
 import { daysUntil, formatDate, formatDateTime, isHttpUrl, useReadOnly } from './Partials/format'
 import { useUpdates } from './Partials/updates'
-import type { Article, Candidate, ElectionEvent, Options, TagHeat, LatestUpdate } from './Partials/types'
+import type { Article, Candidate, ElectionEvent, ElectionInfo, Options, TagHeat, LatestUpdate } from './Partials/types'
 
 defineOptions({ layout: (h, page) => h(AdminLayout, { wide: true, hideBreadcrumbOnMobile: true }, () => page) })
 
@@ -287,7 +295,13 @@ const props = defineProps<{
   /** Server time (Unix seconds). */
   now: number
   options: Options
+  /** Which election this dashboard is for. */
+  election: ElectionInfo
 }>()
+
+const isProvincial = computed(() => props.election.kind === 'provincial')
+// Compare, like the subject heat map, is municipal-only for now.
+const showCompare = computed(() => !isProvincial.value)
 
 const readOnly = useReadOnly()
 // The XML export is the whole dataset: admins only (CandidatePolicy::export).
@@ -297,21 +311,21 @@ const { confirmDialog } = useConfirmDialog()
 // ---- Find a candidate (remembered in history state, so Back keeps it) ----
 interface DashboardFilters {
   search: string
-  office: 'all' | 'mayor' | 'councillor' | 'trustee'
+  office: string
   incumbents: boolean
   tag: string | null
 }
 // useRemember returns a reactive object only when given one (a plain object comes back as a ref).
-const filters = useRemember(reactive<DashboardFilters>({ search: '', office: 'all', incumbents: false, tag: null }), 'elections-dashboard-filters') as DashboardFilters
+const filters = useRemember(reactive<DashboardFilters>({ search: '', office: 'all', incumbents: false, tag: null }), `elections-dashboard-filters-${props.election.slug}`) as DashboardFilters
 
-const officeChoices = [
-  { value: 'all', label: 'Everyone' },
-  { value: 'mayor', label: 'Mayor' },
-  { value: 'councillor', label: 'Council' },
-  { value: 'trustee', label: 'School board' },
-] as const
-
+// Short button labels and group headings; an office without one uses its full label.
+const officeShort: Record<string, string> = { councillor: 'Council', trustee: 'School board' }
 const officeHeading: Record<string, string> = { councillor: 'Council', trustee: 'School board trustees' }
+
+const officeChoices = computed(() => [
+  { value: 'all', label: 'Everyone' },
+  ...Object.entries(props.election.offices).map(([value, label]) => ({ value, label: officeShort[value] ?? label })),
+])
 
 /**
  * Pick a subject: its candidates float to the top of the list. On phones,
@@ -385,7 +399,7 @@ const matchesSearch = (c: Candidate) => {
 }
 
 const candidateGroups = computed(() =>
-  Object.entries(props.options.offices)
+  Object.entries(props.election.offices)
     .filter(([office]) => filters.office === 'all' || filters.office === office)
     .map(([office, label]) => {
       let list = props.candidates.filter((c) => c.office === office && matchesSearch(c) && (!filters.incumbents || c.is_incumbent))
@@ -401,7 +415,7 @@ const candidateGroups = computed(() =>
 // ---- New since last visit (per viewer, per tab) ----
 // Viewing the dashboard marks the events list seen; each candidate's own tabs
 // stay flagged until you open them (see Partials/updates.ts).
-const updates = useUpdates()
+const updates = useUpdates(props.election.slug)
 onMounted(async () => {
   await updates.ensure()
   updates.mark('events')

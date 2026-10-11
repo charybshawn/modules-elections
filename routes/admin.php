@@ -36,7 +36,7 @@ Route::prefix('admin')->name('admin.')->middleware(['web', 'auth', 'admin'])->gr
         // Salmon Arm dashboard so every existing back link still lands there.
         Route::get('/', [ElectionHubController::class, 'home'])->name('home');
         Route::get('salmon-arm', [CandidateController::class, 'index'])->name('index');
-        Route::get('provincial', [ElectionHubController::class, 'provincial'])->name('provincial');
+        Route::get('provincial', [CandidateController::class, 'provincial'])->name('provincial');
         // The one write invited viewers may make (see AdminMiddleware::allowViewerWrite
         // in the service provider): invite someone else to Elections. Throttled per user.
         Route::post('invitations', [ElectionInvitationController::class, 'store'])

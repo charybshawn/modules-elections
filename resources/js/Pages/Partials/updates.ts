@@ -30,8 +30,14 @@ export type Feed = {
 
 type Seen = { base: number; s: Record<string, number> }
 
+const MUNICIPAL = 'salmon-arm-2026'
+
 const feed = ref<Feed | null>(null)
 const seen = ref<Seen | null>(null)
+// Each election keeps its own feed and its own "last looked" marks, so the
+// provincial election's news never lights up the municipal badges. The
+// municipal election's storage key is the one it always had.
+let election = MUNICIPAL
 let storageKey = ''
 let loading: Promise<void> | null = null
 let loadedAt = 0
@@ -88,18 +94,21 @@ const userKey = (): string => {
 }
 
 const fetchFeed = async (): Promise<void> => {
-  const response = await fetch(route('admin.elections.updates'), {
+  const forElection = election
+  const response = await fetch(route('admin.elections.updates', forElection === MUNICIPAL ? {} : { election: forElection }), {
     headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
     credentials: 'same-origin',
   })
   if (!response.ok) return
   const next = (await response.json()) as Feed
+  // The viewer moved to the other election while this was loading: not for them any more.
+  if (forElection !== election) return
   feed.value = next
   loadedAt = Date.now()
 
   if (seen.value === null) {
-    // First visit on this browser: carry over the old cookie, else start from now.
-    save(readLegacyCookie(userKey()) ?? { base: next.now, s: {} })
+    // First visit on this browser: carry over the old cookie (municipal only), else start from now.
+    save((forElection === MUNICIPAL ? readLegacyCookie(userKey()) : null) ?? { base: next.now, s: {} })
   }
 }
 
@@ -177,10 +186,14 @@ const markAll = (): void => {
  * feed and the viewer's marks only exist in the browser) before reading or
  * marking. Everything it returns is reactive.
  */
-export const useUpdates = () => {
-  if (!storageKey) {
-    storageKey = `elections_seen_v2_${userKey()}`
-    if (typeof window !== 'undefined') seen.value = readStorage()
+export const useUpdates = (forElection: string = MUNICIPAL) => {
+  if (!storageKey || forElection !== election) {
+    election = forElection
+    storageKey = forElection === MUNICIPAL ? `elections_seen_v2_${userKey()}` : `elections_seen_v2_${forElection}_${userKey()}`
+    feed.value = null
+    loading = null
+    loadedAt = 0
+    seen.value = typeof window !== 'undefined' ? readStorage() : null
   }
   if (typeof window !== 'undefined' && !listening) {
     listening = true

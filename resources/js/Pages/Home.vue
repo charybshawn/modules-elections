@@ -31,7 +31,9 @@
         >
           <h2 class="text-lg font-semibold text-gray-900 dark:text-white">BC Provincial Election</h2>
           <p class="mt-1 text-sm text-gray-600 dark:text-gray-400">Salmon Arm-Shuswap riding.</p>
-          <p class="mt-4 text-sm text-gray-500 dark:text-gray-400">Coming soon</p>
+          <p class="mt-4 text-sm text-gray-500 dark:text-gray-400">
+            {{ provincial.candidates }} candidate{{ provincial.candidates === 1 ? '' : 's' }}<template v-if="provincial.votingDay"> · voting day {{ formatDate(provincial.votingDay) }}</template>
+          </p>
         </Link>
       </div>
     </div>
@@ -51,6 +53,7 @@ defineOptions({ layout: (h, page) => h(AdminLayout, { wide: true, hideBreadcrumb
 
 defineProps<{
   salmonArm: { candidates: number; votingDay: string | null }
+  provincial: { candidates: number; votingDay: string | null }
 }>()
 
 // Everything unread for this viewer, counted by the same store as every other

@@ -2,6 +2,7 @@
 
 namespace Cultpantry\Elections\Actions;
 
+use Cultpantry\Elections\Models\Election;
 use Cultpantry\Elections\Models\Article;
 use Cultpantry\Elections\Models\ElectionEvent;
 use Cultpantry\Elections\Models\Entry;
@@ -57,12 +58,14 @@ class BuildUpdateDigest
     {
         $window = fn ($query) => $query->where('created_at', '>', $since)->where('created_at', '<=', $until);
 
-        $articles = $window(Article::query())->with('candidates:id,name')->latest('created_at')->get(['id', 'title', 'outlet', 'summary', 'url']);
-        $events = $window(ElectionEvent::query())->orderBy('starts_at')->get(['title', 'starts_at']);
-        $entries = $window(Entry::query())->with('candidate:id,name')->latest('created_at')
+        // The email covers the municipal election only for now, so provincial imports never go out in it.
+        $municipal = Election::municipal();
+        $articles = $window(Article::forElection($municipal))->with('candidates:id,name')->latest('created_at')->orderBy('id')->get(['id', 'title', 'outlet', 'summary', 'url']);
+        $events = $window(ElectionEvent::forElection($municipal))->orderBy('starts_at')->get(['title', 'starts_at']);
+        $entries = $window(Entry::forElection($municipal))->with('candidate:id,name')->latest('created_at')->orderBy('id')
             ->get(['id', 'candidate_id', 'plank_id', 'kind', 'summary', 'source_url', 'source_name'])
             ->filter(fn (Entry $e) => $e->candidate !== null)->values();
-        $planks = $window(Plank::query())->with('candidate:id,name')->orderBy('id')
+        $planks = $window(Plank::forElection($municipal))->with('candidate:id,name')->orderBy('id')
             ->get(['id', 'candidate_id', 'title'])
             ->filter(fn (Plank $p) => $p->candidate !== null)->values();
 
@@ -77,7 +80,7 @@ class BuildUpdateDigest
         ]);
 
         $news = $this->news($articles, $sharedUrls);
-        $stories = Article::query()->whereIn('url', $sharedUrls)->get(['title', 'url', 'outlet'])->keyBy('url');
+        $stories = Article::forElection($municipal)->whereIn('url', $sharedUrls)->get(['title', 'url', 'outlet'])->keyBy('url');
         $sharedItems = $shared->map(function (Collection $group, string $url) use ($plankSource, $stories) {
             $names = $group->pluck('candidate.name')->unique()->values();
             $newPlanks = $plankSource->filter(fn ($u) => $u === $url)->count();

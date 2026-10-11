@@ -2,6 +2,7 @@
 
 namespace Cultpantry\Elections\Http\Controllers\Admin;
 
+use Cultpantry\Elections\Models\Election;
 use App\Http\Controllers\Controller;
 use Cultpantry\Elections\Http\Controllers\Admin\Concerns\ElectionsAdminMiddleware;
 use Cultpantry\Elections\Models\Candidate;
@@ -9,6 +10,7 @@ use Cultpantry\Elections\Models\Entry;
 use Cultpantry\Elections\Models\Plank;
 use Cultpantry\Elections\Models\Tag;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Routing\Controllers\HasMiddleware;
 
 /**
@@ -20,16 +22,20 @@ class SearchIndexController extends Controller implements HasMiddleware
 {
     use ElectionsAdminMiddleware;
 
-    public function __invoke(): JsonResponse
+    public function __invoke(Request $request): JsonResponse
     {
         $this->authorize('viewAny', Candidate::class);
 
+        $election = Election::bySlug((string) $request->query('election', Election::MUNICIPAL)) ?? abort(404);
+        // Subjects and planks are municipal-only for now.
+        $municipal = ! $election->isProvincial();
+
         return response()->json([
-            'candidates' => Candidate::orderBy('name')->get(['name', 'slug', 'office', 'occupation', 'status'])
+            'candidates' => Candidate::forElection($election)->orderBy('name')->get(['name', 'slug', 'office', 'occupation', 'status'])
                 ->map(fn (Candidate $c) => $c->only(['name', 'slug', 'office', 'occupation', 'status'])),
-            'subjects' => Tag::orderBy('name')->get(['slug', 'name', 'topic'])
+            'subjects' => Tag::orderBy('name')->when(! $municipal, fn ($q) => $q->whereRaw('1 = 0'))->get(['slug', 'name', 'topic'])
                 ->map(fn (Tag $t) => ['slug' => $t->slug, 'name' => $t->name, 'heading' => Entry::TOPICS[$t->topic] ?? $t->topic]),
-            'planks' => Plank::with('candidate:id,name,slug,status')->get(['key', 'title', 'tier', 'candidate_id'])
+            'planks' => Plank::forElection($election)->with('candidate:id,name,slug,status')->get(['key', 'title', 'tier', 'candidate_id'])
                 ->filter(fn (Plank $p) => $p->candidate !== null)
                 ->map(fn (Plank $p) => [
                     'key' => $p->key,

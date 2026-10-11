@@ -3,6 +3,7 @@
 namespace Cultpantry\Elections\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use Cultpantry\Elections\Models\Election;
 use Cultpantry\Elections\Actions\BuildCandidatePortfolio;
 use Cultpantry\Elections\Actions\BuildElectionDashboard;
 use Cultpantry\Elections\Actions\ExportElectionToXml;
@@ -32,7 +33,18 @@ class CandidateController extends Controller implements HasMiddleware
         $this->authorize('viewAny', Candidate::class);
 
         return Inertia::render('Vendor/elections/Index', [
-            ...$buildElectionDashboard->handle(),
+            ...$buildElectionDashboard->handle(Election::municipal()),
+            'options' => Options::all(),
+        ]);
+    }
+
+    /** The BC provincial election's dashboard: the same page as Salmon Arm's, scoped to the riding. */
+    public function provincial(BuildElectionDashboard $buildElectionDashboard): Response
+    {
+        $this->authorize('viewAny', Candidate::class);
+
+        return Inertia::render('Vendor/elections/Index', [
+            ...$buildElectionDashboard->handle(Election::provincial()),
             'options' => Options::all(),
         ]);
     }
@@ -61,6 +73,7 @@ class CandidateController extends Controller implements HasMiddleware
         return Inertia::render('Vendor/elections/Candidates/Show', [
             'portfolio' => $portfolio,
             'activeTab' => in_array($tab, $tabs, true) ? $tab : 'about',
+            'election' => $candidate->election->toPage(),
             'options' => Options::all(),
         ]);
     }
@@ -70,6 +83,7 @@ class CandidateController extends Controller implements HasMiddleware
         $this->authorize('delete', $candidate);
 
         $name = $candidate->name;
+        $back = $candidate->election->isProvincial() ? 'admin.elections.provincial' : 'admin.elections.index';
         $counts = ['entries' => $candidate->entries()->count(), 'planks' => $candidate->planks()->count()];
         $candidate->delete();
         Tag::pruneOrphans();
@@ -78,7 +92,7 @@ class CandidateController extends Controller implements HasMiddleware
         ], 'warning');
 
         return redirect()
-            ->route('admin.elections.index')
+            ->route($back)
             ->with('success', "{$name} and everything on file for them deleted.");
     }
 
@@ -102,16 +116,17 @@ class CandidateController extends Controller implements HasMiddleware
     }
 
     /**
-     * The whole dataset as the same XML the import reads. Linked with a
+     * One election's data (?election=<slug>, municipal by default) as the same XML the import reads. Linked with a
      * plain <a href>, not Inertia's <Link>, so the browser downloads it.
      */
-    public function export(ExportElectionToXml $exportElectionToXml): \Illuminate\Http\Response
+    public function export(Request $request, ExportElectionToXml $exportElectionToXml): \Illuminate\Http\Response
     {
         $this->authorize('export', Candidate::class);
 
-        $filename = 'salmon-arm-election-'.Carbon::today()->toDateString().'.xml';
+        $election = Election::bySlug((string) $request->query('election', Election::MUNICIPAL)) ?? abort(404);
+        $filename = ($election->isProvincial() ? 'bc-provincial-election-' : 'salmon-arm-election-').Carbon::today()->toDateString().'.xml';
 
-        return response($exportElectionToXml->handle())
+        return response($exportElectionToXml->handle($election))
             ->header('Content-Type', 'text/xml; charset=UTF-8')
             ->header('Content-Disposition', "attachment; filename=\"{$filename}\"");
     }

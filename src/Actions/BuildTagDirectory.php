@@ -2,6 +2,8 @@
 
 namespace Cultpantry\Elections\Actions;
 
+use Cultpantry\Elections\Models\Candidate;
+use Cultpantry\Elections\Models\Election;
 use Cultpantry\Elections\Models\Entry;
 use Cultpantry\Elections\Models\Tag;
 
@@ -13,7 +15,16 @@ class BuildTagDirectory
 {
     public function handle(): array
     {
-        $tags = Tag::withCount(['planks', 'entries', 'articles', 'pulseIssues', 'scorecardItems'])
+        // Municipal records only; provincial ones don't count toward these subjects yet.
+        $municipal = Election::municipal();
+        $candidateIds = Candidate::forElection($municipal)->pluck('id');
+        $tags = Tag::withCount([
+            'planks' => fn ($q) => $q->forElection($municipal),
+            'entries' => fn ($q) => $q->forElection($municipal),
+            'articles' => fn ($q) => $q->forElection($municipal),
+            'pulseIssues',
+            'scorecardItems',
+        ])
             ->with('planks:id,candidate_id')
             ->orderBy('name')
             ->get();
@@ -22,7 +33,7 @@ class BuildTagDirectory
             'slug' => $tag->slug,
             'name' => $tag->name,
             'description' => $tag->description,
-            'candidates' => $tag->planks->pluck('candidate_id')->unique()->count(),
+            'candidates' => $tag->planks->pluck('candidate_id')->unique()->intersect($candidateIds)->count(),
             'records' => $tag->planks_count + $tag->entries_count + $tag->articles_count + $tag->pulse_issues_count + $tag->scorecard_items_count,
         ];
 

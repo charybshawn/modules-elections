@@ -2,6 +2,7 @@
 
 use App\Models\User;
 use Cultpantry\Elections\Models\Candidate;
+use Cultpantry\Elections\Models\Election;
 use Cultpantry\Elections\Models\ElectionEvent;
 
 describe('elections landing page', function () {
@@ -20,7 +21,9 @@ describe('elections landing page', function () {
             ->assertInertia(fn ($page) => $page
                 ->component('Vendor/elections/Home', false)
                 ->where('salmonArm.candidates', 1)
-                ->where('salmonArm.votingDay', fn ($v) => str_starts_with($v, '2026-10-17')));
+                ->where('salmonArm.votingDay', fn ($v) => str_starts_with($v, '2026-10-17'))
+                ->where('provincial.candidates', 0)
+                ->where('provincial.votingDay', null));
     });
 
     it('serves the Salmon Arm dashboard at its own address', function () {
@@ -32,11 +35,21 @@ describe('elections landing page', function () {
             ->assertInertia(fn ($page) => $page->component('Vendor/elections/Index', false));
     });
 
-    it('shows the provincial placeholder page', function () {
+    it('serves the provincial dashboard with the riding\'s own candidates', function () {
+        $provincial = Election::provincial();
+        Candidate::create(['election_id' => $provincial->id, 'name' => 'Pat Riding', 'office' => 'mla', 'status' => 'declared']);
+        Candidate::create(['name' => 'Jane Example', 'office' => 'councillor', 'status' => 'nominated']);
+
         $this->actingAs($this->admin)
             ->get(route('admin.elections.provincial'))
             ->assertOk()
-            ->assertInertia(fn ($page) => $page->component('Vendor/elections/Provincial', false));
+            ->assertInertia(fn ($page) => $page
+                ->component('Vendor/elections/Index', false)
+                ->where('election.slug', Election::PROVINCIAL)
+                ->where('election.offices', ['mla' => 'MLA'])
+                ->has('candidates', 1)
+                ->where('candidates.0.name', 'Pat Riding')
+                ->where('stats.candidates', 1));
     });
 
     it('lets invited Elections viewers open both pages, and keeps customers out', function () {

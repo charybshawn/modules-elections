@@ -2,6 +2,7 @@
 
 namespace Cultpantry\Elections\Actions;
 
+use Cultpantry\Elections\Models\Election;
 use Cultpantry\Elections\Http\Resources\ArticleResource;
 use Cultpantry\Elections\Http\Resources\PlankResource;
 use Cultpantry\Elections\Models\Candidate;
@@ -23,7 +24,7 @@ class BuildTagPage
 {
     public function handle(Tag $tag): array
     {
-        $planks = $tag->planks()->with(['candidate', 'entries'])->get();
+        $planks = $tag->planks()->forElection(Election::municipal())->with(['candidate', 'entries'])->get();
         $items = $tag->scorecardItems()->with('category.scorecard')->get();
 
         $answers = ScorecardAnswer::with('response')
@@ -32,7 +33,7 @@ class BuildTagPage
             ->get()
             ->groupBy(fn (ScorecardAnswer $a) => $a->response->candidate_id);
 
-        $candidates = Candidate::where('status', '!=', 'withdrawn')->orderBy('office')->orderBy('name')->get();
+        $candidates = Candidate::forElection(Election::municipal())->where('status', '!=', 'withdrawn')->orderBy('office')->orderBy('name')->get();
         $itemKey = fn (ScorecardItem $i) => $i->category->scorecard->key.'/'.$i->key;
         $itemById = $items->keyBy('id');
 
@@ -97,7 +98,7 @@ class BuildTagPage
                     'summary' => $i->summary,
                     'taken_on' => $i->snapshot->taken_on->toDateString(),
                 ])->values()->all(),
-            'articles' => ArticleResource::collection($tag->articles()->orderByDesc('published_on')->get())->resolve(),
+            'articles' => ArticleResource::collection($tag->articles()->forElection(Election::municipal())->orderByDesc('published_on')->get())->resolve(),
             'related' => $this->related($tag),
         ];
     }

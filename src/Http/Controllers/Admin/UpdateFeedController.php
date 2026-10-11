@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Cultpantry\Elections\Actions\BuildUpdateFeed;
 use Cultpantry\Elections\Http\Controllers\Admin\Concerns\ElectionsAdminMiddleware;
 use Cultpantry\Elections\Models\Candidate;
+use Cultpantry\Elections\Models\Election;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controllers\HasMiddleware;
@@ -23,7 +24,9 @@ class UpdateFeedController extends Controller implements HasMiddleware
     {
         $this->authorize('viewAny', Candidate::class);
 
-        return response()->json($buildUpdateFeed->handle((bool) $request->user()?->isAdmin()))
+        $election = Election::bySlug((string) $request->query('election', Election::MUNICIPAL)) ?? abort(404);
+
+        return response()->json($buildUpdateFeed->handle((bool) $request->user()?->isAdmin(), $election))
             ->header('Cache-Control', 'no-store');
     }
 }

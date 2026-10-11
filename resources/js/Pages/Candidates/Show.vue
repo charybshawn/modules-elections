@@ -1,7 +1,7 @@
 <template>
   <AdminShowShell wide>
     <template #mobile-header>
-      <AdminMobileHeader :title="candidate.name" :href="route('admin.elections.index')" />
+      <AdminMobileHeader :title="candidate.name" :href="dashboardHref" />
     </template>
 
     <template v-if="!readOnly" #actions>
@@ -19,10 +19,10 @@
     <template #header>
       <!-- Search sits beside Back, clear of the sticky actions pill on the right. -->
       <div class="flex items-center gap-4">
-        <Link :href="route('admin.elections.index')" class="hidden md:inline-flex tap-target-touch items-center text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white text-sm">
+        <Link :href="dashboardHref" class="hidden md:inline-flex tap-target-touch items-center text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white text-sm">
           &larr; Back to Elections
         </Link>
-        <QuickSearch />
+        <QuickSearch :election="election.slug" />
       </div>
       <!-- pr-40 keeps a long name clear of the sticky actions pill. -->
       <h1 class="hidden md:block mt-2 pr-40 text-2xl font-semibold text-gray-900 dark:text-white">{{ candidate.name }}</h1>
@@ -32,11 +32,12 @@
       <!-- Identity and key facts (both breakpoints): photo above the facts on phones. -->
       <div class="flex flex-col sm:flex-row gap-5">
         <figure class="shrink-0">
-          <CandidatePhoto :name="candidate.name" :url="candidate.photo_url" class="h-28 w-28 rounded-lg text-3xl" />
+          <PartyPhoto :name="candidate.name" :url="candidate.photo_url" :party="candidate.party" variant="ribbon" photo-class="h-48 w-48 rounded-full text-5xl sm:h-56 sm:w-56" />
           <figcaption v-if="candidate.photo_url && candidate.photo_credit" class="mt-1 text-[11px] text-gray-500 dark:text-gray-400">Photo: {{ candidate.photo_credit }}</figcaption>
         </figure>
         <div class="min-w-0 flex-1">
           <div class="flex flex-wrap items-center gap-2">
+            <span v-if="partyStyle(candidate.party)" :class="partyStyle(candidate.party)!.solid" class="rounded-md px-3 py-1 text-sm font-extrabold uppercase tracking-wide shadow-sm">{{ candidate.party }}</span>
             <span class="px-2 py-0.5 text-xs font-semibold rounded-full bg-amber-100 text-amber-800 dark:bg-amber-900/60 dark:text-amber-200">
               {{ options.offices[candidate.office] ?? candidate.office }}
             </span>
@@ -301,7 +302,8 @@ import AdminShowShell from '@/Components/Admin/AdminShowShell.vue'
 import AccountSection from '@/Components/Admin/Accounts/AccountSection.vue'
 import IconButton from '@/Components/IconButton.vue'
 import { useConfirmDialog } from '@/composables/useConfirmDialog'
-import CandidatePhoto from '../Partials/CandidatePhoto.vue'
+import PartyPhoto from '../Partials/PartyPhoto.vue'
+import { partyStyle } from '../Partials/party'
 import EntryCard from '../Partials/EntryCard.vue'
 import FactList from '../Partials/FactList.vue'
 import PlankRow from '../Partials/PlankRow.vue'
@@ -312,7 +314,7 @@ import { newPillClass } from '../Partials/classes'
 import { focusKey } from '../Partials/focus'
 import { formatDate, hostOf, isHttpUrl, useReadOnly } from '../Partials/format'
 import { tabScope, toUnix, useUpdates } from '../Partials/updates'
-import type { Article, Entry, Options, Plank, Portfolio } from '../Partials/types'
+import type { Article, ElectionInfo, Entry, Options, Plank, Portfolio } from '../Partials/types'
 
 defineOptions({ layout: (h, page) => h(AdminLayout, { hideBreadcrumbOnMobile: true }, () => page) })
 
@@ -323,7 +325,12 @@ const props = defineProps<{
   /** about, a portfolio section key, or news -- from ?tab=, checked server-side. */
   activeTab: string
   options: Options
+  /** The election this candidate is running in. */
+  election: ElectionInfo
 }>()
+
+// Back goes to the dashboard of the candidate's own election.
+const dashboardHref = computed(() => route(props.election.kind === 'provincial' ? 'admin.elections.provincial' : 'admin.elections.index'))
 
 // Computed: Inertia replaces the prop object on every visit.
 const candidate = computed(() => props.portfolio.candidate)
@@ -364,7 +371,7 @@ const backgroundDescriptions: Record<string, string> = {
 // until you open them. The marks as they stood when the page opened are kept
 // for this visit, so the tabs stay orange and the items keep their "New" tags
 // while you read them (switching tabs keeps this component alive).
-const updates = useUpdates()
+const updates = useUpdates(props.election.slug)
 const TAB_IDS = ['about', 'affiliations', 'platform', 'scorecards', 'words', 'record', 'endorsements', 'finance', 'news', 'notes']
 const lastLook = reactive<Record<string, number>>({})
 
