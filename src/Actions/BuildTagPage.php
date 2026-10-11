@@ -115,6 +115,10 @@ class BuildTagPage
                     ->on('other.taggable_id', '=', 'mine.taggable_id')
                     ->whereColumn('other.tag_id', '!=', 'mine.tag_id');
             })
+            // Subjects only: a news-type tag (personal, legislative...) isn't a subject
+            // to be "discussed with", and mustn't use up the limit below.
+            ->join('elections_tags as other_tag', 'other_tag.id', '=', 'other.tag_id')
+            ->where('other_tag.kind', 'subject')
             ->where('mine.tag_id', $tag->id)
             ->selectRaw('other.tag_id, count(*) as together')
             ->groupBy('other.tag_id')
@@ -122,7 +126,7 @@ class BuildTagPage
             ->limit(6)
             ->pluck('together', 'other.tag_id');
 
-        $tags = Tag::whereIn('id', $same->keys())->get()->keyBy('id');
+        $tags = Tag::subjects()->whereIn('id', $same->keys())->get()->keyBy('id');
 
         return $same->map(fn ($together, $id) => [
             'slug' => $tags[$id]->slug,

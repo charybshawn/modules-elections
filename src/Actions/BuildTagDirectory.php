@@ -18,7 +18,7 @@ class BuildTagDirectory
         // Municipal records only; provincial ones don't count toward these subjects yet.
         $municipal = Election::municipal();
         $candidateIds = Candidate::forElection($municipal)->pluck('id');
-        $tags = Tag::withCount([
+        $tags = Tag::subjects()->withCount([
             'planks' => fn ($q) => $q->forElection($municipal),
             'entries' => fn ($q) => $q->forElection($municipal),
             'articles' => fn ($q) => $q->forElection($municipal),

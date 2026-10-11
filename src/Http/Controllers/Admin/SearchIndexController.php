@@ -33,7 +33,7 @@ class SearchIndexController extends Controller implements HasMiddleware
         return response()->json([
             'candidates' => Candidate::forElection($election)->orderBy('name')->get(['name', 'slug', 'office', 'occupation', 'status'])
                 ->map(fn (Candidate $c) => $c->only(['name', 'slug', 'office', 'occupation', 'status'])),
-            'subjects' => Tag::orderBy('name')->when(! $municipal, fn ($q) => $q->whereRaw('1 = 0'))->get(['slug', 'name', 'topic'])
+            'subjects' => Tag::subjects()->orderBy('name')->when(! $municipal, fn ($q) => $q->whereRaw('1 = 0'))->get(['slug', 'name', 'topic'])
                 ->map(fn (Tag $t) => ['slug' => $t->slug, 'name' => $t->name, 'heading' => Entry::TOPICS[$t->topic] ?? $t->topic]),
             'planks' => Plank::forElection($election)->with('candidate:id,name,slug,status')->get(['key', 'title', 'tier', 'candidate_id'])
                 ->filter(fn (Plank $p) => $p->candidate !== null)

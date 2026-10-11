@@ -177,6 +177,90 @@ Start anywhere; the web decides the order. Seeds, by usefulness:
     (in the cultpantry app) for the module's registry of local churches,
     clubs and societies; every hit is a lead to open and tie, not a fact.
 
+## Field notes from the first run (David L Williams, Oct. 2026)
+
+How the sources actually behave, so the next run doesn't relearn it. Re-verify
+anything that looks changed; these are observations, not guarantees.
+
+**Conflict of Interest disclosures (the richest source for an MLA)**
+- Commissioner's site is `https://coibc.ca/` (not `www.`, whose certificate is
+  wrong). Its Disclosure Process page says what a statement covers.
+- The statements themselves are on the Legislature's site:
+  `https://www.leg.bc.ca/about/accountability/members-disclosures/public-disclosure-statements`.
+  The per-member PDF links sit inside a collapsed accordion, so a plain link
+  scrape misses them; list **all** links on the page (the fetch script caps
+  `--links` at 80) and filter on the member's surname.
+- A `leg.bc.ca/parliamentary-documents/...pdf` address returns an **HTML
+  viewer page**, not the PDF. The real file is the iframe address
+  `https://api.lims.leg.bc.ca/pdms/file/content-committees/AccountabilityDocuments/MLAs/...`.
+  Download each file into its own empty folder and extract with `pdftotext -layout`.
+- Per member there can be: this year's and last year's **statement**, **notices
+  of material change** (dispositions, new acquisitions) and **gift
+  declarations**. Statements are removed five years after dissolution, so
+  save the facts.
+- **A statement covers the member, the spouse and minor children together,
+  marked `(Member)` / `(Spouse)`.** Record only `(Member)` lines and
+  `(Member & Spouse)` joint holdings (as "held jointly", naming no one).
+  Anything marked `(Spouse)`, including income, property, deposits, tax owed
+  and a spouse's property sold in a material change, is left out entirely.
+- Statements give the **nature, not the value**, of assets, and name shares
+  by company only. Don't put a value or a jurisdiction on a holding the
+  record doesn't give; identify the issuer from its own filing or release and
+  say the disclosure gives the name only. If no single company matches the
+  name, say so and don't guess.
+
+**Registries and records**
+- **OrgBook BC** has a plain JSON API that needs no browser:
+  `https://orgbook.gov.bc.ca/api/v4/search/topic?q=<name>&inactive=any&latest=true&revoked=any&page_size=6`
+  (results carry registry id, status, type, registration date). It confirms an
+  entity exists and its status; **it does not list a society's directors**, so
+  a directorship stays sourced to the disclosure or the entity's own page.
+  Names must match exactly to count: a near name is a lead.
+- **Elections BC contributions system** (`contributions.electionsbc.gov.bc.ca/pcs/`):
+  an ASP.NET form. *Political Contributions* searches by contributor name
+  (try `First Last`; `Last, First` returned nothing) and returns name, date,
+  amount, recipient and class, **with no address or city**. A common name
+  therefore returns unrelated people and nothing ties any row to the candidate
+  (a first-run search for "David Williams" gave 17 records across three
+  parties). Treat those as leads in `<notes>`, not entries.
+  *Election Summary* (partial filer name + event + electoral district) returns
+  the candidate's **own** financing report (income, expenditures,
+  reimbursement), which is tied by the district and filer type and *is* a
+  fact. Don't collect the campaign's donor names.
+- **Hansard** is on `lims.leg.bc.ca/hdms/file/Debates/<parliament><session>/<date><am|pm>-Hansard-n<issue>.html`;
+  a search restricted to `lims.leg.bc.ca` and `leg.bc.ca` found a speech by a
+  keyword from a disclosure (a directorship), which is exactly the
+  cross-link the method is after. Open the transcript, read the exact words,
+  and check what was and wasn't declared.
+- The Legislature's member profile
+  (`leg.bc.ca/members/43rd-Parliament/<First>-<Last>`) renders empty without
+  its API; use it only to confirm the page exists. Roles come from the party
+  page and Wikipedia (cited to the party), checked against Hansard.
+- Wayback copies (`web.archive.org/web/2024/<url>`) read pages that block
+  automated fetches (Castanet, and CentreBC's site from a plain fetch).
+
+**Dead ends, so you don't repeat them**
+- DuckDuckGo's HTML search through a browser returned a non-result page (202);
+  Bing and Google weren't tried because search pages invite bot checks. Use
+  the search tool for leads, then open the real pages.
+- `barchart.com` company pages are blocked (403); the company's own
+  newswire release (`newswire.ca`, `newsfilecorp.com`) loads.
+- `cfjctoday.com`, `castanet.net` are bot-checked from a fresh browser; use
+  the archive copy or a different outlet.
+
+**How findings mapped to entries**
+- One entry per disclosed item; **one entry per issuer** for shares.
+- `finance` kind (topic `governance_transparency`, source type `elections_bc`)
+  for the candidate's own financing report.
+- A gift declaration is a `background` entry with topic `other`.
+- A legislative statement is `public_service`, with the short verbatim line
+  as `quote` and the issue number in `source_name`.
+- Liabilities and income sources from a disclosure were included because they
+  are mandated public financial records; they are a judgment call, so name
+  them in the hand-off and make them easy to drop.
+- Party-page claims that no independent record confirms stay in the file,
+  attributed to the party page in the summary ("his party profile says ...").
+
 ## The loop (per person)
 
 1. Pull the baseline and seed the thread list from it and from the first

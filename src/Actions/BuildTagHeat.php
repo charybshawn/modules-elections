@@ -27,7 +27,7 @@ class BuildTagHeat
 
     public function handle(): array
     {
-        $tags = Tag::orderBy('name')->get()->keyBy('id');
+        $tags = Tag::subjects()->orderBy('name')->get()->keyBy('id');
         if ($tags->isEmpty()) {
             return ['headings' => [], 'heatingUp' => []];
         }

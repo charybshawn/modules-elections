@@ -801,6 +801,12 @@ class ImportElectionFromXml
             $this->problems[] = "Tag {$slug}: unknown topic \"{$topic}\", left as it was.";
             $topic = null;
         }
+        $kind = $this->text($node, 'kind');
+        if ($kind !== null && ! array_key_exists($kind, Tag::KINDS)) {
+            $this->problems[] = "Tag {$slug}: unknown kind \"{$kind}\", left as it was.";
+            $kind = null;
+        }
+        $tag->kind = $kind ?? $tag->kind ?? 'subject';
         $tag->topic = $topic ?? $tag->topic ?? 'other';
         $tag->name = $this->text($node, 'name') ?? $tag->name ?? $slug;
         $tag->description = $this->text($node, 'description') ?? $tag->description;
@@ -820,10 +826,22 @@ class ImportElectionFromXml
         }
 
         $slugs = $this->list($node->tags, 'tag');
-        $ids = $slugs === [] ? collect() : Tag::whereIn('slug', $slugs)->pluck('id', 'slug');
-        foreach (array_diff($slugs, $ids->keys()->all()) as $unknown) {
+        $found = $slugs === [] ? collect() : Tag::whereIn('slug', $slugs)->get(['id', 'slug', 'kind'])->keyBy('slug');
+        foreach (array_diff($slugs, $found->keys()->all()) as $unknown) {
             $this->problems[] = "{$label}: unknown tag \"{$unknown}\" -- add it to <vocabulary> first.";
         }
+
+        // A story is one type of news, so it sits in one column: of several news-type
+        // tags on an article, the first listed is kept and the rest are reported.
+        if ($model instanceof Article) {
+            $news = array_values(array_filter($slugs, fn ($slug) => ($found[$slug]->kind ?? null) === 'news'));
+            if (count($news) > 1) {
+                $this->problems[] = "{$label}: more than one news-type tag (".implode(', ', $news).") -- kept {$news[0]}, a story has one type.";
+                $drop = array_slice($news, 1);
+                $found = $found->reject(fn ($tag) => in_array($tag->slug, $drop, true));
+            }
+        }
+        $ids = $found->pluck('id', 'slug');
 
         /** @var \Illuminate\Database\Eloquent\Relations\MorphToMany $relation */
         $relation = $model->tags();

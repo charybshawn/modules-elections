@@ -112,8 +112,14 @@ class BuildUpdateFeed
     private function subjects(): array
     {
         $unique = array_values(array_unique(array_merge(
-            $this->times(DB::table('elections_tags')->get(['created_at']), fn ($r) => $r->created_at),
-            $this->times(DB::table('elections_taggables')->get(['created_at']), fn ($r) => $r->created_at),
+            $this->times(DB::table('elections_tags')->where('kind', 'subject')->get(['created_at']), fn ($r) => $r->created_at),
+            $this->times(
+                DB::table('elections_taggables')
+                    ->join('elections_tags', 'elections_tags.id', '=', 'elections_taggables.tag_id')
+                    ->where('elections_tags.kind', 'subject')
+                    ->get(['elections_taggables.created_at']),
+                fn ($r) => $r->created_at,
+            ),
         )));
         sort($unique);
 

@@ -267,17 +267,87 @@
 
         <!-- In the news -->
         <div v-else-if="activeTab === 'news'">
-          <AccountSection title="Coverage" description="News stories that mention this candidate.">
-            <ul class="space-y-5">
-              <li v-for="article in portfolio.articles" :key="article.id">
-                <a v-if="isHttpUrl(article.url)" :href="article.url" target="_blank" rel="noopener noreferrer" class="font-medium text-gray-900 hover:underline dark:text-white">{{ article.title }}</a>
-                <span v-if="isNewArticle(article)" :class="newPillClass" class="ml-2 align-middle">New</span>
-                <div class="mt-0.5 text-xs text-gray-500 dark:text-gray-400">{{ [article.outlet, formatDate(article.published_on)].filter(Boolean).join(' · ') }}</div>
-                <p v-if="article.summary" class="mt-1 text-sm leading-relaxed text-gray-600 dark:text-gray-300">{{ article.summary }}</p>
-                <TagChips :tags="article.tags" class="mt-1.5" />
-                <button v-if="!readOnly" type="button" class="tap-target-touch mt-1 text-xs text-red-600 hover:text-red-800 dark:text-red-400" @click="deleteArticle(article)">Remove article</button>
-              </li>
-            </ul>
+          <AccountSection title="Coverage" description="News stories that mention this candidate, in a column for each type of story.">
+            <!-- Search across every column; with hundreds of stories this is how you find one. -->
+            <div v-if="portfolio.articles.length > 8" class="mb-3">
+              <label for="news-search" class="sr-only">Search coverage</label>
+              <input
+                id="news-search"
+                v-model="newsSearch"
+                type="search"
+                placeholder="Search coverage by title, outlet or summary"
+                class="w-full rounded-md border-gray-300 text-base sm:max-w-sm sm:text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+              />
+              <p v-if="newsSearch.trim()" class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ matchingStories }} of {{ portfolio.articles.length }} stories match.</p>
+            </div>
+
+            <!-- Phones stack the columns, so jump between them. -->
+            <nav v-if="newsSections.length > 1" class="-mx-4 mb-2 flex gap-1.5 overflow-x-auto px-4 py-1 scrollbar-hide sm:mx-0 sm:flex-wrap sm:px-0 lg:hidden" aria-label="Types of story">
+              <a
+                v-for="section in newsSections"
+                :key="section.slug"
+                :href="`#news-${section.slug}`"
+                :class="section.badge"
+                class="tap-target-touch inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1 text-sm font-semibold"
+                @click.prevent="jumpToNews(section.slug)"
+              >{{ section.name }} <span class="opacity-70">{{ section.total }}</span></a>
+            </nav>
+
+            <p v-if="newsSections.length === 0" class="mt-3 text-sm text-gray-500 dark:text-gray-400">No stories match.</p>
+
+            <div class="mt-3 grid grid-cols-1 items-start gap-4" :class="newsColumnsClass">
+              <section v-for="section in newsSections" :id="`news-${section.slug}`" :key="section.slug" class="min-w-0 scroll-mt-32 rounded-lg border border-gray-200 bg-gray-50/60 p-3 dark:border-gray-700 dark:bg-gray-800/40">
+                <h3 class="flex flex-wrap items-center gap-2 text-sm font-semibold text-gray-900 dark:text-white">
+                  <span :class="section.badge" class="rounded px-2 py-0.5 text-xs font-bold uppercase tracking-wide">{{ section.name }}</span>
+                  <span class="text-xs font-normal text-gray-500 dark:text-gray-400">
+                    {{ section.articles.length === section.total ? section.total : `${section.articles.length} of ${section.total}` }} {{ section.total === 1 ? 'story' : 'stories' }}
+                  </span>
+                </h3>
+                <p v-if="section.hint" class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ section.hint }}</p>
+
+                <!-- A tall column scrolls inside itself from large screens up, so one big type never pushes the others off the page. -->
+                <ul class="mt-3 space-y-2 lg:max-h-[70vh] lg:overflow-y-auto lg:pr-1">
+                  <li v-for="article in visibleIn(section)" :key="article.id" class="rounded-md bg-white p-2.5 shadow-sm dark:bg-gray-800">
+                    <a v-if="isHttpUrl(article.url)" :href="article.url" target="_blank" rel="noopener noreferrer" class="line-clamp-2 text-sm font-medium leading-snug text-gray-900 hover:underline dark:text-white" :class="isStoryOpen(article) ? 'line-clamp-none' : ''">{{ article.title }}</a>
+                    <span v-if="isNewArticle(article)" :class="newPillClass" class="ml-1 align-middle">New</span>
+                    <!-- Blurb: two lines, expandable. -->
+                    <p v-if="article.summary" class="mt-1 text-xs leading-relaxed text-gray-600 dark:text-gray-300" :class="isStoryOpen(article) ? '' : 'line-clamp-2'">{{ article.summary }}</p>
+
+                    <div v-if="isStoryOpen(article)" class="mt-1.5">
+                      <TagChips :tags="article.tags.filter(isSubjectTag)" />
+                      <button v-if="!readOnly" type="button" class="tap-target-touch mt-1 text-xs text-red-600 hover:text-red-800 dark:text-red-400" @click="deleteArticle(article)">Remove article</button>
+                    </div>
+
+                    <!-- Footer: where and when on the left, expand on the right. -->
+                    <div class="mt-1.5 flex items-center justify-between gap-3 text-[11px]">
+                      <span class="min-w-0 truncate text-gray-500 dark:text-gray-400">{{ [article.outlet, formatDate(article.published_on)].filter(Boolean).join(' · ') }}</span>
+                      <button
+                        v-if="isExpandable(article)"
+                        type="button"
+                        class="tap-target-touch shrink-0 font-medium text-indigo-600 hover:underline dark:text-indigo-400"
+                        :aria-expanded="isStoryOpen(article)"
+                        @click="toggleStory(article)"
+                      >{{ isStoryOpen(article) ? 'Less' : 'More' }}</button>
+                    </div>
+                  </li>
+                </ul>
+
+                <div v-if="section.articles.length > NEWS_SHOWN" class="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1">
+                  <button
+                    v-if="newsCount(section.slug) < section.articles.length"
+                    type="button"
+                    class="tap-target-touch text-xs font-medium text-indigo-600 hover:underline dark:text-indigo-400"
+                    @click="showMoreNews(section.slug)"
+                  >Show {{ Math.min(NEWS_STEP, section.articles.length - newsCount(section.slug)) }} more ({{ section.articles.length - newsCount(section.slug) }} left)</button>
+                  <button
+                    v-if="newsCount(section.slug) > NEWS_SHOWN"
+                    type="button"
+                    class="tap-target-touch text-xs font-medium text-gray-500 hover:underline dark:text-gray-400"
+                    @click="resetNews(section.slug)"
+                  >Show fewer</button>
+                </div>
+              </section>
+            </div>
           </AccountSection>
         </div>
 
@@ -311,6 +381,7 @@ import QuickSearch from '../Partials/QuickSearch.vue'
 import ScorecardView from '../Partials/ScorecardView.vue'
 import TagChips from '../Partials/TagChips.vue'
 import { newPillClass } from '../Partials/classes'
+import { isNewsTag, isSubjectTag, newsTagClass } from '../Partials/newsTags'
 import { focusKey } from '../Partials/focus'
 import { formatDate, hostOf, isHttpUrl, useReadOnly } from '../Partials/format'
 import { tabScope, toUnix, useUpdates } from '../Partials/updates'
@@ -421,6 +492,78 @@ const plankEntries = computed(() => [...allPlanks.value.flatMap((p) => p.sources
 /** 1-based position across the whole platform, top tier first. */
 const plankPosition = (plank: Plank) => allPlanks.value.findIndex((p) => p.id === plank.id) + 1
 // ---- Platform: filter by subject in place (remembered so Back keeps it) ----
+// ---- In the news: one column per type of story (news-kind tags; a story can be in several) ----
+// Built for hundreds of stories: each column starts at NEWS_SHOWN cards, grows NEWS_STEP at a
+// time and scrolls inside itself; a search narrows every column; a blurb expands on demand.
+const NEWS_SHOWN = 5
+const NEWS_STEP = 10
+const BLURB_CHARS = 110
+const NEWS_ORDER = ['news-personal', 'news-legislative', 'news-opinion', 'news-background']
+const NEWS_HINTS: Record<string, string> = {
+  'news-personal': 'Their own personal life and personal legal matters, as reported. Never family.',
+  'news-legislative': 'Anything that relates to their public office: council, committee and Legislature business, votes, policy positions, statements and appearances.',
+  'news-opinion': 'Opinion pieces, editorials and letters.',
+  'news-background': 'Who they are and the context of the race: profiles, introductions, announcements, forums and how to vote.',
+}
+const newsSearch = ref('')
+const newsLimits = reactive<Record<string, number>>({})
+const openStories = reactive({ ids: [] as number[] })
+const newsCount = (slug: string) => newsLimits[slug] ?? NEWS_SHOWN
+const showMoreNews = (slug: string) => {
+  newsLimits[slug] = newsCount(slug) + NEWS_STEP
+}
+const resetNews = (slug: string) => {
+  newsLimits[slug] = NEWS_SHOWN
+}
+const isStoryOpen = (article: Article) => openStories.ids.includes(article.id)
+const toggleStory = (article: Article) => {
+  openStories.ids = isStoryOpen(article) ? openStories.ids.filter((id) => id !== article.id) : [...openStories.ids, article.id]
+}
+/** Only worth a More button when there is more to show: a long blurb, subjects or admin actions. */
+const isExpandable = (article: Article) =>
+  (article.summary?.length ?? 0) > BLURB_CHARS || article.title.length > 70 || article.tags.some(isSubjectTag) || !readOnly.value
+
+const matchesNews = (article: Article) => {
+  const q = newsSearch.value.trim().toLowerCase()
+  return !q || [article.title, article.outlet, article.summary].some((v) => (v ?? '').toLowerCase().includes(q))
+}
+const matchingStories = computed(() => props.portfolio.articles.filter(matchesNews).length)
+
+type NewsSection = { slug: string; name: string; articles: Article[]; total: number; badge: string; hint: string | null }
+const newsSections = computed<NewsSection[]>(() => {
+  const bySlug = new Map<string, { slug: string; name: string; articles: Article[]; total: number }>()
+  const unfiled = { articles: [] as Article[], total: 0 }
+  for (const article of props.portfolio.articles) {
+    const matches = matchesNews(article)
+    const types = article.tags.filter(isNewsTag)
+    if (types.length === 0) {
+      unfiled.total++
+      if (matches) unfiled.articles.push(article)
+    }
+    for (const tag of types) {
+      const section = bySlug.get(tag.slug) ?? { slug: tag.slug, name: tag.name, articles: [], total: 0 }
+      section.total++
+      if (matches) section.articles.push(article)
+      bySlug.set(tag.slug, section)
+    }
+  }
+  const rank = (slug: string) => (NEWS_ORDER.includes(slug) ? NEWS_ORDER.indexOf(slug) : NEWS_ORDER.length)
+  const sections: NewsSection[] = [...bySlug.values()]
+    .sort((a, b) => rank(a.slug) - rank(b.slug) || a.name.localeCompare(b.name))
+    .map((section) => ({ ...section, badge: newsTagClass(section.slug), hint: NEWS_HINTS[section.slug] ?? null }))
+  if (unfiled.total) sections.push({ slug: 'unfiled', name: 'Not yet filed', ...unfiled, badge: newsTagClass(''), hint: 'Not yet filed under a type of story.' })
+  // While searching, a column with no match has nothing to show.
+  return newsSearch.value.trim() ? sections.filter((section) => section.articles.length > 0) : sections
+})
+// One column per type from large screens up (up to four across; more wrap), stacked below that.
+const newsColumnsClass = computed(
+  () => (({ 1: 'lg:grid-cols-1', 2: 'lg:grid-cols-2', 3: 'lg:grid-cols-3' }) as Record<number, string>)[newsSections.value.length] ?? 'lg:grid-cols-2 xl:grid-cols-4',
+)
+const visibleIn = (section: NewsSection) => section.articles.slice(0, newsCount(section.slug))
+const jumpToNews = (slug: string) => {
+  nextTick(() => document.getElementById(`news-${slug}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' }))
+}
+
 const platformFilter = useRemember(reactive({ tag: null as string | null }), 'elections-platform-filter') as { tag: string | null }
 const platformSubjects = computed(() => {
   const counts = new Map<string, { slug: string; name: string; count: number }>()

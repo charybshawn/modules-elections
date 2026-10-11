@@ -38,7 +38,7 @@ class BuildSubjectCoverage
             }
         }
 
-        $tags = Tag::orderBy('name')->get(['slug', 'name', 'topic'])
+        $tags = Tag::subjects()->orderBy('name')->get(['slug', 'name', 'topic'])
             ->map(fn (Tag $t) => [
                 'slug' => $t->slug,
                 'name' => $t->name,

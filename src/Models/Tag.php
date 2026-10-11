@@ -2,18 +2,23 @@
 
 namespace Cultpantry\Elections\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 
 /**
- * A subject tag from the module's controlled vocabulary. It files under one
- * Entry::TOPICS heading and is applied, many-to-many, to planks,
- * statements, articles, Community Pulse issues and scorecard statements.
+ * A tag from the module's controlled vocabulary. A *subject* tag files under
+ * one Entry::TOPICS heading and is applied, many-to-many, to planks,
+ * statements, articles, Community Pulse issues and scorecard statements. A
+ * *news* tag names a type of story (personal, legislative, opinion,
+ * background) and is applied only to articles, one per article; it has no
+ * subject page and never shows in the subject views.
  *
  * @property int $id
  * @property string $slug
+ * @property string $kind one of Tag::KINDS
  * @property string $topic
  * @property string $name
  * @property string|null $description
@@ -22,7 +27,23 @@ class Tag extends Model
 {
     protected $table = 'elections_tags';
 
-    protected $fillable = ['slug', 'topic', 'name', 'description'];
+    public const KINDS = [
+        'subject' => 'Subject',
+        'news' => 'Type of news',
+    ];
+
+    protected $fillable = ['slug', 'kind', 'topic', 'name', 'description'];
+
+    /** The subject vocabulary: what Browse by subject, the heat map and search list. */
+    public function scopeSubjects(Builder $query): Builder
+    {
+        return $query->where($this->getTable().'.kind', 'subject');
+    }
+
+    public function scopeNews(Builder $query): Builder
+    {
+        return $query->where($this->getTable().'.kind', 'news');
+    }
 
     /**
      * Removes tag links whose record is gone. Deletes happen through

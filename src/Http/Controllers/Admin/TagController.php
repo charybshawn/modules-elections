@@ -45,6 +45,8 @@ class TagController extends Controller implements HasMiddleware
     public function show(Tag $tag, BuildTagPage $buildTagPage): Response
     {
         $this->authorize('view', $tag);
+        // A news-type tag labels stories; it has no subject page.
+        abort_unless($tag->kind === 'subject', 404);
 
         return Inertia::render('Vendor/elections/Tags/Show', [
             ...$buildTagPage->handle($tag),

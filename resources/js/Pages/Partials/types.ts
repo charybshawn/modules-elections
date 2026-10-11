@@ -46,6 +46,8 @@ export interface TagHeat {
 
 export interface TagRef {
   slug: string
+  /** subject (files under a topic heading) or news (a type of story). */
+  kind: 'subject' | 'news'
   name: string
   /** Options.topics key -- the heading it files under. */
   topic: string

@@ -38,7 +38,7 @@ class ExportElectionToXml
             $vocabulary = $xml->addChild('vocabulary');
             foreach ($tags as $tag) {
                 $node = $vocabulary->addChild('tag');
-                foreach (['slug', 'topic', 'name', 'description'] as $field) {
+                foreach (['slug', 'kind', 'topic', 'name', 'description'] as $field) {
                     $this->addChild($node, $field, $tag->{$field});
                 }
             }
