@@ -65,6 +65,7 @@ import { useMediaQuery } from '@vueuse/core'
 import ElectionsNav from '../Partials/ElectionsNav.vue'
 import { Link, useRemember } from '@inertiajs/vue3'
 import AdminLayout from '@/Layouts/AdminLayout.vue'
+import { trail, salmonArm } from '../Partials/breadcrumbs'
 import AdminMobileHeader from '@/Components/Admin/AdminMobileHeader.vue'
 import SubjectMatrix from '../Partials/SubjectMatrix.vue'
 import { sectionHeadingClass } from '../Partials/classes'
@@ -72,7 +73,7 @@ import type { SubjectCoverage } from '../Partials/coverage'
 import { useUpdates } from '../Partials/updates'
 import type { Candidate, Options } from '../Partials/types'
 
-defineOptions({ layout: (h, page) => h(AdminLayout, { wide: true, hideBreadcrumbOnMobile: true }, () => page) })
+defineOptions({ layout: (h, page) => h(AdminLayout, { wide: true, hideBreadcrumbOnMobile: true, breadcrumbs: trail(salmonArm(), { label: 'Browse by subject' }) }, () => page) })
 
 // Opening Browse by subject marks it seen (the nav tab stops being orange).
 const updates = useUpdates()

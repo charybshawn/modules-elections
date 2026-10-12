@@ -197,6 +197,7 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { Link, router } from '@inertiajs/vue3'
 import AdminLayout from '@/Layouts/AdminLayout.vue'
+import { trail, provincial, pick } from '../Partials/breadcrumbs'
 import AdminMobileHeader from '@/Components/Admin/AdminMobileHeader.vue'
 import AdminShowShell from '@/Components/Admin/AdminShowShell.vue'
 import AccountSection from '@/Components/Admin/Accounts/AccountSection.vue'
@@ -207,7 +208,7 @@ import QuickSearch from '../Partials/QuickSearch.vue'
 import { formatDate, hostOf, isHttpUrl } from '../Partials/format'
 import type { ElectionInfo, PartyArticle, PartyClaim, PartyProfile as PartyProfileData, PartySlate } from '../Partials/types'
 
-defineOptions({ layout: (h, page) => h(AdminLayout, { wide: true, hideBreadcrumbOnMobile: true }, () => page) })
+defineOptions({ layout: (h, page) => h(AdminLayout, { wide: true, hideBreadcrumbOnMobile: true, breadcrumbs: trail(provincial(), { label: pick(page, 'party.name', 'Party') }) }, () => page) })
 
 const props = defineProps<{
   election: ElectionInfo

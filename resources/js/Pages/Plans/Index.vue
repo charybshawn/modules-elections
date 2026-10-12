@@ -116,11 +116,12 @@
 import { onMounted } from 'vue'
 import { Link } from '@inertiajs/vue3'
 import AdminLayout from '@/Layouts/AdminLayout.vue'
+import { trail, salmonArm } from '../Partials/breadcrumbs'
 import AdminMobileHeader from '@/Components/Admin/AdminMobileHeader.vue'
 import ElectionsNav from '../Partials/ElectionsNav.vue'
 import { useUpdates } from '../Partials/updates'
 
-defineOptions({ layout: (h, page) => h(AdminLayout, { wide: true, hideBreadcrumbOnMobile: true }, () => page) })
+defineOptions({ layout: (h, page) => h(AdminLayout, { wide: true, hideBreadcrumbOnMobile: true, breadcrumbs: trail(salmonArm(), { label: 'City Plans + Finances' }) }, () => page) })
 
 // A sheet refreshed since you last opened it carries an orange "Updated" chip.
 const updates = useUpdates()

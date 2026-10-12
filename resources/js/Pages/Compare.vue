@@ -154,6 +154,7 @@
 import { computed, reactive } from 'vue'
 import { Link, router, useRemember } from '@inertiajs/vue3'
 import AdminLayout from '@/Layouts/AdminLayout.vue'
+import { trail, salmonArm } from './Partials/breadcrumbs'
 import AdminMobileHeader from '@/Components/Admin/AdminMobileHeader.vue'
 import CandidatePhoto from './Partials/CandidatePhoto.vue'
 import ElectionsNav from './Partials/ElectionsNav.vue'
@@ -161,7 +162,7 @@ import { sectionHeadingClass } from './Partials/classes'
 import { tierBadgeClass, tierShortLabel } from './Partials/coverage'
 import type { Candidate, Options } from './Partials/types'
 
-defineOptions({ layout: (h, page) => h(AdminLayout, { wide: true, hideBreadcrumbOnMobile: true }, () => page) })
+defineOptions({ layout: (h, page) => h(AdminLayout, { wide: true, hideBreadcrumbOnMobile: true, breadcrumbs: trail(salmonArm(), { label: 'Compare candidates' }) }, () => page) })
 
 interface ComparedPlank {
   key: string

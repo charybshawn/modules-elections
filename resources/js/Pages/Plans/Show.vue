@@ -122,13 +122,14 @@
 import { onMounted, ref, watch } from 'vue'
 import { Link } from '@inertiajs/vue3'
 import AdminLayout from '@/Layouts/AdminLayout.vue'
+import { trail, salmonArm, cityPlans, pick } from '../Partials/breadcrumbs'
 import AdminMobileHeader from '@/Components/Admin/AdminMobileHeader.vue'
 import ElectionsNav from '../Partials/ElectionsNav.vue'
 import PageRefs from './PageRefs.vue'
 import { formatDate } from '../Partials/format'
 import { useUpdates } from '../Partials/updates'
 
-defineOptions({ layout: (h, page) => h(AdminLayout, { wide: true, hideBreadcrumbOnMobile: true }, () => page) })
+defineOptions({ layout: (h, page) => h(AdminLayout, { wide: true, hideBreadcrumbOnMobile: true, breadcrumbs: trail(salmonArm(), cityPlans(), { label: pick(page, 'plan.title', 'Plan') }) }, () => page) })
 
 type Cited = { text: string; pages: number[] }
 type Point = Cited & { title?: string }

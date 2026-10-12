@@ -120,6 +120,7 @@ import ElectionsNav from './Partials/ElectionsNav.vue'
 import { onMounted } from 'vue'
 import { Link, router } from '@inertiajs/vue3'
 import AdminLayout from '@/Layouts/AdminLayout.vue'
+import { trail, salmonArm } from './Partials/breadcrumbs'
 import AdminMobileHeader from '@/Components/Admin/AdminMobileHeader.vue'
 import { useConfirmDialog } from '@/composables/useConfirmDialog'
 import TagChips from './Partials/TagChips.vue'
@@ -128,7 +129,7 @@ import { formatDate, useReadOnly } from './Partials/format'
 import { useUpdates } from './Partials/updates'
 import type { Options, PulseIssue, PulseSnapshot } from './Partials/types'
 
-defineOptions({ layout: (h, page) => h(AdminLayout, { wide: true, hideBreadcrumbOnMobile: true }, () => page) })
+defineOptions({ layout: (h, page) => h(AdminLayout, { wide: true, hideBreadcrumbOnMobile: true, breadcrumbs: trail(salmonArm(), { label: 'Community Pulse' }) }, () => page) })
 
 const props = defineProps<{
   snapshot: PulseSnapshot | null

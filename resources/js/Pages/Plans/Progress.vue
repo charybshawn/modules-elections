@@ -160,12 +160,13 @@
 import { computed, onMounted, ref, watch } from 'vue'
 import { Link } from '@inertiajs/vue3'
 import AdminLayout from '@/Layouts/AdminLayout.vue'
+import { trail, salmonArm, cityPlans, pick } from '../Partials/breadcrumbs'
 import AdminMobileHeader from '@/Components/Admin/AdminMobileHeader.vue'
 import ElectionsNav from '../Partials/ElectionsNav.vue'
 import { formatDate } from '../Partials/format'
 import { useUpdates } from '../Partials/updates'
 
-defineOptions({ layout: (h, page) => h(AdminLayout, { wide: true, hideBreadcrumbOnMobile: true }, () => page) })
+defineOptions({ layout: (h, page) => h(AdminLayout, { wide: true, hideBreadcrumbOnMobile: true, breadcrumbs: trail(salmonArm(), cityPlans(), { label: pick(page, 'sheet.title', 'Progress') }) }, () => page) })
 
 type Source = { label: string; url: string; date: string | null }
 type Project = {

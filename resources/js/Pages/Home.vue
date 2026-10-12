@@ -43,13 +43,14 @@
 <script setup lang="ts">
 import { Link } from '@inertiajs/vue3'
 import AdminLayout from '@/Layouts/AdminLayout.vue'
+import { trail } from './Partials/breadcrumbs'
 import AdminMobileHeader from '@/Components/Admin/AdminMobileHeader.vue'
 import { computed, onMounted } from 'vue'
 import { formatDate } from './Partials/format'
 import { useUpdates } from './Partials/updates'
 import InviteButton from './Partials/InviteButton.vue'
 
-defineOptions({ layout: (h, page) => h(AdminLayout, { wide: true, hideBreadcrumbOnMobile: true }, () => page) })
+defineOptions({ layout: (h, page) => h(AdminLayout, { wide: true, hideBreadcrumbOnMobile: true, breadcrumbs: trail() }, () => page) })
 
 defineProps<{
   salmonArm: { candidates: number; votingDay: string | null }

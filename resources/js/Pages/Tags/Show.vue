@@ -84,13 +84,14 @@
 import ElectionsNav from '../Partials/ElectionsNav.vue'
 import { Link } from '@inertiajs/vue3'
 import AdminLayout from '@/Layouts/AdminLayout.vue'
+import { trail, salmonArm, subjects, pick } from '../Partials/breadcrumbs'
 import AdminMobileHeader from '@/Components/Admin/AdminMobileHeader.vue'
 import { sectionHeadingClass } from '../Partials/classes'
 import { formatDate, isHttpUrl } from '../Partials/format'
 import AnalysisPanel from '../Partials/AnalysisPanel.vue'
 import type { Article, Options, PlankAnalysis } from '../Partials/types'
 
-defineOptions({ layout: (h, page) => h(AdminLayout, { wide: true, hideBreadcrumbOnMobile: true }, () => page) })
+defineOptions({ layout: (h, page) => h(AdminLayout, { wide: true, hideBreadcrumbOnMobile: true, breadcrumbs: trail(salmonArm(), subjects(), { label: pick(page, 'tag.name', 'Subject') }) }, () => page) })
 
 interface Position {
   name: string

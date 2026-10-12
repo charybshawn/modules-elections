@@ -366,6 +366,7 @@
 import { computed, nextTick, onMounted, provide, reactive, ref, watch } from 'vue'
 import { Link, router, useRemember, usePage } from '@inertiajs/vue3'
 import AdminLayout from '@/Layouts/AdminLayout.vue'
+import { trail, salmonArm, pick } from '../Partials/breadcrumbs'
 import AdminMobileHeader from '@/Components/Admin/AdminMobileHeader.vue'
 import AdminShowShell from '@/Components/Admin/AdminShowShell.vue'
 import AccountSection from '@/Components/Admin/Accounts/AccountSection.vue'
@@ -385,7 +386,7 @@ import { formatDate, hostOf, isHttpUrl, useReadOnly } from '../Partials/format'
 import { tabScope, toUnix, useUpdates } from '../Partials/updates'
 import type { Article, ElectionInfo, Entry, Options, Plank, Portfolio } from '../Partials/types'
 
-defineOptions({ layout: (h, page) => h(AdminLayout, { hideBreadcrumbOnMobile: true }, () => page) })
+defineOptions({ layout: (h, page) => h(AdminLayout, { hideBreadcrumbOnMobile: true, breadcrumbs: trail(salmonArm(), { label: pick(page, 'portfolio.candidate.name', 'Candidate') }) }, () => page) })
 
 const changeNoteClass = 'rounded-md bg-orange-100 px-3 py-2 text-sm font-medium text-orange-900 dark:bg-orange-500/20 dark:text-orange-200'
 

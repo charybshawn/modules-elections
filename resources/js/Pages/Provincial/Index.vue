@@ -263,6 +263,7 @@ import InviteButton from '../Partials/InviteButton.vue'
 import { computed, nextTick, onMounted, ref, reactive } from 'vue'
 import { Link, router, usePage, useRemember } from '@inertiajs/vue3'
 import AdminLayout from '@/Layouts/AdminLayout.vue'
+import { trail } from '../Partials/breadcrumbs'
 import AdminMobileHeader from '@/Components/Admin/AdminMobileHeader.vue'
 import { useConfirmDialog } from '@/composables/useConfirmDialog'
 import PartyPhoto from './PartyPhoto.vue'
@@ -273,7 +274,7 @@ import { daysUntil, formatDate, formatDateTime, isHttpUrl, useReadOnly } from '.
 import { useUpdates } from '../Partials/updates'
 import type { Article, Candidate, ElectionEvent, ElectionInfo, Options, TagHeat, LatestUpdate, PollData, RidingProjectionRow } from '../Partials/types'
 
-defineOptions({ layout: (h, page) => h(AdminLayout, { wide: true, hideBreadcrumbOnMobile: true }, () => page) })
+defineOptions({ layout: (h, page) => h(AdminLayout, { wide: true, hideBreadcrumbOnMobile: true, breadcrumbs: trail({ label: 'BC Provincial 2026' }) }, () => page) })
 
 const props = defineProps<{
   candidates: Candidate[]

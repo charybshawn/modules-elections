@@ -232,6 +232,7 @@
 import { computed, defineComponent, h, onMounted, ref } from 'vue'
 import { Link } from '@inertiajs/vue3'
 import AdminLayout from '@/Layouts/AdminLayout.vue'
+import { trail, salmonArm, cityPlans, pick } from '../Partials/breadcrumbs'
 import AdminMobileHeader from '@/Components/Admin/AdminMobileHeader.vue'
 import ElectionsNav from '../Partials/ElectionsNav.vue'
 import { formatDate } from '../Partials/format'
@@ -246,7 +247,7 @@ onMounted(async () => {
   updates.mark('plans:city-finances')
 })
 
-defineOptions({ layout: (hh, page) => hh(AdminLayout, { wide: true, hideBreadcrumbOnMobile: true }, () => page) })
+defineOptions({ layout: (hh, page) => hh(AdminLayout, { wide: true, hideBreadcrumbOnMobile: true, breadcrumbs: trail(salmonArm(), cityPlans(), { label: pick(page, 'finances.title', 'Finances') }) }, () => page) })
 
 type Item = { label: string; amount: number }
 type Source = { label: string; url: string; date: string | null }

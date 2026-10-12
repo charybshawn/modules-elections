@@ -114,6 +114,7 @@
 import { computed, reactive } from 'vue'
 import { Link } from '@inertiajs/vue3'
 import AdminLayout from '@/Layouts/AdminLayout.vue'
+import { trail, provincial } from '../Partials/breadcrumbs'
 import AdminMobileHeader from '@/Components/Admin/AdminMobileHeader.vue'
 import AdminShowShell from '@/Components/Admin/AdminShowShell.vue'
 import { partyStyle } from './party'
@@ -121,7 +122,7 @@ import QuickSearch from '../Partials/QuickSearch.vue'
 import { formatDate, isHttpUrl } from '../Partials/format'
 import type { ElectionInfo, PollData } from '../Partials/types'
 
-defineOptions({ layout: (h, page) => h(AdminLayout, { wide: true, hideBreadcrumbOnMobile: true }, () => page) })
+defineOptions({ layout: (h, page) => h(AdminLayout, { wide: true, hideBreadcrumbOnMobile: true, breadcrumbs: trail(provincial(), { label: 'Poll history' }) }, () => page) })
 
 const props = defineProps<PollData & { election: ElectionInfo; calledOn: string; votingDay: string }>()
 
