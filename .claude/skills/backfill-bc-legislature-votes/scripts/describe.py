@@ -60,7 +60,7 @@ def describe(d):
         last = " ".join(sents[-2:])
     if ref and not name:
         name = BILLNAMES.get((d["key"].split("-")[0], ref))
-    reasoned = re.search(r"amendment on the motion for (second|third) reading", text, re.I) or re.search(r"subamendment|reasoned amendment", text, re.I)
+    reasoned = re.search(r"amendment (?:on|to) the motion for (second|third) reading", text, re.I) or re.search(r"subamendment|reasoned amendment", text, re.I)
     for pat, label in [(r"third reading", "third reading"), (r"second reading", "second reading"), (r"introduced and read a first time|first time", "first reading"), (r"(clauses? \d+(?:\.\d+)?|Schedule [^ ,]+|Section [^ ,]+)", None), (r"amendment", "amendment"), (r"concurred in|report stage", "report stage"), (r"committal|committed", "committal")]:
         x = re.search(pat, last, re.I) or re.search(pat, text, re.I)
         if x: stage = label or x.group(1); break

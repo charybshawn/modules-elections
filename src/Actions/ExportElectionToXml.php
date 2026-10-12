@@ -45,7 +45,7 @@ class ExportElectionToXml
         }
 
         $candidatesNode = $xml->addChild('candidates');
-        foreach (Candidate::forElection($election)->with(['entries.tags', 'votes.tags', 'planks.tags', 'planks.entries.tags'])->orderBy('name')->get() as $candidate) {
+        foreach (Candidate::forElection($election)->with(['entries.tags', 'votes.tags', 'billNotes', 'sponsorships', 'planks.tags', 'planks.entries.tags'])->orderBy('name')->get() as $candidate) {
             $node = $candidatesNode->addChild('candidate');
             foreach (self::CANDIDATE_FIELDS as $field) {
                 $this->addChild($node, $field, $candidate->{$field});
@@ -80,6 +80,43 @@ class ExportElectionToXml
                     $this->addChild($v, 'source_url', $vote->source_url);
                     $this->addChild($v, 'source_name', $vote->source_name);
                     $this->appendTags($v, $vote);
+                }
+            }
+
+            if ($candidate->sponsorships->isNotEmpty()) {
+                $sponsoredNode = $node->addChild('sponsored');
+                foreach ($candidate->sponsorships->sortBy([['introduced_on', 'asc'], ['id', 'asc']]) as $s) {
+                    $i = $sponsoredNode->addChild('item');
+                    $this->addChild($i, 'kind', $s->kind);
+                    $this->addChild($i, 'reference', $s->reference);
+                    $this->addChild($i, 'session', $s->session);
+                    $this->addChild($i, 'title', $s->title);
+                    $this->addChild($i, 'summary', $s->summary);
+                    $this->addChild($i, 'introduced_on', $s->introduced_on?->toDateString());
+                    $this->addChild($i, 'status', $s->status);
+                    $this->addChild($i, 'status_note', $s->status_note);
+                    $this->addChild($i, 'context', $s->context);
+                    $this->addChild($i, 'source_url', $s->source_url);
+                    $this->addChild($i, 'source_name', $s->source_name);
+                }
+            }
+
+            if ($candidate->billNotes->isNotEmpty()) {
+                $notesNode = $node->addChild('bill_notes');
+                foreach ($candidate->billNotes->sortBy('bill_key') as $note) {
+                    $n = $notesNode->addChild('bill_note');
+                    $this->addChild($n, 'bill_key', $note->bill_key);
+                    $this->addChild($n, 'purpose', $note->purpose);
+                    $this->addChild($n, 'vote_analysis', $note->vote_analysis);
+                    $this->addChild($n, 'basis', $note->basis);
+                    if ($note->sources) {
+                        $sourcesNode = $n->addChild('sources');
+                        foreach ($note->sources as $s) {
+                            $sn = $sourcesNode->addChild('source');
+                            $this->addChild($sn, 'label', $s['label'] ?? null);
+                            $this->addChild($sn, 'url', $s['url'] ?? null);
+                        }
+                    }
                 }
             }
 

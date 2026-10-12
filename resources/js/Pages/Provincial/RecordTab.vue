@@ -48,6 +48,31 @@
           </li>
         </ul>
       </section>
+
+      <!-- What they introduced themselves: one sponsor per bill in BC, no co-sponsors. Shown for a member with a recorded vote history. -->
+      <section v-if="sponsored?.length || voteTotal" class="mt-4 rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-800">
+        <h3 class="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Bills and motions they introduced</h3>
+        <p v-if="!sponsored?.length" class="mt-2 text-sm text-gray-600 dark:text-gray-300">
+          None on record: no bill or motion introduced by them in this Parliament.
+        </p>
+        <ul v-else class="mt-2 divide-y divide-gray-100 dark:divide-gray-700/60">
+          <li v-for="s in sponsored" :key="s.id" class="py-3 first:pt-1">
+            <p class="text-sm font-semibold leading-snug text-gray-900 dark:text-white">
+              <a v-if="isHttpUrl(s.source_url)" :href="s.source_url" target="_blank" rel="noopener noreferrer" class="hover:underline">{{ s.title }}</a>
+              <template v-else>{{ s.title }}</template>
+            </p>
+            <p class="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
+              {{ s.reference }} · {{ s.session }}<template v-if="s.introduced_on"> · introduced {{ formatDate(s.introduced_on) }}</template>
+            </p>
+            <p class="mt-1.5">
+              <span class="inline-flex rounded-full bg-gray-100 px-2 py-0.5 text-[11px] font-medium text-gray-700 dark:bg-gray-700 dark:text-gray-200">{{ options.sponsorStatuses?.[s.status] ?? s.status }}</span>
+              <span v-if="s.status_note" class="ml-1.5 text-xs text-gray-500 dark:text-gray-400">{{ s.status_note }}</span>
+            </p>
+            <p v-if="s.summary" class="mt-1.5 text-xs leading-relaxed text-gray-700 dark:text-gray-300">{{ s.summary }}</p>
+            <p v-if="s.context" class="mt-1.5 text-[11px] leading-relaxed text-gray-500 dark:text-gray-400">{{ s.context }}</p>
+          </li>
+        </ul>
+      </section>
     </aside>
 
     <!-- Row one: the totals line and the filter pills, across both columns. -->
@@ -130,6 +155,37 @@
               </li>
             </ul>
             <p v-else class="mt-2 text-xs text-gray-500 dark:text-gray-400">No reading-stage division recorded for this member; the votes below are on amendments and committee stages.</p>
+
+            <!-- The two synopses sit after the votes and start collapsed. -->
+            <div v-if="item.note && (item.note.purpose || item.note.vote_analysis)" class="mt-2 border-t border-gray-100 pt-2 dark:border-gray-700/60">
+              <button
+                type="button"
+                class="tap-target-touch inline-flex items-center gap-1.5 text-xs font-medium text-indigo-600 hover:underline dark:text-indigo-400"
+                :aria-expanded="openNotes.includes(item.bill_key)"
+                @click="toggleNote(item.bill_key)"
+              >
+                <svg :class="openNotes.includes(item.bill_key) ? 'rotate-90' : ''" class="h-3.5 w-3.5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
+                What the bill does, and why they voted this way
+              </button>
+              <div v-if="openNotes.includes(item.bill_key)" class="mt-2 space-y-3 rounded-md bg-indigo-50/60 p-3 dark:bg-indigo-500/10">
+                <div v-if="item.note.purpose">
+                  <h4 class="text-[11px] font-semibold uppercase tracking-wide text-indigo-700 dark:text-indigo-300">What the bill does</h4>
+                  <p class="mt-0.5 text-sm leading-relaxed text-gray-800 dark:text-gray-200">{{ item.note.purpose }}</p>
+                </div>
+                <div v-if="item.note.vote_analysis">
+                  <h4 class="text-[11px] font-semibold uppercase tracking-wide text-indigo-700 dark:text-indigo-300">Why they voted this way, and the result</h4>
+                  <p class="mt-0.5 text-sm leading-relaxed text-gray-800 dark:text-gray-200">{{ item.note.vote_analysis }}</p>
+                </div>
+                <p class="flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-gray-500 dark:text-gray-400">
+                  <span class="rounded bg-white px-1.5 py-0.5 font-medium text-gray-600 ring-1 ring-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:ring-gray-600">AI-written from the public record</span>
+                  <span v-if="item.note.basis">Based on: {{ options.noteBases?.[item.note.basis] ?? item.note.basis }}.</span>
+                  <template v-for="(s, i) in item.note.sources" :key="s.url">
+                    <a v-if="isHttpUrl(s.url)" :href="s.url" target="_blank" rel="noopener noreferrer" class="underline decoration-gray-300 underline-offset-2 hover:text-gray-900 dark:decoration-gray-600 dark:hover:text-white">{{ s.label }}</a>
+                    <span v-if="i < item.note.sources.length - 1" aria-hidden="true">·</span>
+                  </template>
+                </p>
+              </div>
+            </div>
 
             <!-- Amendments, committee clause votes and bill-specific procedural votes. -->
             <div v-if="item.other_votes.length" class="mt-2 border-t border-gray-100 pt-2 dark:border-gray-700/60">
@@ -230,10 +286,12 @@ import { useIntersectionObserver } from '@vueuse/core'
 import EntryCard from '../Partials/EntryCard.vue'
 import { newPillClass } from '../Partials/classes'
 import { formatDate, hostOf, isHttpUrl } from '../Partials/format'
-import type { Entry, Options, RecordItem, RecordYear, Vote } from '../Partials/types'
+import type { Entry, Options, RecordItem, RecordYear, Sponsored, Vote } from '../Partials/types'
 
 const props = defineProps<{
   years: RecordYear[]
+  /** Bills and motions the candidate introduced themselves. */
+  sponsored?: Sponsored[]
   options: Options
   editable?: boolean
   isNew: (item: Entry | Vote) => boolean
@@ -258,12 +316,19 @@ const everything = computed<RecordItem[]>(() => props.years.flatMap((y) => y.ite
 const allVotes = (item: RecordItem): Vote[] => (item.type === 'bill' ? [...item.stage_votes, ...item.other_votes] : item.type === 'vote' ? [item] : [])
 const votes = computed(() => everything.value.flatMap(allVotes))
 const voteTotal = computed(() => votes.value.length)
-const billTotal = computed(() => everything.value.filter((i) => i.type === 'bill').length)
-const motionTotal = computed(() => everything.value.filter((i) => i.type === 'vote').length)
+/** A bill, as opposed to a motion (which is grouped the same way, with its amendments folded under it). */
+const isBill = (i: RecordItem) => i.type === 'bill' && i.kind !== 'motion'
+const isMotion = (i: RecordItem) => i.type === 'vote' || (i.type === 'bill' && i.kind === 'motion')
+const billTotal = computed(() => everything.value.filter(isBill).length)
+const motionTotal = computed(() => everything.value.filter(isMotion).length)
 const entryTotal = computed(() => everything.value.filter((i) => i.type === 'entry').length)
 const countOf = (how: string) => votes.value.filter((v) => v.vote === how).length
 
 const openBills = ref<string[]>([])
+const openNotes = ref<string[]>([])
+const toggleNote = (key: string) => {
+  openNotes.value = openNotes.value.includes(key) ? openNotes.value.filter((k) => k !== key) : [...openNotes.value, key]
+}
 const toggleBill = (key: string) => {
   openBills.value = openBills.value.includes(key) ? openBills.value.filter((k) => k !== key) : [...openBills.value, key]
 }
@@ -282,8 +347,8 @@ const yearTotals = computed(() =>
       yea: vs.filter((v) => v.vote === 'yea').length,
       nay: vs.filter((v) => v.vote === 'nay').length,
       abstained: vs.filter((v) => v.vote === 'abstained').length,
-      bills: y.items.filter((i) => i.type === 'bill').length,
-      motions: y.items.filter((i) => i.type === 'vote').length,
+      bills: y.items.filter(isBill).length,
+      motions: y.items.filter(isMotion).length,
       others: y.items.filter((i) => i.type === 'entry').length,
     }
   }),
@@ -341,8 +406,8 @@ const filteredYears = computed<YearView[]>(() =>
       return {
         label: y.year === null ? 'Undated' : String(y.year),
         votes: items.reduce((n, i) => n + allVotes(i).length, 0),
-        bills: items.filter((i) => i.type === 'bill').length,
-        others: items.filter((i) => i.type === 'entry').length + items.filter((i) => i.type === 'vote').length,
+        bills: items.filter(isBill).length,
+        others: items.filter((i) => i.type === 'entry').length + items.filter(isMotion).length,
         items,
       }
     })

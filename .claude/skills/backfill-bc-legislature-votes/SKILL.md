@@ -1,6 +1,6 @@
 ---
 name: backfill-bc-legislature-votes
-description: Backfill how a sitting BC MLA voted -- every recorded division in the Legislative Assembly's published Votes and Proceedings -- for the cultpantry admin panel's Elections module (modules-elections), as structured, subject-tagged vote records that the provincial candidate page shows by year on its Voting record tab. Use this when the user asks for an MLA's or incumbent's voting record, how they voted on bills, motions or amendments, or to refresh or extend it after new sittings, even if they don't mention XML or this skill by name. Provincial only: council and board votes are a different record and are not covered. Who the MLA is belongs to find-bc-provincial-candidates; their wider background to backfill-bc-mla-backgrounds.
+description: Backfill how a sitting BC MLA voted -- every recorded division in the Legislative Assembly's published Votes and Proceedings -- for the cultpantry admin panel's Elections module (modules-elections), as structured, subject-tagged vote records that the provincial candidate page shows by year on its Voting record tab, one entry per bill with two AI-written synopses (what the bill does; why the member voted as they did and how it ended). Use this when the user asks for an MLA's or incumbent's voting record, how they voted on bills, motions or amendments, or to refresh or extend it after new sittings, even if they don't mention XML or this skill by name. Provincial only: council and board votes are a different record and are not covered. Who the MLA is belongs to find-bc-provincial-candidates; their wider background to backfill-bc-mla-backgrounds.
 ---
 
 # Backfill BC legislature votes
@@ -105,6 +105,10 @@ downloads, so each goes in its own folder and nothing is executed from it). They
 7. **Import:** back up the database, `php artisan elections:import-pending --dry-run`,
    fix every problem, then `php artisan elections:import-pending` (see "Saving and
    importing" in the schema doc).
+8. **Write the per-bill synopses** for every bill that has votes and no note yet (see
+   "Per-bill synopses" below). This is part of the job, not an extra: a bill shows on
+   the page with its two synopses, so new votes are not finished until the bills
+   they belong to have them. Import them the same way as the votes, as a second file.
 
 ## One entry per bill
 
@@ -122,6 +126,117 @@ file (`"bill": "Bill 9", "stage": "procedural"`) for a procedural motion about a
 bill (time allocation, deferral), which has no stage in its title. A bill whose only
 votes are amendments to its second-reading motion shows with an empty stage section
 and the amendments under it; that is correct, not a gap.
+
+### Bills and motions they introduced
+
+The right column's "Bills and motions they introduced" card is a separate record (`<sponsored>`),
+not votes: introducing a bill usually has no recorded division. Run it on every refresh:
+
+```
+python3 -I scripts/sponsored.py ctx <work-dir> "<Name as in the bill record>" "<Name on file>" <out.xml>
+```
+
+It reads the sponsor out of `bills-<session>.json` and the member's private members'
+motions out of the Votes and Proceedings, sets how far each got (introduced, second
+reading, third reading, law), and adds one line of context (how many MLAs introduced a
+private member's bill this Parliament, and how many became law). The Legislature
+records one sponsor per bill, so there are no co-sponsors to count; do not invent any.
+A member who introduced nothing shows "None on record". Motions that merely adjourn a
+debate ("On the motion of David Williams, the debate was adjourned") are not motions
+they introduced. The status of a motion is set to "moved"; check the later Votes and
+Proceedings and correct it to agreed or defeated.
+
+### Motions group like bills
+
+A numbered motion with amendments or subamendments (Motion 13, Motion M 205) is one
+entry too: set `bill` (`"Motion M 205"`), `bill_title` (`"Motion M 205: <what it asks>"`)
+and `stage` (`motion` for the main question, `amendment` for amendments and
+subamendments) in the overrides file for each of its divisions, and name the mover in the
+title. The page counts them as motions, not bills. Procedural motions that belong to no
+single bill or motion (adjourn, leave the Chair, defer divisions) stay standalone.
+Read the motion's own wording in the Votes and Proceedings; the division text alone
+does not say what it was about, and the main question may be a voice vote or a division
+the member is not listed in.
+
+## Per-bill synopses
+
+Each bill on the page carries two AI-written synopses, labelled as such, with the
+sources they rest on:
+
+1. **What the bill does**, from the bill's own words (its Explanatory Note and the
+   sponsor's introduction), not from a headline.
+2. **Why the member voted as they did, and how the question ended**: what they did at
+   each stage, the reasons they gave, and why it passed or failed.
+
+They are stored per member and bill (`<bill_notes>`; one note per `bill_key`), with a
+`basis` that says what the "why" rests on, and a source list assembled for you.
+
+### Gathering the facts
+
+All of these are public pages; each writes JSON into one work folder (`ctx/`):
+
+```
+python3 -I scripts/roster.py ctx/roster.json                       # who sat for which party (Wikipedia table)
+python3 -I scripts/bill_context.py ctx 43rd1st 173                 # bill facts + Explanatory Note (progress id: see the script)
+python3 -I scripts/bill_context.py ctx 43rd2nd 206
+python3 -I scripts/sponsor_speech.py ctx 43rd1st                   # the sponsor's opening speech
+python3 -I scripts/sponsor_speech.py ctx 43rd2nd
+python3 -I scripts/hansard.py ctx 43rd1st "Williams, David" "David Williams"   # the member's own speeches, per bill
+python3 -I scripts/hansard.py ctx 43rd2nd "Williams, David" "David Williams"
+python3 -I scripts/intro_statement.py ctx <votes.xml>              # the mover's statement for bills with no sponsor opening
+python3 -I scripts/dossier.py <work-dir> ctx <votes.xml> <Surname> dossier.json
+```
+
+`dossier.json` is one record per bill: its facts, the member's votes with the result,
+tally and **how each party voted** (`yea_by_party` / `nay_by_party`, by the party each
+member was elected under), the sponsor's opening, and everything the member said
+about it. Read it; write from it. If a bill has no record at all (an opposition bill
+that stopped at first reading has no number or Explanatory Note), the mover's
+introduction from Hansard is the source; if there is nothing, say the content cannot
+be described beyond its title rather than guessing.
+
+### Writing them
+
+Write `synopses.json` (`{bill_key: {purpose, vote_analysis, basis}}`), then
+`python3 -I scripts/build_notes_xml.py dossier.json synopses.json "<Name>" <out.xml>`,
+which refuses a note with no basis or for a bill not in the dossier, builds the
+source list (bill text, the Hansard issues used, the Votes and Proceedings) and writes
+`YYYY-MM-DD-NN-bc-provincial-bill-synopses-<name>.xml`.
+
+- **`basis`**: `spoke` when the member's own words in debate explain the vote
+  (including remarks on a related bill that state the objection); `caucus` when the
+  reason is another member of their caucus's stated position in the same debate;
+  `record` when only the votes and the bill are available. The page prints it, so
+  never claim a stronger basis than you have.
+- **Their own speech is never filtered.** What a member says on the Hansard record is
+  directly theirs, so personal or family matters they chose to say in debate belong
+  in the "why" when they are the reason they gave. This is the one exception to the
+  family line in the research-sensitivity rules, which stay in force for what others
+  say or research finds.
+- **Do not invent motives.** If they did not speak, say so ("He did not speak on the
+  bill, so his reasons are not on the record") and state what the record does show:
+  the pattern of votes (amendments moved by their caucus, a unanimous stage, a
+  caucus split), and what the caucus did. Say plainly when the record does not
+  explain a change (a speech of support followed by a nay at third reading).
+- **Explain the result from the numbers.** Use `yea_by_party`/`nay_by_party`: which
+  party carried or defeated it, who crossed, how close it was. A tied division
+  carries only because the Speaker breaks ties (the Speaker votes only to break one);
+  a tied committee vote is decided by the chair. A private member's bill that passes
+  is unusual; say when it became law (Royal Assent) and when it went no further.
+- **Check the stage labels first.** The reading-stage rows decide what you write
+  ("voted at second reading"). The derivation mislabels a few: the main question after
+  an amendment ("The debate resumed on the main motion"), a government motion to
+  recommit or to send a bill to a committee, and an order-of-business motion. Fix
+  them in the overrides file (`stage: "procedural"` or `second_reading`, plus `bill`),
+  re-run build and the importer, and re-run `dossier.py`, before you write.
+- **Neutral wording.** Attribute a sponsor's or member's characterizations to them
+  ("she said", "per her introduction"); describe what a bill would do without
+  adopting its framing. Keep to about 50-60 words for the purpose and 70-110 for the
+  analysis; quote at most a few words.
+- **Don't carry a caucus roster as fact.** `elected_as` is the party a member was
+  elected under; members have since changed caucus (Wikipedia's table shows the
+  changes). Say "the Conservatives" for the caucus as elected, and note a departure
+  where it matters.
 
 ## Tagging by subject
 
@@ -143,6 +258,8 @@ provincial votes is hidden from the municipal subject views automatically.
 - Titles overridden by hand and why; tags applied.
 - Any surname ambiguity or a division the parse could not read.
 - That voice votes are not in the record.
+- Synopses: how many bills got a note, how many rest on `spoke`, `caucus` and `record`,
+  any bill with no source text, and any stage label corrected before writing.
 
 ## First run (Oct. 2026): David L Williams
 

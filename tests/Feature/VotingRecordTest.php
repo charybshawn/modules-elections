@@ -129,6 +129,68 @@ describe('voting record', function () {
             });
     });
 
+    it('attaches the two synopses to a bill, with what they rest on, and skips notes it cannot place', function () {
+        $bill = fn (string $stage, string $how) => '<vote><body>legislature</body><voted_on>2025-05-28</voted_on><title>Bill 7 — '.$stage.'</title>'
+            .'<reference>Bill 7</reference><bill_key>43rd1st:Bill 7</bill_key><bill_title>Bill 7: Tariff Response Act</bill_title><stage>'.$stage.'</stage>'
+            .'<vote>'.$how.'</vote><outcome>passed</outcome><source_url>https://leg.example/v.pdf</source_url></vote>';
+
+        $result = voteImport('<candidates><candidate><name>Pat Riding</name><office>mla</office><votes>'.$bill('third_reading', 'nay').'</votes>'
+            .'<bill_notes>'
+            .'<bill_note><bill_key>43rd1st:Bill 7</bill_key><purpose>Lets government respond to tariffs.</purpose>'
+            .'<vote_analysis>Voted nay; said the powers were too broad. Passed 48–44.</vote_analysis><basis>spoke</basis>'
+            .'<sources><source><label>Bill text</label><url>https://leg.example/bill7.htm</url></source><source><label>bad</label><url>javascript:alert(1)</url></source></sources></bill_note>'
+            .'<bill_note><bill_key>43rd1st:Bill 99</bill_key><purpose>No votes on file for this bill.</purpose><vote_analysis>x</vote_analysis></bill_note>'
+            .'<bill_note><bill_key>43rd1st:Bill 7</bill_key></bill_note>'
+            .'</bill_notes></candidate></candidates>');
+
+        expect($result['bill_notes']['created'])->toBe(1)
+            ->and(collect($result['problems'])->contains(fn ($p) => str_contains($p, 'Bill 99')))->toBeTrue()
+            ->and(collect($result['problems'])->contains(fn ($p) => str_contains($p, 'valid <url>')))->toBeTrue();
+
+        // Importing again updates the note rather than adding a second.
+        $again = voteImport('<candidates><candidate><name>Pat Riding</name><office>mla</office><bill_notes><bill_note><bill_key>43rd1st:Bill 7</bill_key>'
+            .'<purpose>Lets government respond to US tariffs.</purpose><vote_analysis>Voted nay.</vote_analysis><basis>record</basis></bill_note></bill_notes></candidate></candidates>');
+        expect($again['bill_notes']['updated'])->toBe(1)->and(\Cultpantry\Elections\Models\BillNote::count())->toBe(1);
+
+        $this->actingAs($this->admin)->get(route('admin.elections.candidates.show', ['candidate' => 'pat-riding', 'tab' => 'record']))
+            ->assertInertia(function ($page) {
+                $years = collect($page->toArray()['props']['portfolio']['sections'])->firstWhere('key', 'record')['years'];
+                $bill = collect($years)->flatMap(fn ($y) => $y['items'])->firstWhere('type', 'bill');
+
+                expect($bill['note']['purpose'])->toBe('Lets government respond to US tariffs.')
+                    ->and($bill['note']['vote_analysis'])->toBe('Voted nay.')
+                    ->and($bill['note']['basis'])->toBe('record');
+            });
+    });
+
+    it('lists what a member introduced themselves, and skips items it cannot place', function () {
+        $item = fn (string $kind, string $status, string $url = 'https://leg.example/m246.htm') => '<item><kind>'.$kind.'</kind><reference>Bill M246</reference>'
+            .'<session>43rd Parliament, 2nd session</session><title>Small Farms Act</title><introduced_on>2026-05-21</introduced_on>'
+            .'<status>'.$status.'</status><status_note>First reading only</status_note><source_url>'.$url.'</source_url></item>';
+
+        $result = voteImport('<candidates><candidate><name>Pat Riding</name><office>mla</office><sponsored>'
+            .$item('bill', 'introduced')
+            .$item('petition', 'introduced')
+            .$item('bill', 'sideways')
+            .$item('bill', 'introduced', 'not a url')
+            .'</sponsored></candidate></candidates>');
+
+        expect($result['sponsored']['created'])->toBe(1)
+            ->and($result['problems'])->toHaveCount(3);
+
+        $again = voteImport('<candidates><candidate><name>Pat Riding</name><office>mla</office><sponsored>'.$item('bill', 'second_reading').'</sponsored></candidate></candidates>');
+        expect($again['sponsored']['updated'])->toBe(1)->and(\Cultpantry\Elections\Models\Sponsorship::count())->toBe(1);
+
+        $this->actingAs($this->admin)->get(route('admin.elections.candidates.show', ['candidate' => 'pat-riding', 'tab' => 'record']))
+            ->assertInertia(function ($page) {
+                $record = collect($page->toArray()['props']['portfolio']['sections'])->firstWhere('key', 'record');
+
+                expect($record['sponsored'])->toHaveCount(1)
+                    ->and($record['sponsored'][0]['title'])->toBe('Small Farms Act')
+                    ->and($record['sponsored'][0]['status'])->toBe('second_reading');
+            });
+    });
+
     it('exports votes and reads them back, and lets an admin delete one with an audit entry', function () {
         voteImport(voteXml());
 

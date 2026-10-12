@@ -53,7 +53,7 @@ class BuildCandidatePortfolio
 
     public function handle(Candidate $candidate): array
     {
-        $candidate->load(['election', 'entries.tags', 'votes.tags', 'articles.tags', 'planks.tags', 'planks.entries.tags', 'planks.rankHistory']);
+        $candidate->load(['election', 'entries.tags', 'votes.tags', 'billNotes', 'sponsorships', 'articles.tags', 'planks.tags', 'planks.entries.tags', 'planks.rankHistory']);
 
         $background = $candidate->entries->where('kind', 'background')->values();
 
@@ -64,7 +64,7 @@ class BuildCandidatePortfolio
             // A municipal candidate's record tab stays what it was (items grouped by topic):
             // council records don't look like legislature divisions.
             if ($key === 'record' && $candidate->election?->isProvincial()) {
-                if ($entries->isEmpty() && $candidate->votes->isEmpty()) {
+                if ($entries->isEmpty() && $candidate->votes->isEmpty() && $candidate->sponsorships->isEmpty()) {
                     continue;
                 }
                 $sections[] = [
@@ -73,6 +73,21 @@ class BuildCandidatePortfolio
                     'groups' => [],
                     'years' => $this->recordYears($candidate, $entries),
                     'vote_count' => $candidate->votes->count(),
+                    // Bills and motions they introduced themselves (one sponsor per bill; no co-sponsors).
+                    'sponsored' => $candidate->sponsorships->map(fn ($s) => [
+                        'id' => $s->id,
+                        'kind' => $s->kind,
+                        'reference' => $s->reference,
+                        'session' => $s->session,
+                        'title' => $s->title,
+                        'summary' => $s->summary,
+                        'introduced_on' => $s->introduced_on?->toDateString(),
+                        'status' => $s->status,
+                        'status_note' => $s->status_note,
+                        'context' => $s->context,
+                        'source_url' => $s->source_url,
+                        'source_name' => $s->source_name,
+                    ])->values()->all(),
                 ];
 
                 continue;
@@ -118,6 +133,7 @@ class BuildCandidatePortfolio
         $items = collect();
         $stageOrder = array_flip(Vote::MAIN_STAGES);
 
+        $notes = $candidate->billNotes->keyBy('bill_key');
         [$billed, $loose] = $candidate->votes->partition(fn (Vote $v) => $v->bill_key !== null && $v->bill_key !== '');
 
         foreach ($billed->groupBy('bill_key') as $key => $group) {
@@ -137,6 +153,8 @@ class BuildCandidatePortfolio
                 'item' => [
                     'id' => $group->min('id'),
                     'bill_key' => $key,
+                    // A private member's or government motion is grouped like a bill, but counted apart.
+                    'kind' => str_contains($key, ':Motion') ? 'motion' : 'bill',
                     'bill_title' => $group->first()->bill_title ?? $group->first()->title,
                     'reference' => $group->first()->reference,
                     'first_on' => $first?->toDateString(),
@@ -145,7 +163,13 @@ class BuildCandidatePortfolio
                     'stage_votes' => $main->map($resolved)->all(),
                     'other_votes' => $other->map($resolved)->all(),
                     'tags' => TagResource::collection($tags)->resolve(),
-                    'added_at' => $group->max('created_at')?->toIso8601String(),
+                    'note' => ($n = $notes->get($key)) ? [
+                        'purpose' => $n->purpose,
+                        'vote_analysis' => $n->vote_analysis,
+                        'basis' => $n->basis,
+                        'sources' => $n->sources ?? [],
+                    ] : null,
+                    'added_at' => max($group->max('created_at'), $notes->get($key)?->updated_at)?->toIso8601String(),
                     'tab' => 'record',
                 ],
             ]);

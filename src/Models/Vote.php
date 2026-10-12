@@ -56,6 +56,7 @@ class Vote extends Model
      * bill) fold under it.
      */
     public const STAGES = [
+        'motion' => 'Motion',
         'first_reading' => 'First reading',
         'second_reading' => 'Second reading',
         'committal' => 'Committal',
@@ -67,7 +68,7 @@ class Vote extends Model
     ];
 
     /** The stages shown as the bill's own votes; every other stage folds under "amendments and committee votes". */
-    public const MAIN_STAGES = ['first_reading', 'second_reading', 'committal', 'report_stage', 'third_reading'];
+    public const MAIN_STAGES = ['motion', 'first_reading', 'second_reading', 'committal', 'report_stage', 'third_reading'];
 
     public const OUTCOMES = [
         'passed' => 'Passed',

@@ -29,10 +29,13 @@
    "for": 92,
    "against": null,
    "starts": "18 The House resumed",
-   "title": "Motion 18 regarding acknowledging the findings of the Truth and Reconciliation Commission and the National Inquiry into Missing and Murdered Indigenous Women and Girls",
+   "title": "Motion 18 — main motion (Hon. Tamara Davidson)",
    "tags": [
     "reconciliation"
-   ]
+   ],
+   "bill": "Motion 18",
+   "bill_title": "Motion 18: Acknowledging the Truth and Reconciliation Commission and MMIWG Inquiry findings, residential schools, and Indigenous rights and title",
+   "stage": "motion"
   },
   {
    "date": "2025-04-16",
@@ -90,10 +93,13 @@
    "for": 36,
    "against": 50,
    "starts": "A debate arose on the amendment",
-   "title": "Motion 13 (support for the B.C. Human Rights Code) — amendment moved by Á’a:líya Warbus",
+   "title": "Motion 13 — amendment moved by Á’a:líya Warbus, replacing the listed grounds with “protecting all people from hate and discrimination”",
    "tags": [
     "human-rights"
-   ]
+   ],
+   "bill": "Motion 13",
+   "bill_title": "Motion 13: Support for the B.C. Human Rights Code and the Tribunal",
+   "stage": "amendment"
   },
   {
    "date": "2026-03-12",
@@ -101,10 +107,13 @@
    "for": 83,
    "against": 3,
    "starts": "A debate arose on the amendment",
-   "title": "Motion 13 (Hon. Mike Farnworth): that the House affirms its unequivocal support for the B.C. Human Rights Code and the Tribunal’s powers to enforce it",
+   "title": "Motion 13 — main motion (Hon. Mike Farnworth)",
    "tags": [
     "human-rights"
-   ]
+   ],
+   "bill": "Motion 13",
+   "bill_title": "Motion 13: Support for the B.C. Human Rights Code and the Tribunal",
+   "stage": "motion"
   },
   {
    "date": "2026-03-30",
@@ -123,10 +132,13 @@
    "for": 45,
    "against": 46,
    "starts": "M 203 In consideration",
-   "title": "Motion M 203 that the application of the merit principle within the B.C. Public Service be overseen by an independent officer of the Legislature",
+   "title": "Motion M 203 — main motion (Tony Luck)",
    "tags": [
     "legislature-process"
-   ]
+   ],
+   "bill": "Motion M 203",
+   "bill_title": "Motion M 203: Merit principle in the BC Public Service overseen by an independent officer of the Legislature",
+   "stage": "motion"
   },
   {
    "date": "2026-04-27",
@@ -134,10 +146,13 @@
    "for": 45,
    "against": 45,
    "starts": "M 205 Pursuant",
-   "title": "Motion M 205 — subamendment",
+   "title": "Motion M 205 — subamendment moved by Kiel Giddens, deleting the added text on public-policy implications",
    "tags": [
     "legislature-process"
-   ]
+   ],
+   "bill": "Motion M 205",
+   "bill_title": "Motion M 205: Mandatory orientation course for new MLAs in economics, public finance and numeracy",
+   "stage": "amendment"
   },
   {
    "date": "2026-05-04",
@@ -145,10 +160,13 @@
    "for": 46,
    "against": 45,
    "starts": "M 205 Pursuant",
-   "title": "Motion M 205 — amendment",
+   "title": "Motion M 205 — amendment moved by Jennifer Blatherwick, adding evidence-based science, truth and reconciliation and human rights",
    "tags": [
     "legislature-process"
-   ]
+   ],
+   "bill": "Motion M 205",
+   "bill_title": "Motion M 205: Mandatory orientation course for new MLAs in economics, public finance and numeracy",
+   "stage": "amendment"
   },
   {
    "date": "2026-05-06",
@@ -221,6 +239,77 @@
    "tags": [
     "transparency"
    ]
+  },
+  {
+   "date": "2025-05-06",
+   "vote": "yea",
+   "for": 89,
+   "against": null,
+   "starts": "The amendment on the motion for second reading of Bill (No. 5) was negatived on the following division: The debate resumed",
+   "title": "Bill 5: Budget Measures Implementation Act, 2025 — second reading",
+   "stage": "second_reading",
+   "bill": "Bill 5"
+  },
+  {
+   "date": "2026-05-06",
+   "vote": "nay",
+   "for": 48,
+   "against": 42,
+   "starts": "The amendment to the motion for second reading of Bill (No. ",
+   "title": "Bill 9: Freedom of Information and Protection of Privacy Amendment Act, 2026 — second reading",
+   "stage": "second_reading",
+   "bill": "Bill 9"
+  },
+  {
+   "date": "2026-05-20",
+   "vote": "nay",
+   "for": 48,
+   "against": 42,
+   "starts": "The amendment to the motion for second reading of Bill (No. ",
+   "title": "Bill 20: K’ómoks Treaty Act — second reading",
+   "stage": "second_reading",
+   "bill": "Bill 20"
+  },
+  {
+   "date": "2025-05-15",
+   "vote": "nay",
+   "for": 48,
+   "against": 42,
+   "starts": "31 The Hon. Mike Farnworth moved",
+   "title": "Bill M202: Eligibility to Hold Public Office Act — motion (Hon. Mike Farnworth) to discharge the order for third reading and recommit the bill to the Select Standing Committee on Private Bills",
+   "stage": "procedural",
+   "bill": "Bill M202"
+  },
+  {
+   "date": "2025-05-12",
+   "vote": "yea",
+   "for": 91,
+   "against": null,
+   "starts": "On the motion that Bill (No. M 214) be placed on the Orders of the Day for second reading",
+   "title": "Bill M214: Firefighters’ Health Act — motion to place the bill on the Orders of the Day for second reading at the next sitting",
+   "stage": "procedural",
+   "bill": "Bill M214"
+  },
+  {
+   "date": "2026-04-22",
+   "vote": "nay",
+   "for": 49,
+   "against": 42,
+   "starts": "15 The Hon. Mike Farnworth moved",
+   "title": "Bill M237: Insurance (Vehicle) Amendment Act, 2026 — motion (Hon. Mike Farnworth) that, if the bill passes second reading, it be committed to the Special Committee to Review Provisions of the Insurance (Vehicle) Act",
+   "stage": "procedural",
+   "bill": "Bill M237"
+  },
+  {
+   "date": "2025-02-24",
+   "vote": "yea",
+   "for": 86,
+   "against": 5,
+   "starts": "Pursuant to Standing Order 25, in consideration of Motion 7",
+   "title": "Motion 7 — main motion (Jennifer Blatherwick)",
+   "bill": "Motion 7",
+   "bill_title": "Motion 7: Condemning proposed US tariffs and endorsing the Team Canada response",
+   "stage": "motion"
   }
  ]
 }

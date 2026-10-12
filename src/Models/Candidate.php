@@ -121,6 +121,18 @@ class Candidate extends Model
         return $slug;
     }
 
+    /** Bills and motions they introduced themselves, newest first. */
+    public function sponsorships(): HasMany
+    {
+        return $this->hasMany(Sponsorship::class)->orderByDesc('introduced_on')->orderByDesc('id');
+    }
+
+    /** The synopses under each bill on the voting record, keyed by bill_key. */
+    public function billNotes(): HasMany
+    {
+        return $this->hasMany(BillNote::class);
+    }
+
     /** Recorded votes, newest first. */
     public function votes(): HasMany
     {

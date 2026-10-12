@@ -396,6 +396,71 @@ For planks already on file, or to take an analysis off a plank:
 - **Retired shape:** analyses in the earlier impact/challenges/risks format are hidden on the
   page.
 
+## Votes and bill notes (`<votes>`, `<bill_notes>` under a `<candidate>`)
+
+Provincial only (a legislature's recorded divisions). Written by `backfill-bc-legislature-votes`;
+shown on the candidate's Voting record tab, one entry per bill.
+
+```xml
+<candidate>
+  <name>David L Williams</name>
+  <votes>
+    <vote>
+      <body>legislature</body>               <!-- legislature | council | board -->
+      <voted_on>2025-05-28</voted_on>        <!-- required -->
+      <title>Bill 7: … — third reading</title>   <!-- required -->
+      <reference>Bill 7</reference>
+      <bill_key>43rd1st:Bill 7</bill_key>    <!-- groups a bill's votes; unique within a session -->
+      <bill_title>Bill 7: Economic Stabilization (Tariff Response) Act</bill_title>
+      <stage>third_reading</stage>           <!-- first_reading second_reading committal report_stage third_reading | amendment clause procedural -->
+      <description>the record's own wording</description>
+      <vote>nay</vote>                        <!-- required: yea | nay | abstained -->
+      <outcome>passed</outcome>               <!-- passed | defeated -->
+      <tally_for>48</tally_for><tally_against>44</tally_against>
+      <source_url>https://…</source_url>      <!-- required, http(s) -->
+      <source_name>Votes and Proceedings, …</source_name>
+      <tags><tag>slug</tag></tags>
+    </vote>
+  </votes>
+  <bill_notes>
+    <bill_note>
+      <bill_key>43rd1st:Bill 7</bill_key>     <!-- required; the candidate must have votes on this bill -->
+      <purpose>What the bill does.</purpose>
+      <vote_analysis>Why they voted as they did, and how the question ended.</vote_analysis>
+      <basis>spoke</basis>                    <!-- spoke | caucus | record: what the "why" rests on -->
+      <sources><source><label>Bill text</label><url>https://…</url></source></sources>
+    </bill_note>
+  </bill_notes>
+</candidate>
+```
+
+Bills and motions the candidate introduced themselves (provincial; the Legislature records
+one sponsor per bill, so there are no co-sponsors) go in a `<sponsored>` block:
+
+```xml
+<sponsored>
+  <item>
+    <kind>bill</kind>                          <!-- required: bill | motion -->
+    <reference>Bill M246</reference>           <!-- required; with kind and session, the match key -->
+    <session>43rd Parliament, 2nd session</session>   <!-- required -->
+    <title>Small Farms Act</title>             <!-- required -->
+    <summary>One or two sentences from the bill's own note.</summary>
+    <introduced_on>2026-05-21</introduced_on>
+    <status>introduced</status>                <!-- required: introduced | second_reading | committee | third_reading | law | moved | agreed | defeated | not_proceeded -->
+    <status_note>First reading only; no further stage recorded</status_note>
+    <context>30 of 93 MLAs introduced a private member's bill this Parliament; 6 became law.</context>
+    <source_url>https://…</source_url>         <!-- required, http(s) -->
+    <source_name>Bill text (first reading)</source_name>
+  </item>
+</sponsored>
+```
+
+A vote matches on its source, day, reference and wording, so a re-import updates it. A
+bill note matches on `bill_key` per candidate. A note needs a `<bill_key>` the candidate has
+votes on and at least one of `<purpose>` / `<vote_analysis>`; an unknown `<basis>` or a
+source without an http(s) `<url>` is left out with a note. Votes for bills with no
+`<bill_key>` (motions) stand alone on the page.
+
 ## Corrections (`<changes>`)
 
 The rest of the format only adds and updates. For the few corrections it can't express, put a

@@ -3,6 +3,7 @@
 namespace Cultpantry\Elections\Actions;
 
 use Cultpantry\Elections\Models\Article;
+use Cultpantry\Elections\Models\BillNote;
 use Cultpantry\Elections\Models\Candidate;
 use Cultpantry\Elections\Models\Election;
 use Cultpantry\Elections\Models\ElectionEvent;
@@ -11,6 +12,7 @@ use Cultpantry\Elections\Models\Plank;
 use Cultpantry\Elections\Models\PulseIssue;
 use Cultpantry\Elections\Models\PulseSnapshot;
 use Cultpantry\Elections\Models\Scorecard;
+use Cultpantry\Elections\Models\Sponsorship;
 use Cultpantry\Elections\Models\ScorecardAnswer;
 use Cultpantry\Elections\Models\ScorecardItem;
 use Cultpantry\Elections\Models\ScorecardResponse;
@@ -99,6 +101,8 @@ class ImportElectionFromXml
             'candidates' => $counts(),
             'entries' => $counts(),
             'votes' => $counts(),
+            'bill_notes' => $counts(),
+            'sponsored' => $counts(),
             'planks' => $counts(),
             'articles' => $counts(),
             'events' => $counts(),
@@ -176,7 +180,7 @@ class ImportElectionFromXml
     public function summarize(array $result): string
     {
         $parts = [];
-        foreach (['tags', 'candidates', 'entries', 'votes', 'planks', 'articles', 'events', 'pulse', 'scorecards', 'responses', 'tagged', 'plans', 'analyses'] as $type) {
+        foreach (['tags', 'candidates', 'entries', 'votes', 'bill_notes', 'sponsored', 'planks', 'articles', 'events', 'pulse', 'scorecards', 'responses', 'tagged', 'plans', 'analyses'] as $type) {
             ['created' => $created, 'updated' => $updated, 'unchanged' => $unchanged] = $result[$type];
             if ($created + $updated + $unchanged === 0) {
                 continue;
@@ -273,6 +277,118 @@ class ImportElectionFromXml
         foreach ($node->votes->vote ?? [] as $voteNode) {
             $this->importVote($candidate, $voteNode, $result);
         }
+
+        foreach ($node->bill_notes->bill_note ?? [] as $noteNode) {
+            $this->importBillNote($candidate, $noteNode, $result);
+        }
+
+        foreach ($node->sponsored->item ?? [] as $itemNode) {
+            $this->importSponsorship($candidate, $itemNode, $result);
+        }
+    }
+
+    /**
+     * A bill or motion the candidate introduced: <sponsored><item><kind>bill</kind><reference>Bill M246</reference>
+     * <session>43rd Parliament, 2nd session</session><title>Small Farms Act</title><summary>…</summary>
+     * <introduced_on>2026-05-21</introduced_on><status>introduced</status><status_note>…</status_note>
+     * <context>…</context><source_url>…</source_url><source_name>…</source_name></item></sponsored>.
+     * The same kind, session and reference is the same item.
+     */
+    private function importSponsorship(Candidate $candidate, SimpleXMLElement $node, array &$result): void
+    {
+        $label = "{$candidate->name}: sponsored item";
+        $kind = $this->text($node, 'kind');
+        $reference = $this->text($node, 'reference');
+        $session = $this->text($node, 'session');
+        $title = $this->text($node, 'title');
+        $status = $this->text($node, 'status');
+        $sourceUrl = $this->text($node, 'source_url');
+
+        if (! array_key_exists((string) $kind, Sponsorship::KINDS) || $reference === null || $session === null || $title === null) {
+            $this->problems[] = "{$label}: skipped an item with no valid <kind> (bill or motion), <reference>, <session> or <title>.";
+
+            return;
+        }
+        if (! array_key_exists((string) $status, Sponsorship::STATUSES)) {
+            $this->problems[] = "{$label} \"{$reference}\": unknown or missing <status> \"{$status}\", skipped.";
+
+            return;
+        }
+        if ($sourceUrl === null || ! $this->isHttpUrl($sourceUrl)) {
+            $this->problems[] = "{$label} \"{$reference}\": no valid <source_url>, skipped.";
+
+            return;
+        }
+
+        $item = $candidate->sponsorships()->where(['kind' => $kind, 'session' => $session, 'reference' => $reference])->first()
+            ?? $candidate->sponsorships()->make();
+        $item->fill([
+            'kind' => $kind,
+            'reference' => $reference,
+            'session' => $session,
+            'title' => $title,
+            'summary' => $this->text($node, 'summary'),
+            'introduced_on' => $this->date($node, 'introduced_on', $label),
+            'status' => $status,
+            'status_note' => $this->text($node, 'status_note'),
+            'context' => $this->text($node, 'context'),
+            'source_url' => $sourceUrl,
+            'source_name' => $this->text($node, 'source_name'),
+        ]);
+
+        $this->tally($item, $result['sponsored']);
+    }
+
+    /**
+     * The synopses under one bill: <bill_note><bill_key>43rd1st:Bill 7</bill_key><purpose>…</purpose>
+     * <vote_analysis>…</vote_analysis><basis>spoke</basis><sources><source><label>…</label><url>…</url></source></sources>
+     * </bill_note>. A note needs a bill the candidate has votes on, and at least one of the two synopses.
+     */
+    private function importBillNote(Candidate $candidate, SimpleXMLElement $node, array &$result): void
+    {
+        $label = "{$candidate->name}: bill note";
+        $key = $this->text($node, 'bill_key');
+        $purpose = $this->text($node, 'purpose');
+        $analysis = $this->text($node, 'vote_analysis');
+
+        if ($key === null || ($purpose === null && $analysis === null)) {
+            $this->problems[] = "{$label}: skipped a note with no <bill_key> or no synopsis.";
+
+            return;
+        }
+        if (! $candidate->votes()->where('bill_key', $key)->exists()) {
+            $this->problems[] = "{$label} \"{$key}\": no vote on that bill is on file for {$candidate->name}; import the votes first. Skipped.";
+
+            return;
+        }
+
+        $basis = $this->text($node, 'basis');
+        if ($basis !== null && ! array_key_exists($basis, BillNote::BASES)) {
+            $this->problems[] = "{$label} \"{$key}\": unknown basis \"{$basis}\", left out.";
+            $basis = null;
+        }
+
+        $sources = [];
+        foreach ($node->sources->source ?? [] as $s) {
+            $url = $this->text($s, 'url');
+            if ($url === null || ! $this->isHttpUrl($url)) {
+                $this->problems[] = "{$label} \"{$key}\": a source with no valid <url>, left out.";
+
+                continue;
+            }
+            $sources[] = ['label' => $this->text($s, 'label') ?? $url, 'url' => $url];
+        }
+
+        $note = $candidate->billNotes()->where('bill_key', $key)->first() ?? $candidate->billNotes()->make();
+        $note->fill([
+            'bill_key' => $key,
+            'purpose' => $purpose,
+            'vote_analysis' => $analysis,
+            'basis' => $basis,
+            'sources' => $sources === [] ? null : $sources,
+        ]);
+
+        $this->tally($note, $result['bill_notes']);
     }
 
     /**

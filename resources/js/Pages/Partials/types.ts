@@ -113,6 +113,10 @@ export interface Options {
   voteOutcomes?: Record<string, string>
   /** first_reading ... procedural. */
   voteStages?: Record<string, string>
+  /** spoke, caucus, record. */
+  noteBases?: Record<string, string>
+  /** introduced, second_reading, ..., law, defeated. */
+  sponsorStatuses?: Record<string, string>
   scorecardStances: Record<string, string>
   planStatuses: Record<string, string>
   planAspects: Record<string, string>
@@ -199,16 +203,45 @@ export interface Vote {
   tags: TagRef[]
 }
 
+/** A bill or motion the candidate introduced themselves. */
+export interface Sponsored {
+  id: number
+  kind: 'bill' | 'motion'
+  reference: string
+  session: string
+  title: string
+  summary: string | null
+  introduced_on: string | null
+  status: string
+  status_note: string | null
+  context: string | null
+  source_url: string
+  source_name: string | null
+}
+
+/** The two synopses under a bill, and what the "why" rests on. */
+export interface BillNote {
+  purpose: string | null
+  vote_analysis: string | null
+  /** spoke (their own words), caucus (their caucus's stated position), record (the votes and bill alone). */
+  basis: string | null
+  sources: { label: string; url: string }[]
+}
+
 /** A bill as one entry: its own stage votes, with amendments and committee votes folded under it. */
 export interface BillRecord {
   type?: 'bill'
   id: number
   bill_key: string
+  /** bill, or motion (a motion with its amendments folded under it). */
+  kind?: 'bill' | 'motion'
   bill_title: string
   reference: string | null
   first_on: string | null
   last_on: string | null
   vote_count: number
+  /** AI-written synopses from the record; null when none is on file. */
+  note?: BillNote | null
   stage_votes: Vote[]
   other_votes: Vote[]
   tags: TagRef[]
@@ -233,6 +266,8 @@ export interface PortfolioSection {
   /** The record tab only: votes and items by year, newest first. */
   years?: RecordYear[]
   vote_count?: number
+  /** The record tab only: bills and motions they introduced themselves. */
+  sponsored?: Sponsored[]
 }
 
 export interface ScorecardItem {

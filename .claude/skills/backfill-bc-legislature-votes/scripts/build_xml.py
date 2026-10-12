@@ -91,7 +91,7 @@ for r in described:
     k = next(i for i, d in enumerate(day) if (d["yeas"] and d["yeas"]["declared"]) == r["for"] and (d["nays"] and d["nays"]["declared"]) == r["against"] and d["w"] == r["w"] and d is not None and not d.get("_used"))
     day[k]["_used"] = True
     rows.append({**r, "title": title, "k": k + 1, "n": len(day), "tags": (ovr or {}).get("tags") or tags_for(title),
-                 "bill": (ovr or {}).get("bill"), "stage": (ovr or {}).get("stage")})
+                 "bill": (ovr or {}).get("bill"), "stage": (ovr or {}).get("stage"), "bill_title_ovr": (ovr or {}).get("bill_title")})
 
 # ---- group a bill's votes: bill key, bill title and stage -------------------------------
 def stage_of(title: str):
@@ -133,6 +133,8 @@ for r in rows:
         r["bill_key"] = f"{session}:{nm}"; r["bill_title"] = nm; r["bill_ref"] = None
     else:
         r["bill_key"] = r["bill_title"] = r["bill_ref"] = None
+    if r.get("bill_title_ovr"):
+        r["bill_title"] = r["bill_title_ovr"]
     r["stage"] = r.get("stage") or (stage_of(r["title"]) if r["bill_key"] else None)
 
 used = sorted({t for r in rows for t in r["tags"] if t in NEW_TAGS})

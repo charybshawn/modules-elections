@@ -36,6 +36,8 @@ class Options
             'voteLabels' => Vote::VOTES,
             'voteOutcomes' => Vote::OUTCOMES,
             'voteStages' => Vote::STAGES,
+            'sponsorStatuses' => \Cultpantry\Elections\Models\Sponsorship::STATUSES,
+            'noteBases' => \Cultpantry\Elections\Models\BillNote::BASES,
         ];
     }
 }

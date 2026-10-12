@@ -245,7 +245,7 @@
 
         <!-- Voting record: recorded votes and what else they did in office, by year -->
         <div v-else-if="activeSection && activeSection.years">
-          <RecordTab :years="activeSection.years ?? []" :options="options" :editable="!readOnly" :is-new="isNewEntry" @delete-vote="deleteVote" @delete-entry="deleteEntry" />
+          <RecordTab :years="activeSection.years ?? []" :sponsored="activeSection.sponsored ?? []" :options="options" :editable="!readOnly" :is-new="isNewEntry" @delete-vote="deleteVote" @delete-entry="deleteEntry" />
         </div>
 
         <!-- In their own words, Endorsements, Campaign finance -->
