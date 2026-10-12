@@ -37,3 +37,31 @@ if (! function_exists('compareFixture')) {
             .'</responses></scorecard></scorecards></election>');
     }
 }
+
+if (! function_exists('emailWith')) {
+    /**
+     * A minimal update-email array (see BuildElectionsEmail::handle()) with one municipal section; pass
+     * ['digest' => [...]] to override that section's digest and ['changelog' => [...]] for change-log entries.
+     */
+    function emailWith(array $over = []): array
+    {
+        $digest = array_replace(['articles' => 0, 'events' => 0, 'candidates' => 0, 'total' => 1, 'news' => [], 'more_news' => 0, 'coming_up' => [], 'shared' => [], 'highlights' => [], 'also' => []], $over['digest'] ?? []);
+
+        return [
+            'total' => 1,
+            'since' => now()->subDay()->toIso8601String(),
+            'until' => now()->toIso8601String(),
+            'voting_days' => [['key' => 'municipal', 'label' => 'Salmon Arm', 'voting_day' => now()->addDays(5)->toIso8601String(), 'days_away' => 5]],
+            'sections' => [['key' => 'municipal', 'title' => 'Salmon Arm municipal election', 'subtitle' => 'Mayor, council and school board', 'url' => 'https://x.example/m', 'voting_day' => null, 'days_away' => 5, 'digest' => $digest, 'provincial' => null, 'total' => 1]],
+            'changelog' => $over['changelog'] ?? [],
+        ];
+    }
+}
+
+if (! function_exists('emailHtml')) {
+    /** The HTML body of the update email for an email array. */
+    function emailHtml(array $email): string
+    {
+        return (string) (new \Cultpantry\Elections\Notifications\ElectionsUpdateNotification($email))->toMail(new stdClass)->render();
+    }
+}

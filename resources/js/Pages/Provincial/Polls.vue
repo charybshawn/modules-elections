@@ -23,7 +23,7 @@
 
       <template v-else>
         <!-- Legend and toggles: each party with where its trend stands and how far it has moved in 30 days. -->
-        <ul class="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-5">
+        <ul class="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
           <li v-for="s in series" :key="s.party">
             <button
               type="button"
@@ -47,9 +47,10 @@
 
         <!-- The chart: dates across, percent up, with the day the election was called and voting day marked. -->
         <div class="rounded-lg bg-white p-3 shadow-sm dark:bg-gray-800 sm:p-4">
-          <svg :viewBox="`0 0 ${W} ${H}`" class="h-auto w-full text-gray-500 dark:text-gray-400" role="img" aria-label="Line chart of province-wide poll results by party, January to October 2026">
+          <div ref="chartBox" class="w-full">
+          <svg :viewBox="`0 0 ${W} ${H}`" :width="W" :height="H" class="block h-auto w-full text-gray-500 dark:text-gray-400" role="img" aria-label="Line chart of province-wide poll results by party, January to October 2026">
             <!-- Horizontal grid and the percent scale. -->
-            <g font-size="11" fill="currentColor">
+            <g :font-size="compact ? 12 : 11" fill="currentColor">
               <g v-for="t in yTicks" :key="t">
                 <line :x1="M.left" :x2="W - M.right" :y1="y(t)" :y2="y(t)" stroke="currentColor" stroke-opacity="0.15" />
                 <text :x="M.left - 8" :y="y(t) + 4" text-anchor="end">{{ t }}%</text>
@@ -61,12 +62,18 @@
               </g>
             </g>
 
-            <!-- Election called, and voting day. -->
-            <g font-size="10" fill="currentColor">
+            <!-- Election called, and voting day. On phones the two lines are close together, so the labels run up the lines. -->
+            <g :font-size="compact ? 10 : 11" fill="currentColor">
               <line :x1="x(calledOn)" :x2="x(calledOn)" :y1="M.top" :y2="H - M.bottom" stroke="currentColor" stroke-opacity="0.6" stroke-dasharray="4 3" />
-              <text :x="x(calledOn) - 4" :y="M.top + 10" text-anchor="end">Election called</text>
               <line :x1="x(votingDay)" :x2="x(votingDay)" :y1="M.top" :y2="H - M.bottom" stroke="currentColor" stroke-opacity="0.6" stroke-dasharray="4 3" />
-              <text :x="x(votingDay) - 4" :y="M.top + 22" text-anchor="end">Voting day</text>
+              <template v-if="compact">
+                <text :transform="`translate(${x(calledOn) - 5} ${M.top + 4}) rotate(90)`" text-anchor="start">Election called</text>
+                <text :transform="`translate(${x(votingDay) - 5} ${M.top + 4}) rotate(90)`" text-anchor="start">Voting day</text>
+              </template>
+              <template v-else>
+                <text :x="x(calledOn) - 4" :y="M.top + 11" text-anchor="end">Election called</text>
+                <text :x="x(votingDay) - 4" :y="M.top + 24" text-anchor="end">Voting day</text>
+              </template>
             </g>
 
             <!-- One smoothed trend line per party. -->
@@ -76,6 +83,7 @@
               </path>
             </g>
           </svg>
+          </div>
           <p class="mt-2 text-[11px] leading-relaxed text-gray-500 dark:text-gray-400">
             Trend: a kernel-weighted average of each party's polls (weights fall off over about two weeks and rise with sample size), drawn only between that party's first and last poll, so it is least certain at the ends. Parties with fewer than three polls get no line. The change shown is the trend line now against 30 days earlier. Polls from Mainstreet, Pallas, Léger and others before August come from 338Canada's table and report OneBC and CentreBC only where the table made clear which was which.
           </p>
@@ -111,7 +119,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, reactive } from 'vue'
+import { computed, onBeforeUnmount, onMounted, reactive, ref } from 'vue'
 import { Link } from '@inertiajs/vue3'
 import AdminLayout from '@/Layouts/AdminLayout.vue'
 import { trail, provincial } from '../Partials/breadcrumbs'
@@ -128,10 +136,24 @@ const props = defineProps<PollData & { election: ElectionInfo; calledOn: string;
 
 const dashboardHref = route('admin.elections.provincial')
 
-// ---- Chart geometry (an SVG that scales to its width) ----
-const W = 800
-const H = 400
-const M = { top: 14, right: 16, bottom: 30, left: 44 }
+// ---- Chart geometry: drawn at the container's real width, so text and lines keep their size on a phone ----
+const chartBox = ref<HTMLElement | null>(null)
+const width = ref(800)
+let resizeObserver: ResizeObserver | null = null
+onMounted(() => {
+  if (!chartBox.value) return
+  width.value = Math.round(chartBox.value.clientWidth) || 800
+  resizeObserver = new ResizeObserver(([entry]) => {
+    width.value = Math.round(entry.contentRect.width) || width.value
+  })
+  resizeObserver.observe(chartBox.value)
+})
+onBeforeUnmount(() => resizeObserver?.disconnect())
+
+const compact = computed(() => width.value < 560)
+const W = computed(() => Math.max(260, width.value))
+const H = computed(() => (compact.value ? 340 : 400))
+const M = computed(() => (compact.value ? { top: 14, right: 10, bottom: 32, left: 38 } : { top: 14, right: 16, bottom: 30, left: 44 }))
 const DAY = 86_400_000
 const t = (iso: string) => new Date(`${iso}T12:00:00`).getTime()
 
@@ -140,19 +162,21 @@ const latest = computed(() => Math.max(...props.polls.map((p) => t(p.fielded_to)
 // Dates run from a little before the first poll to voting day.
 const xMin = computed(() => earliest.value - 5 * DAY)
 const xMax = computed(() => Math.max(t(props.votingDay), latest.value) + 2 * DAY)
-const x = (iso: string | number) => M.left + (((typeof iso === 'number' ? iso : t(iso)) - xMin.value) / (xMax.value - xMin.value)) * (W - M.left - M.right)
+const x = (iso: string | number) => M.value.left + (((typeof iso === 'number' ? iso : t(iso)) - xMin.value) / (xMax.value - xMin.value)) * (W.value - M.value.left - M.value.right)
 
 const yMax = computed(() => Math.ceil(Math.max(...props.polls.flatMap((p) => Object.values(p.results))) / 10) * 10 + 5)
-const y = (v: number) => H - M.bottom - (v / yMax.value) * (H - M.top - M.bottom)
+const y = (v: number) => H.value - M.value.bottom - (v / yMax.value) * (H.value - M.value.top - M.value.bottom)
 const yTicks = computed(() => Array.from({ length: Math.floor(yMax.value / 10) + 1 }, (_, i) => i * 10))
 const xTicks = computed(() => {
   const out: { x: number; label: string }[] = []
   const d = new Date(xMin.value)
   d.setDate(1)
   d.setMonth(d.getMonth() + 1)
+  let i = 0
   while (d.getTime() < xMax.value) {
-    out.push({ x: x(d.getTime()), label: d.toLocaleDateString(undefined, { month: 'short' }) })
+    if (!compact.value || i % 2 === 0) out.push({ x: x(d.getTime()), label: d.toLocaleDateString(undefined, { month: 'short' }) })
     d.setMonth(d.getMonth() + 1)
+    i++
   }
   return out
 })

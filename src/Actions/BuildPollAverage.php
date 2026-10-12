@@ -24,18 +24,7 @@ class BuildPollAverage
             return ['polls' => [], 'average' => null];
         }
 
-        $newest = $polls->first()->fielded_to;
-        $current = $polls
-            ->filter(fn (Poll $p) => $p->fielded_to->gte($newest->copy()->subDays(self::WINDOW_DAYS)))
-            ->unique('pollster')
-            ->values();
-
-        $average = [];
-        foreach ($current->flatMap(fn (Poll $p) => array_keys($p->results))->unique() as $party) {
-            $values = $current->map(fn (Poll $p) => $p->results[$party] ?? null)->filter(fn ($v) => $v !== null);
-            $average[$party] = ['percent' => round($values->avg(), 1), 'polls' => $values->count()];
-        }
-        uasort($average, fn ($a, $b) => $b['percent'] <=> $a['percent']);
+        $current = $this->current($polls);
 
         return [
             'polls' => $polls->map(fn (Poll $p) => [
@@ -52,13 +41,54 @@ class BuildPollAverage
                 'note' => $p->note,
                 'in_average' => $current->contains('id', $p->id),
             ])->all(),
-            'average' => [
-                'parties' => $average,
-                'polls' => $current->count(),
-                'from' => $current->min('fielded_to')?->toDateString(),
-                'to' => $newest->toDateString(),
-                'window_days' => self::WINDOW_DAYS,
-            ],
+            'average' => $this->average($current),
+        ];
+    }
+
+    /**
+     * Each pollster's latest poll that ended within WINDOW_DAYS of the newest poll in the set.
+     *
+     * @param  Collection<int, Poll>  $polls
+     * @return Collection<int, Poll>
+     */
+    public function current(Collection $polls): Collection
+    {
+        $polls = $polls->sortByDesc(fn (Poll $p) => $p->fielded_to->timestamp.'-'.str_pad((string) $p->id, 9, '0', STR_PAD_LEFT))->values();
+        if ($polls->isEmpty()) {
+            return $polls;
+        }
+        $newest = $polls->first()->fielded_to;
+
+        return $polls
+            ->filter(fn (Poll $p) => $p->fielded_to->gte($newest->copy()->subDays(self::WINDOW_DAYS)))
+            ->unique('pollster')
+            ->values();
+    }
+
+    /**
+     * The unweighted average of a set of polls, by party, largest first; null when there are none.
+     *
+     * @param  Collection<int, Poll>  $current
+     */
+    public function average(Collection $current): ?array
+    {
+        if ($current->isEmpty()) {
+            return null;
+        }
+
+        $average = [];
+        foreach ($current->flatMap(fn (Poll $p) => array_keys($p->results))->unique() as $party) {
+            $values = $current->map(fn (Poll $p) => $p->results[$party] ?? null)->filter(fn ($v) => $v !== null);
+            $average[$party] = ['percent' => round($values->avg(), 1), 'polls' => $values->count()];
+        }
+        uasort($average, fn ($a, $b) => $b['percent'] <=> $a['percent']);
+
+        return [
+            'parties' => $average,
+            'polls' => $current->count(),
+            'from' => $current->min('fielded_to')?->toDateString(),
+            'to' => $current->max('fielded_to')->toDateString(),
+            'window_days' => self::WINDOW_DAYS,
         ];
     }
 }

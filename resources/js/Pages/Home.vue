@@ -36,6 +36,10 @@
           </p>
         </Link>
       </div>
+
+      <p class="mt-6 text-sm">
+        <Link :href="route('admin.elections.changelog')" class="font-medium text-indigo-600 hover:underline dark:text-indigo-400">What's new on the site →</Link>
+      </p>
     </div>
   </div>
 </template>

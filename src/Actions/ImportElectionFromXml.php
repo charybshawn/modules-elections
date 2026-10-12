@@ -4,6 +4,7 @@ namespace Cultpantry\Elections\Actions;
 
 use Cultpantry\Elections\Models\Article;
 use Cultpantry\Elections\Models\BillNote;
+use Cultpantry\Elections\Models\ChangelogEntry;
 use Cultpantry\Elections\Models\Candidate;
 use Cultpantry\Elections\Models\Election;
 use Cultpantry\Elections\Models\ElectionEvent;
@@ -112,6 +113,7 @@ class ImportElectionFromXml
             'party_news' => $counts(),
             'party_slate' => $counts(),
             'polls' => $counts(),
+            'changelog' => $counts(),
             'projections' => $counts(),
             'sponsored' => $counts(),
             'planks' => $counts(),
@@ -138,6 +140,10 @@ class ImportElectionFromXml
             }
             foreach ($xml->projections->projection ?? [] as $node) {
                 $this->importProjection($node, $result);
+            }
+            // The site's change log (not tied to one election).
+            foreach ($xml->changelog->entry ?? [] as $node) {
+                $this->importChangelogEntry($node, $result);
             }
             // The vocabulary first, so everything below can use new tags.
             foreach ($xml->vocabulary->tag ?? [] as $node) {
@@ -202,7 +208,7 @@ class ImportElectionFromXml
     public function summarize(array $result): string
     {
         $parts = [];
-        foreach (['tags', 'parties', 'party_claims', 'party_news', 'party_slate', 'polls', 'projections', 'candidates', 'entries', 'votes', 'bill_notes', 'sponsored', 'planks', 'articles', 'events', 'pulse', 'scorecards', 'responses', 'tagged', 'plans', 'analyses'] as $type) {
+        foreach (['tags', 'parties', 'party_claims', 'party_news', 'party_slate', 'polls', 'projections', 'changelog', 'candidates', 'entries', 'votes', 'bill_notes', 'sponsored', 'planks', 'articles', 'events', 'pulse', 'scorecards', 'responses', 'tagged', 'plans', 'analyses'] as $type) {
             ['created' => $created, 'updated' => $updated, 'unchanged' => $unchanged] = $result[$type];
             if ($created + $updated + $unchanged === 0) {
                 continue;
@@ -1127,6 +1133,65 @@ class ImportElectionFromXml
             $keep[] = $model->id;
         }
         $party->slate()->whereNotIn('id', $keep)->delete();
+    }
+
+    /**
+     * One change-log line: <entry><key/><committed_at/><title/><body/><scope>both|provincial|municipal</scope><page>party</page><impact>1-5</impact><url/><commits/></entry>.
+     * Matched on key. <committed_at> is when the change went in (its commit time), which is how the update email decides
+     * whether to announce it. Written by hand for non-technical readers, in a sentence or two.
+     */
+    private function importChangelogEntry(SimpleXMLElement $node, array &$result): void
+    {
+        $key = $this->text($node, 'key');
+        $label = 'Change log '.($key ?? '?');
+        $title = $this->text($node, 'title');
+        $body = $this->text($node, 'body');
+        $stamp = $this->text($node, 'committed_at');
+        try {
+            $committedAt = $stamp === null ? null : Carbon::parse($stamp);
+        } catch (\Throwable) {
+            $committedAt = null;
+        }
+        if ($key === null || $committedAt === null || $title === null || $body === null) {
+            $this->problems[] = "{$label}: skipped, it needs a <key>, a valid <committed_at>, a <title> and a <body>.";
+
+            return;
+        }
+        $scope = $this->text($node, 'scope') ?? 'both';
+        if (! array_key_exists($scope, ChangelogEntry::SCOPES)) {
+            $this->problems[] = "{$label}: unknown <scope> \"{$scope}\", treated as both.";
+            $scope = 'both';
+        }
+        $page = $this->text($node, 'page') ?? 'all';
+        if (! array_key_exists($page, ChangelogEntry::PAGES)) {
+            $this->problems[] = "{$label}: unknown <page> \"{$page}\", treated as every page.";
+            $page = 'all';
+        }
+        $impact = (int) ($this->text($node, 'impact') ?? 2);
+        if (! array_key_exists($impact, ChangelogEntry::IMPACTS)) {
+            $this->problems[] = "{$label}: <impact> must be 1 to 5, treated as 2.";
+            $impact = 2;
+        }
+        $url = $this->text($node, 'url');
+        if ($url !== null && ! $this->isHttpUrl($url)) {
+            $this->problems[] = "{$label}: <url> isn't http(s), left out.";
+            $url = null;
+        }
+
+        $model = ChangelogEntry::where('key', $key)->first() ?? new ChangelogEntry;
+        $model->fill([
+            'key' => $key,
+            'committed_at' => $committedAt,
+            'title' => $title,
+            'body' => $body,
+            'scope' => $scope,
+            'page' => $page,
+            'impact' => $impact,
+            'url' => $url,
+            'commits' => $this->text($node, 'commits'),
+        ]);
+
+        $this->tally($model, $result['changelog']);
     }
 
     /**

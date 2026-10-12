@@ -33,6 +33,8 @@ class ElectionsServiceProvider extends ServiceProvider
 
         // 2. Migrations for this module's own elections_* tables.
         $this->loadMigrationsFrom(__DIR__.'/../database/migrations');
+        // The update email's own template (resources/views/mail), apart from the app's general mail theme.
+        $this->loadViewsFrom(__DIR__.'/../resources/views', 'elections');
 
         // 3. Nav entry. The item key is Str::slug('Elections') = 'elections',
         //    which is what per-user section grants (and invitations) store --

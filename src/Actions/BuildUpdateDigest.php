@@ -54,12 +54,12 @@ class BuildUpdateDigest
      *   shared: array<int, array{title: string, url: ?string, outlet: ?string, text: string}>,
      *   highlights: array<int, string>, also: array<int, string>}
      */
-    public function handle(Carbon $since, Carbon $until): array
+    public function handle(Carbon $since, Carbon $until, ?Election $election = null): array
     {
         $window = fn ($query) => $query->where('created_at', '>', $since)->where('created_at', '<=', $until);
 
-        // The email covers the municipal election only for now, so provincial imports never go out in it.
-        $municipal = Election::municipal();
+        // One election at a time (the municipal one unless told otherwise), so an election's rows never turn up in another's section.
+        $municipal = $election ?? Election::municipal();
         $articles = $window(Article::forElection($municipal))->with('candidates:id,name')->latest('created_at')->orderBy('id')->get(['id', 'title', 'outlet', 'summary', 'url']);
         $events = $window(ElectionEvent::forElection($municipal))->orderBy('starts_at')->get(['title', 'starts_at']);
         $entries = $window(Entry::forElection($municipal))->with('candidate:id,name')->latest('created_at')->orderBy('id')

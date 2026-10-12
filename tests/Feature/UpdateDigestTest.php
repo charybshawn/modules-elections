@@ -1,5 +1,7 @@
 <?php
 
+require_once __DIR__.'/fixtures.php';
+
 use Cultpantry\Elections\Actions\BuildUpdateDigest;
 use Cultpantry\Elections\Actions\ImportElectionFromXml;
 use Cultpantry\Elections\Notifications\ElectionsUpdateNotification;
@@ -74,29 +76,24 @@ describe('Update digest', function () {
     });
 
     it('links each candidate in a series item to their own story', function () {
-        $mail = (new ElectionsUpdateNotification([
-            'articles' => 2, 'events' => 0, 'candidates' => 0, 'total' => 2,
-            'news' => [['title' => 'Candidate profile', 'url' => null, 'outlet' => null, 'text' => 'Castanet added 2 to its series: Jane Example and Sam Sample.', 'links' => ['Jane Example' => 'https://c.example/1', 'Sam Sample' => 'https://c.example/2']]],
-        ]))->toMail(new stdClass);
+        $html = emailHtml(emailWith(['digest' => ['news' => [['title' => 'Candidate profile', 'url' => null, 'outlet' => null, 'text' => 'Castanet added 2 to its series: Jane Example and Sam Sample.', 'links' => ['Jane Example' => 'https://c.example/1', 'Sam Sample' => 'https://c.example/2']]]]]));
 
-        expect(implode("\n", $mail->introLines))->toContain('Castanet added 2 to its series: [Jane Example](https://c.example/1) and [Sam Sample](https://c.example/2).');
+        expect($html)->toContain('<a href="https://c.example/1" style="color:#4338ca;">Jane Example</a>')
+            ->toContain('<a href="https://c.example/2" style="color:#4338ca;">Sam Sample</a>');
     });
 
     it('lays the email out as sections with the content in them', function () {
-        $mail = (new ElectionsUpdateNotification([
-            'articles' => 1, 'events' => 0, 'candidates' => 3, 'total' => 9,
+        $html = emailHtml(emailWith(['digest' => [
             'news' => [['title' => 'Advance voting begins', 'url' => 'https://castanet.example/3', 'outlet' => 'Castanet', 'text' => 'Polls are open.']],
-            'more_news' => 0, 'coming_up' => [],
             'shared' => [['title' => 'Strategic priorities', 'url' => 'https://observer.example/q', 'outlet' => 'Observer', 'text' => '3 candidates answered: A, B and C.']],
             'highlights' => ['**Jane Example** says the pool should move into the short term.'],
             'also' => ['Sam Sample', 'Alex Quiet'],
-        ]))->toMail(new stdClass);
-        $body = implode("\n", $mail->introLines);
+        ]]));
 
-        expect($body)->toContain('**In the news**')
-            ->toContain('[Advance voting begins](https://castanet.example/3) (Castanet) — Polls are open.')
-            ->toContain('**One question, many answers:** [Strategic priorities](https://observer.example/q) (Observer). 3 candidates answered: A, B and C.')
-            ->toContain('**Jane Example** says the pool should move into the short term.')
-            ->toContain('**Also updated:** Sam Sample and Alex Quiet.');
+        expect($html)->toContain('In the news')
+            ->toContain('Advance voting begins')->toContain('Polls are open.')
+            ->toContain('One question, many answers')->toContain('3 candidates answered: A, B and C.')
+            ->toContain('<strong>Jane Example</strong> says the pool should move into the short term.')
+            ->toContain('Also updated:')->toContain('Sam Sample and Alex Quiet');
     });
 });

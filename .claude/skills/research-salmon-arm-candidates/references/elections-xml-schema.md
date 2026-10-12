@@ -565,6 +565,25 @@ Provincial only, top-level in the file beside `<parties>`. They feed the provinc
 
 The dashboard averages **each pollster's latest poll that ended in the field within 14 days of the newest poll on file**, unweighted; a party a pollster didn't report is averaged over those that did. Projections are modelled shares, not polls, and are labelled so on the page.
 
+## Site change log (`<changelog>`)
+
+What changed on the site, in plain language, for the change-log page and the "What's new on the site" section of the update email. **Written by hand, very briefly (a title and a sentence), never copied from commit messages.** Not tied to one election; it can sit in any file.
+
+```xml
+<changelog>
+  <entry>
+    <key>party-pages</key>                              <!-- required; matched on this, so a re-import updates it -->
+    <committed_at>2026-10-11T22:32:50-07:00</committed_at>   <!-- required: when the change went in (the commit's time) -->
+    <title>Party pages</title>                          <!-- required, a few words -->
+    <body>Each party gets a page: leadership, record, news and a fact-check of its big claims.</body>   <!-- required, one sentence -->
+    <scope>provincial</scope>                           <!-- both (default) | provincial | municipal -->
+    <commits>c48c4bd</commits>                          <!-- optional, for the maintainer; never shown -->
+  </entry>
+</changelog>
+```
+
+The update email announces the entries whose `committed_at` falls **between the last email and the current one**, so give each the time of the latest commit behind it. Only user-visible changes belong; skip tests, skills and refactors. When committing user-visible work, add its entry in the same pass (the host's `database/elections/` folder, next file number).
+
 ## Corrections (`<changes>`)
 
 The rest of the format only adds and updates. For the few corrections it can't express, put a

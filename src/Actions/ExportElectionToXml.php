@@ -7,6 +7,7 @@ use Cultpantry\Elections\Models\Candidate;
 use Cultpantry\Elections\Models\Election;
 use Cultpantry\Elections\Models\ElectionEvent;
 use Cultpantry\Elections\Models\Entry;
+use Cultpantry\Elections\Models\ChangelogEntry;
 use Cultpantry\Elections\Models\Party;
 use Cultpantry\Elections\Models\Poll;
 use Cultpantry\Elections\Models\RidingProjection;
@@ -44,6 +45,23 @@ class ExportElectionToXml
                 foreach (['slug', 'kind', 'topic', 'name', 'description'] as $field) {
                     $this->addChild($node, $field, $tag->{$field});
                 }
+            }
+        }
+
+        // The change log travels with the provincial export (it isn't tied to one election).
+        if ($election->isProvincial() && ($entries = ChangelogEntry::orderBy('committed_at')->orderBy('id')->get())->isNotEmpty()) {
+            $cn = $xml->addChild('changelog');
+            foreach ($entries as $e) {
+                $n = $cn->addChild('entry');
+                $this->addChild($n, 'key', $e->key);
+                $this->addChild($n, 'committed_at', $e->committed_at->toIso8601String());
+                $this->addChild($n, 'title', $e->title);
+                $this->addChild($n, 'body', $e->body);
+                $this->addChild($n, 'scope', $e->scope);
+                $this->addChild($n, 'page', $e->page);
+                $this->addChild($n, 'impact', (string) $e->impact);
+                $this->addChild($n, 'url', $e->url);
+                $this->addChild($n, 'commits', $e->commits);
             }
         }
 
