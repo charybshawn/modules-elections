@@ -50,6 +50,15 @@
               <dt class="text-sm text-gray-500 dark:text-gray-400">Occupation</dt>
               <dd class="text-gray-900 dark:text-white">{{ candidate.occupation }}</dd>
             </div>
+            <!-- The party's own page carries who leads it, its record and its platform; here, just the way there. -->
+            <div v-if="portfolio.party_profile?.slug" class="min-w-0 sm:col-span-2">
+              <dt class="text-sm text-gray-500 dark:text-gray-400">Party</dt>
+              <dd>
+                <Link :href="route('admin.elections.provincial.parties.show', portfolio.party_profile.slug)" class="inline-flex items-center gap-1 font-medium text-indigo-600 hover:underline dark:text-indigo-400">
+                  {{ candidate.party }}: about the party, news and fact-check <span aria-hidden="true">→</span>
+                </Link>
+              </dd>
+            </div>
             <div v-for="fact in contactFacts" :key="fact.label" class="min-w-0">
               <dt class="text-sm text-gray-500 dark:text-gray-400">{{ fact.label }}</dt>
               <dd class="text-gray-900 dark:text-white break-words">

@@ -108,6 +108,10 @@ class BuildCandidatePortfolio
 
         return [
             'candidate' => CandidateResource::make($candidate)->resolve(),
+            // What the party stands for, as of the date it was checked (provincial candidates only).
+            'party_profile' => $candidate->election?->isProvincial() && $candidate->party
+                ? \Cultpantry\Elections\Models\Party::where('name', $candidate->party)->first()?->profile()
+                : null,
             'background' => $this->byTopic($background, array_diff_key(Entry::BACKGROUND_TOPICS, array_flip(Entry::AFFILIATION_TOPICS))),
             'affiliations' => $this->byTopic($background, array_intersect_key(Entry::BACKGROUND_TOPICS, array_flip(Entry::AFFILIATION_TOPICS))),
             'platform' => $this->platform($candidate),

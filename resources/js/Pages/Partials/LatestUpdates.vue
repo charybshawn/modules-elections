@@ -2,7 +2,9 @@
   <section v-if="updates.length" class="rounded-lg bg-white p-4 shadow-sm dark:bg-gray-800">
     <h2 :class="sectionHeadingClass">Latest updates</h2>
 
-    <TransitionGroup tag="ol" class="mt-3 divide-y divide-gray-100 dark:divide-gray-700" enter-from-class="opacity-0 -translate-y-1" enter-active-class="transition duration-200">
+    <!-- With `scroll`: a fixed-height box that loads the next batch as it is scrolled. -->
+    <div ref="box" :class="scroll ? 'mt-3 h-96 overflow-y-auto pr-1' : ''">
+    <TransitionGroup tag="ol" :class="scroll ? '' : 'mt-3'" class="divide-y divide-gray-100 dark:divide-gray-700" enter-from-class="opacity-0 -translate-y-1" enter-active-class="transition duration-200">
       <li v-for="u in shown" :key="u.id" class="py-2.5 first:pt-0 last:pb-0">
         <!-- A candidate's day of additions: the name opens their page, each new item opens it on that item. -->
         <div v-if="u.type === 'candidate'" class="flex gap-3">
@@ -41,8 +43,10 @@
         </a>
       </li>
     </TransitionGroup>
+    <div v-if="scroll && hasMore" ref="end" class="py-3 text-center text-xs text-gray-500 dark:text-gray-400">Loading more…</div>
+    </div>
 
-    <div v-if="updates.length > PAGE" class="mt-3 flex gap-4 border-t border-gray-100 pt-2 dark:border-gray-700">
+    <div v-if="!scroll && updates.length > PAGE" class="mt-3 flex gap-4 border-t border-gray-100 pt-2 dark:border-gray-700">
       <button v-if="count < updates.length" type="button" class="tap-target-touch inline-flex items-center text-xs font-medium text-indigo-600 hover:underline dark:text-indigo-400" @click="count += PAGE">
         View more ({{ Math.min(PAGE, updates.length - count) }})
       </button>
@@ -57,12 +61,15 @@ import { Link } from '@inertiajs/vue3'
 import CandidatePhoto from './CandidatePhoto.vue'
 import { sectionHeadingClass } from './classes'
 import { formatDateTime } from './format'
+import { useInfiniteScroll } from './infiniteScroll'
 import type { CandidateUpdate, LatestUpdate, UpdateItem } from './types'
 
 const props = defineProps<{
   updates: LatestUpdate[]
   /** Server time (Unix seconds), so "ago" doesn't depend on the viewer's clock. */
   now: number
+  /** A fixed-height box that loads more as it is scrolled, instead of the "View more" button. */
+  scroll?: boolean
 }>()
 
 const PAGE = 10
@@ -74,7 +81,8 @@ const candidateHref = (u: CandidateUpdate): string => {
 }
 const itemHref = (u: CandidateUpdate, item: UpdateItem): string => route('admin.elections.candidates.show', { candidate: u.slug, tab: item.tab, focus: item.focus })
 const count = ref(PAGE)
-const shown = computed(() => props.updates.slice(0, count.value))
+const { box, end, visible, hasMore } = useInfiniteScroll(() => props.updates, PAGE)
+const shown = computed(() => (props.scroll ? visible.value : props.updates.slice(0, count.value)))
 
 /** "just now", "5 min ago", "3 h ago", "yesterday", "4 days ago", then the date. */
 const ago = (iso: string) => {

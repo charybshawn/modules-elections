@@ -7,6 +7,9 @@ use Cultpantry\Elections\Models\Candidate;
 use Cultpantry\Elections\Models\Election;
 use Cultpantry\Elections\Models\ElectionEvent;
 use Cultpantry\Elections\Models\Entry;
+use Cultpantry\Elections\Models\Party;
+use Cultpantry\Elections\Models\Poll;
+use Cultpantry\Elections\Models\RidingProjection;
 use Cultpantry\Elections\Models\Plank;
 use Cultpantry\Elections\Models\PulseSnapshot;
 use Cultpantry\Elections\Models\Scorecard;
@@ -40,6 +43,117 @@ class ExportElectionToXml
                 $node = $vocabulary->addChild('tag');
                 foreach (['slug', 'kind', 'topic', 'name', 'description'] as $field) {
                     $this->addChild($node, $field, $tag->{$field});
+                }
+            }
+        }
+
+        if ($election->isProvincial() && ($polls = Poll::orderBy('fielded_to')->orderBy('id')->get())->isNotEmpty()) {
+            $pn = $xml->addChild('polls');
+            foreach ($polls as $poll) {
+                $n = $pn->addChild('poll');
+                $this->addChild($n, 'pollster', $poll->pollster);
+                $this->addChild($n, 'fielded_from', $poll->fielded_from?->toDateString());
+                $this->addChild($n, 'fielded_to', $poll->fielded_to->toDateString());
+                $this->addChild($n, 'published_on', $poll->published_on?->toDateString());
+                $this->addChild($n, 'sample_size', $poll->sample_size === null ? null : (string) $poll->sample_size);
+                $this->addChild($n, 'method', $poll->method);
+                $rn = $n->addChild('results');
+                foreach ($poll->results as $party => $percent) {
+                    $one = $rn->addChild('result');
+                    $this->addChild($one, 'party', $party);
+                    $this->addChild($one, 'percent', (string) $percent);
+                }
+                $this->addChild($n, 'source_url', $poll->source_url);
+                $this->addChild($n, 'source_name', $poll->source_name);
+                $this->addChild($n, 'note', $poll->note);
+            }
+        }
+
+        if ($election->isProvincial() && ($projections = RidingProjection::orderBy('riding')->get())->isNotEmpty()) {
+            $pn = $xml->addChild('projections');
+            foreach ($projections as $projection) {
+                $n = $pn->addChild('projection');
+                $this->addChild($n, 'riding', $projection->riding);
+                $this->addChild($n, 'rating', $projection->rating);
+                $this->addChild($n, 'leader', $projection->leader);
+                $this->addChild($n, 'as_of', $projection->as_of->toDateString());
+                $this->addChild($n, 'source_url', $projection->source_url);
+                $sn = $n->addChild('shares');
+                foreach ($projection->shares as $share) {
+                    $one = $sn->addChild('share');
+                    $this->addChild($one, 'party', $share['party']);
+                    $this->addChild($one, 'percent', (string) $share['percent']);
+                    $this->addChild($one, 'margin', isset($share['margin']) ? (string) $share['margin'] : null);
+                }
+            }
+        }
+
+        if ($election->isProvincial() && ($parties = Party::with(['claims', 'articles', 'slate'])->orderBy('name')->get())->isNotEmpty()) {
+            $partiesNode = $xml->addChild('parties');
+            foreach ($parties as $party) {
+                $n = $partiesNode->addChild('party');
+                foreach (['name', 'full_name', 'leader', 'leader_note', 'founded', 'founded_note'] as $field) {
+                    $this->addChild($n, $field, $party->{$field});
+                }
+                $this->addChild($n, 'times_in_government', $party->times_in_government === null ? null : (string) $party->times_in_government);
+                $this->addChild($n, 'government_note', $party->government_note);
+                $this->addChild($n, 'principles', $party->principles);
+                if ($party->platform) {
+                    $pl = $n->addChild('platform');
+                    foreach ($party->platform as $point) {
+                        $this->addChild($pl, 'point', $point);
+                    }
+                }
+                if ($party->claims->isNotEmpty()) {
+                    $cn = $n->addChild('claims');
+                    foreach ($party->claims as $c) {
+                        $one = $cn->addChild('claim');
+                        foreach (['key', 'kind', 'claim', 'source_url', 'source_name', 'topic', 'rating', 'summary'] as $field) {
+                            $this->addChild($one, $field, $c->{$field});
+                        }
+                        if ($c->evidence) {
+                            $en = $one->addChild('evidence');
+                            foreach ($c->evidence as $e) {
+                                $item = $en->addChild('item');
+                                foreach (['kind', 'text', 'label', 'url'] as $field) {
+                                    $this->addChild($item, $field, $e[$field] ?? null);
+                                }
+                            }
+                        }
+                        $this->addChild($one, 'checked_on', $c->checked_on?->toDateString());
+                    }
+                }
+                if ($party->articles->isNotEmpty()) {
+                    $an = $n->addChild('news');
+                    foreach ($party->articles as $a) {
+                        $one = $an->addChild('article');
+                        foreach (['title', 'url', 'outlet'] as $field) {
+                            $this->addChild($one, $field, $a->{$field});
+                        }
+                        $this->addChild($one, 'published_on', $a->published_on?->toDateString());
+                        $this->addChild($one, 'summary', $a->summary);
+                        $this->addChild($one, 'type', $a->type);
+                    }
+                }
+                if ($party->slate->isNotEmpty() && $party->slate_source_url) {
+                    $sl = $n->addChild('slate');
+                    $this->addChild($sl, 'source_url', $party->slate_source_url);
+                    $this->addChild($sl, 'as_of', $party->slate_as_of?->toDateString());
+                    foreach ($party->slate as $c) {
+                        $one = $sl->addChild('candidate');
+                        $this->addChild($one, 'riding', $c->riding);
+                        $this->addChild($one, 'name', $c->name);
+                        $this->addChild($one, 'incumbent_riding', $c->incumbent_riding);
+                    }
+                }
+                $this->addChild($n, 'as_of', $party->as_of?->toDateString());
+                if ($party->sources) {
+                    $sn = $n->addChild('sources');
+                    foreach ($party->sources as $s) {
+                        $one = $sn->addChild('source');
+                        $this->addChild($one, 'label', $s['label'] ?? null);
+                        $this->addChild($one, 'url', $s['url'] ?? null);
+                    }
                 }
             }
         }

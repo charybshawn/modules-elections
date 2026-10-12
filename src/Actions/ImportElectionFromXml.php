@@ -8,7 +8,12 @@ use Cultpantry\Elections\Models\Candidate;
 use Cultpantry\Elections\Models\Election;
 use Cultpantry\Elections\Models\ElectionEvent;
 use Cultpantry\Elections\Models\Entry;
+use Cultpantry\Elections\Models\Party;
+use Cultpantry\Elections\Models\PartyArticle;
+use Cultpantry\Elections\Models\PartyClaim;
 use Cultpantry\Elections\Models\Plank;
+use Cultpantry\Elections\Models\Poll;
+use Cultpantry\Elections\Models\RidingProjection;
 use Cultpantry\Elections\Models\PulseIssue;
 use Cultpantry\Elections\Models\PulseSnapshot;
 use Cultpantry\Elections\Models\Scorecard;
@@ -102,6 +107,12 @@ class ImportElectionFromXml
             'entries' => $counts(),
             'votes' => $counts(),
             'bill_notes' => $counts(),
+            'parties' => $counts(),
+            'party_claims' => $counts(),
+            'party_news' => $counts(),
+            'party_slate' => $counts(),
+            'polls' => $counts(),
+            'projections' => $counts(),
             'sponsored' => $counts(),
             'planks' => $counts(),
             'articles' => $counts(),
@@ -117,6 +128,17 @@ class ImportElectionFromXml
         ];
 
         DB::transaction(function () use ($xml, &$result) {
+            // Parties, so a candidate's party can be matched to its profile (provincial only).
+            foreach ($xml->parties->party ?? [] as $node) {
+                $this->importParty($node, $result);
+            }
+            // Province-wide polls and the model's riding projections (provincial only).
+            foreach ($xml->polls->poll ?? [] as $node) {
+                $this->importPoll($node, $result);
+            }
+            foreach ($xml->projections->projection ?? [] as $node) {
+                $this->importProjection($node, $result);
+            }
             // The vocabulary first, so everything below can use new tags.
             foreach ($xml->vocabulary->tag ?? [] as $node) {
                 $this->importTag($node, $result);
@@ -180,7 +202,7 @@ class ImportElectionFromXml
     public function summarize(array $result): string
     {
         $parts = [];
-        foreach (['tags', 'candidates', 'entries', 'votes', 'bill_notes', 'sponsored', 'planks', 'articles', 'events', 'pulse', 'scorecards', 'responses', 'tagged', 'plans', 'analyses'] as $type) {
+        foreach (['tags', 'parties', 'party_claims', 'party_news', 'party_slate', 'polls', 'projections', 'candidates', 'entries', 'votes', 'bill_notes', 'sponsored', 'planks', 'articles', 'events', 'pulse', 'scorecards', 'responses', 'tagged', 'plans', 'analyses'] as $type) {
             ['created' => $created, 'updated' => $updated, 'unchanged' => $unchanged] = $result[$type];
             if ($created + $updated + $unchanged === 0) {
                 continue;
@@ -978,6 +1000,347 @@ class ImportElectionFromXml
         }
 
         $result['responses'][$response->wasRecentlyCreated ? 'created' : ($changed ? 'updated' : 'unchanged')]++;
+    }
+
+    /**
+     * A party profile: <party><name>BC NDP</name><full_name/><leader/><leader_note/><founded/><founded_note/>
+     * <times_in_government>3</times_in_government><government_note/><principles/><platform><point>…</point></platform>
+     * <as_of>2026-10-12</as_of><sources><source><label/><url/></source></sources></party>. Matched by <name>, the
+     * name candidates carry in their party field. Needs a name and an as_of date; the rest is optional.
+     */
+    private function importParty(SimpleXMLElement $node, array &$result): void
+    {
+        $name = $this->text($node, 'name');
+        if ($name === null) {
+            $this->problems[] = 'Skipped a party with no <name>.';
+
+            return;
+        }
+        if (! $this->election->isProvincial()) {
+            $this->problems[] = "Party \"{$name}\": party profiles are provincial only; skipped.";
+
+            return;
+        }
+
+        $party = Party::where('name', $name)->first() ?? new Party;
+        $asOf = $this->date($node, 'as_of', "Party \"{$name}\"");
+        if (! $party->exists && $asOf === null) {
+            $this->problems[] = "Party \"{$name}\": a new party needs a valid <as_of> date; skipped.";
+
+            return;
+        }
+
+        // Only the fields the file carries are updated, so a file of claims or news
+        // for a party doesn't blank the profile written by an earlier file.
+        $fields = ['name' => $name];
+        foreach (['full_name', 'leader', 'leader_note', 'founded', 'founded_note', 'government_note', 'principles'] as $field) {
+            if (isset($node->{$field})) {
+                $fields[$field] = $this->text($node, $field);
+            }
+        }
+        if (isset($node->times_in_government)) {
+            $times = $this->text($node, 'times_in_government');
+            if ($times !== null && ! ctype_digit($times)) {
+                $this->problems[] = "Party \"{$name}\": <times_in_government> must be a whole number; left out.";
+                $times = null;
+            }
+            $fields['times_in_government'] = $times === null ? null : (int) $times;
+        }
+        if ($asOf !== null) {
+            $fields['as_of'] = $asOf;
+        }
+        if (isset($node->platform)) {
+            $platform = [];
+            foreach ($node->platform->point ?? [] as $point) {
+                $p = trim((string) $point);
+                if ($p !== '') {
+                    $platform[] = $p;
+                }
+            }
+            $fields['platform'] = $platform === [] ? null : $platform;
+        }
+        if (isset($node->sources)) {
+            $sources = [];
+            foreach ($node->sources->source ?? [] as $src) {
+                $url = $this->text($src, 'url');
+                if ($url === null || ! $this->isHttpUrl($url)) {
+                    $this->problems[] = "Party \"{$name}\": a source with no valid <url>, left out.";
+
+                    continue;
+                }
+                $sources[] = ['label' => $this->text($src, 'label') ?? $url, 'url' => $url];
+            }
+            $fields['sources'] = $sources === [] ? null : $sources;
+        }
+
+        $party->fill($fields);
+
+        $this->tally($party, $result['parties']);
+
+        $position = 0;
+        foreach ($node->claims->claim ?? [] as $claimNode) {
+            $this->importPartyClaim($party, $claimNode, $position++, $result);
+        }
+        foreach ($node->news->article ?? [] as $articleNode) {
+            $this->importPartyArticle($party, $articleNode, $result);
+        }
+        if (isset($node->slate)) {
+            $this->importPartySlate($party, $node->slate, $result);
+        }
+    }
+
+    /**
+     * Every candidate the party is running province-wide, from the official list:
+     * <slate><source_url/><as_of/><candidate><riding/><name/><incumbent_riding/></candidate>…</slate>
+     * (<incumbent_riding> only for a sitting MLA running again: the seat they hold now).
+     * The file is the whole list, so a candidate it no longer names is removed.
+     */
+    private function importPartySlate(Party $party, SimpleXMLElement $node, array &$result): void
+    {
+        $label = "Party {$party->name}: slate";
+        $source = $this->text($node, 'source_url');
+        $asOf = $this->date($node, 'as_of', $label);
+        if ($source === null || ! $this->isHttpUrl($source) || $asOf === null) {
+            $this->problems[] = "{$label}: skipped, it needs an http(s) <source_url> and a valid <as_of>.";
+
+            return;
+        }
+
+        $party->fill(['slate_source_url' => $source, 'slate_as_of' => $asOf]);
+        if ($party->isDirty()) {
+            $party->save();
+        }
+
+        $keep = [];
+        $position = 0;
+        foreach ($node->candidate ?? [] as $c) {
+            $riding = $this->text($c, 'riding');
+            $name = $this->text($c, 'name');
+            if ($riding === null || $name === null) {
+                $this->problems[] = "{$label}: skipped a candidate with no <riding> or <name>.";
+
+                continue;
+            }
+            $model = $party->slate()->where('riding', $riding)->where('name', $name)->first() ?? $party->slate()->make();
+            $model->fill(['riding' => $riding, 'name' => $name, 'incumbent_riding' => $this->text($c, 'incumbent_riding'), 'position' => $position++]);
+            $this->tally($model, $result['party_slate']);
+            $keep[] = $model->id;
+        }
+        $party->slate()->whereNotIn('id', $keep)->delete();
+    }
+
+    /**
+     * One published poll: <poll><pollster/><fielded_from/><fielded_to/><published_on/><sample_size/><method/>
+     * <results><result><party>BC NDP</party><percent>37</percent></result>…</results><source_url/><source_name/><note/></poll>.
+     * Matched on pollster and the last day in the field. Provincial only.
+     */
+    private function importPoll(SimpleXMLElement $node, array &$result): void
+    {
+        $pollster = $this->text($node, 'pollster');
+        $label = 'Poll '.($pollster ?? '?');
+        $fieldedTo = $this->date($node, 'fielded_to', $label);
+        $source = $this->text($node, 'source_url');
+        if ($pollster === null || $fieldedTo === null || $source === null || ! $this->isHttpUrl($source)) {
+            $this->problems[] = "{$label}: skipped, it needs a <pollster>, a valid <fielded_to> and an http(s) <source_url>.";
+
+            return;
+        }
+        if (! $this->election->isProvincial()) {
+            $this->problems[] = "{$label}: polls are provincial only, skipped.";
+
+            return;
+        }
+
+        $results = [];
+        foreach ($node->results->result ?? [] as $r) {
+            $party = $this->text($r, 'party');
+            $percent = $this->text($r, 'percent');
+            if ($party === null || $percent === null || ! is_numeric($percent) || $percent < 0 || $percent > 100) {
+                $this->problems[] = "{$label}: a result with no <party> or a <percent> outside 0-100 was left out.";
+
+                continue;
+            }
+            $results[$party] = (float) $percent;
+        }
+        if (count($results) < 2) {
+            $this->problems[] = "{$label}: skipped, it needs results for at least two parties.";
+
+            return;
+        }
+
+        $model = Poll::where('pollster', $pollster)->whereDate('fielded_to', $fieldedTo)->first() ?? new Poll;
+        $model->fill([
+            'pollster' => $pollster,
+            'fielded_from' => $this->date($node, 'fielded_from', $label),
+            'fielded_to' => $fieldedTo,
+            'published_on' => $this->date($node, 'published_on', $label),
+            'sample_size' => $this->positiveInt($node, 'sample_size'),
+            'method' => $this->text($node, 'method'),
+            'results' => $results,
+            'source_url' => $source,
+            'source_name' => $this->text($node, 'source_name'),
+            'note' => $this->text($node, 'note'),
+        ]);
+
+        $this->tally($model, $result['polls']);
+    }
+
+    /**
+     * A riding's modelled vote shares: <projection><riding/><rating/><leader/><as_of/><source_url/>
+     * <shares><share><party/><percent/><margin/></share>…</shares></projection>. Matched on riding. Provincial only.
+     */
+    private function importProjection(SimpleXMLElement $node, array &$result): void
+    {
+        $riding = $this->text($node, 'riding');
+        $label = 'Projection '.($riding ?? '?');
+        $asOf = $this->date($node, 'as_of', $label);
+        $source = $this->text($node, 'source_url');
+        if ($riding === null || $asOf === null || $source === null || ! $this->isHttpUrl($source)) {
+            $this->problems[] = "{$label}: skipped, it needs a <riding>, a valid <as_of> and an http(s) <source_url>.";
+
+            return;
+        }
+        if (! $this->election->isProvincial()) {
+            $this->problems[] = "{$label}: projections are provincial only, skipped.";
+
+            return;
+        }
+
+        $shares = [];
+        foreach ($node->shares->share ?? [] as $sh) {
+            $party = $this->text($sh, 'party');
+            $percent = $this->text($sh, 'percent');
+            if ($party === null || $percent === null || ! is_numeric($percent)) {
+                continue;
+            }
+            $margin = $this->text($sh, 'margin');
+            $shares[] = ['party' => $party, 'percent' => (float) $percent, 'margin' => is_numeric($margin) ? (float) $margin : null];
+        }
+        if ($shares === []) {
+            $this->problems[] = "{$label}: skipped, it has no usable <share>.";
+
+            return;
+        }
+        usort($shares, fn ($a, $b) => $b['percent'] <=> $a['percent']);
+
+        $model = RidingProjection::where('riding', $riding)->first() ?? new RidingProjection;
+        $model->fill([
+            'riding' => $riding,
+            'rating' => $this->text($node, 'rating'),
+            'leader' => $this->text($node, 'leader') ?? $shares[0]['party'],
+            'shares' => $shares,
+            'as_of' => $asOf,
+            'source_url' => $source,
+        ]);
+
+        $this->tally($model, $result['projections']);
+    }
+
+    /**
+     * One fact-check under a party: <claim><key>ndp-jobs</key><kind>claim</kind><claim>…</claim><source_url/><source_name/>
+     * <topic/><rating>mostly_holds_up</rating><summary>what the evidence shows</summary>
+     * <evidence><item><kind>votes</kind><text/><label/><url/></item></evidence><checked_on>2026-10-12</checked_on></claim>.
+     * Matched by <key> within the party; needs the claim, where the party says it, a rating, a summary and the check date.
+     */
+    private function importPartyClaim(Party $party, SimpleXMLElement $node, int $position, array &$result): void
+    {
+        $label = "Party {$party->name}: claim";
+        $key = $this->text($node, 'key');
+        $claim = $this->text($node, 'claim');
+        $sourceUrl = $this->text($node, 'source_url');
+        $rating = $this->text($node, 'rating');
+        $summary = $this->text($node, 'summary');
+        $checkedOn = $this->date($node, 'checked_on', $label);
+
+        if ($key === null || $claim === null || $summary === null || $checkedOn === null) {
+            $this->problems[] = "{$label}: skipped a claim with no <key>, <claim>, <summary> or valid <checked_on>.";
+
+            return;
+        }
+        if (! array_key_exists((string) $rating, PartyClaim::RATINGS)) {
+            $this->problems[] = "{$label} \"{$key}\": unknown or missing <rating> \"{$rating}\", skipped.";
+
+            return;
+        }
+        if ($sourceUrl === null || ! $this->isHttpUrl($sourceUrl)) {
+            $this->problems[] = "{$label} \"{$key}\": no valid <source_url> for where the party says it, skipped.";
+
+            return;
+        }
+        $kind = $this->text($node, 'kind') ?? 'claim';
+        if (! array_key_exists($kind, PartyClaim::KINDS)) {
+            $this->problems[] = "{$label} \"{$key}\": unknown <kind> \"{$kind}\", treated as a claim.";
+            $kind = 'claim';
+        }
+
+        $evidence = [];
+        foreach ($node->evidence->item ?? [] as $item) {
+            $ek = $this->text($item, 'kind');
+            $text = $this->text($item, 'text');
+            $url = $this->text($item, 'url');
+            if (! array_key_exists((string) $ek, PartyClaim::EVIDENCE) || $text === null) {
+                $this->problems[] = "{$label} \"{$key}\": an evidence item with no valid <kind> or no <text>, left out.";
+
+                continue;
+            }
+            if ($url !== null && ! $this->isHttpUrl($url)) {
+                $this->problems[] = "{$label} \"{$key}\": an evidence <url> that isn't http(s), left out of that item.";
+                $url = null;
+            }
+            $evidence[] = ['kind' => $ek, 'text' => $text, 'label' => $this->text($item, 'label'), 'url' => $url];
+        }
+
+        $model = $party->claims()->where('key', $key)->first() ?? $party->claims()->make();
+        $model->fill([
+            'key' => $key,
+            'position' => $position,
+            'kind' => $kind,
+            'claim' => $claim,
+            'source_url' => $sourceUrl,
+            'source_name' => $this->text($node, 'source_name'),
+            'topic' => $this->text($node, 'topic'),
+            'rating' => $rating,
+            'summary' => $summary,
+            'evidence' => $evidence === [] ? null : $evidence,
+            'checked_on' => $checkedOn,
+        ]);
+
+        $this->tally($model, $result['party_claims']);
+    }
+
+    /**
+     * A story about the party as a whole: <article><title/><url/><outlet/><published_on/><summary/><type>legislative</type></article>.
+     * Matched by its address within the party.
+     */
+    private function importPartyArticle(Party $party, SimpleXMLElement $node, array &$result): void
+    {
+        $label = "Party {$party->name}: news";
+        $title = $this->text($node, 'title');
+        $url = $this->text($node, 'url');
+        if ($title === null || $url === null || ! $this->isHttpUrl($url)) {
+            $this->problems[] = "{$label}: skipped a story with no <title> or valid <url>.";
+
+            return;
+        }
+        $type = $this->text($node, 'type') ?? 'legislative';
+        if (! array_key_exists($type, PartyArticle::TYPES)) {
+            $this->problems[] = "{$label} \"".mb_strimwidth($title, 0, 50, '…')."\": unknown <type> \"{$type}\", filed as legislative.";
+            $type = 'legislative';
+        }
+
+        $hash = PartyArticle::hashFor($url);
+        $article = $party->articles()->where('url_hash', $hash)->first() ?? $party->articles()->make();
+        $article->fill([
+            'title' => $title,
+            'url' => $url,
+            'url_hash' => $hash,
+            'outlet' => $this->text($node, 'outlet'),
+            'published_on' => $this->date($node, 'published_on', $label),
+            'summary' => $this->text($node, 'summary'),
+            'type' => $type,
+        ]);
+
+        $this->tally($article, $result['party_news']);
     }
 
     /**

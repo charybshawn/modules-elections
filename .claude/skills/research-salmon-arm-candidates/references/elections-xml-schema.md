@@ -461,6 +461,110 @@ votes on and at least one of `<purpose>` / `<vote_analysis>`; an unknown `<basis
 source without an http(s) `<url>` is left out with a note. Votes for bills with no
 `<bill_key>` (motions) stand alone on the page.
 
+## Party profiles (`<parties>`)
+
+Provincial only. One `<party>` per party, matched by `<name>`, which must equal the name candidates carry in their `<party>` field (as Elections BC prints it). The provincial candidate page shows it under the Occupation row, in this order: current leader, how long the party has existed, times in government, then what it stands for and its platform. Parties change (leaders resign, parties split and merge, platforms are released), so each profile is dated and **must be re-checked** before an election and when the news says something changed.
+
+```xml
+<parties>
+  <party>
+    <name>BC NDP</name>                              <!-- required; same as the candidate's <party> -->
+    <full_name>British Columbia New Democratic Party (BC NDP)</full_name>
+    <leader>David Eby</leader>
+    <leader_note>Since when, and any interim or recent change.</leader_note>
+    <founded>1933 (93 years), …</founded>            <!-- how long it has existed -->
+    <founded_note>Lineage, renamings, splits.</founded_note>
+    <times_in_government>3</times_in_government>     <!-- whole number; 0 = never -->
+    <government_note>Which governments, when, or "never".</government_note>
+    <principles>What it stands for, in its own terms, with outside descriptions attributed.</principles>
+    <platform><point>One current commitment.</point></platform>
+    <as_of>2026-10-12</as_of>                        <!-- required: the day it was checked -->
+    <sources><source><label>…</label><url>https://…</url></source></sources>
+  </party>
+</parties>
+```
+
+Sourcing: the party's own site for leader, principles and platform (say so when a page describes a record, not pledges, or says the full platform is still coming), the Legislature or reputable press for leadership changes, Wikipedia only for history and for outside descriptions of ideology, attributed. State what a source does not say (an interim leader, a platform not yet published).
+
+### Updating a profile, and a party's fact-checks and news
+
+A `<party>` is **updated field by field**: only the elements present in the file change, so a correction can carry just `<leader_note>`, `<sources>` and `<as_of>`. A *new* party needs `<name>` and `<as_of>`. The same `<party>` element can also carry `<claims>` and `<news>`; a file of only those leaves the profile alone. The party's own page (`/admin/elections/provincial/parties/{slug}`) shows the profile, the riding's candidates for it, the fact-check and the news.
+
+```xml
+<party>
+  <name>BC NDP</name>
+  <claims>
+    <claim>
+      <key>jobs-since-2017</key>                     <!-- required; matched on this within the party -->
+      <kind>claim</kind>                             <!-- claim (something said about the record) | pledge (a promise) -->
+      <claim>The sentence, as the party words it.</claim>
+      <source_url>https://…</source_url>             <!-- required: where the party says it -->
+      <source_name>Party page, read Oct. 12, 2026</source_name>
+      <topic>Economy</topic>
+      <rating>holds_up</rating>                      <!-- holds_up | mostly_holds_up | mixed | mostly_does_not | does_not_hold_up | untestable -->
+      <summary>What the evidence shows, neutrally, including what the claim leaves out.</summary>
+      <evidence>
+        <item><kind>government_record</kind>         <!-- votes | government_record | past_statement | reporting -->
+              <text>The fact, with figures and dates.</text><label>Source name</label><url>https://…</url></item>
+      </evidence>
+      <checked_on>2026-10-12</checked_on>            <!-- required -->
+    </claim>
+  </claims>
+  <news>
+    <article><title/><url/><outlet/><published_on/><type>legislative</type><summary/></article>
+                                                     <!-- type: legislative | opinion | background; matched on url within the party -->
+  </news>
+</party>
+```
+
+A party can also carry its **province-wide slate**, the whole official list, replaced on each import (a candidate the file no longer names is removed). It shows as a fixed-height, scrolling list on the party's About tab:
+
+```xml
+<slate>
+  <source_url>https://elections.bc.ca/2026-provincial-election/candidate-list/</source_url>   <!-- required -->
+  <as_of>2026-10-12</as_of>                                                                 <!-- required -->
+  <candidate><riding>Abbotsford South</riding><name>Leah Ballantyne</name></candidate>
+  <!-- A sitting MLA running again: name the seat they hold now (it can differ from the riding they run in). -->
+  <candidate><riding>Surrey South</riding><name>Elenore Sturko</name><incumbent_riding>Surrey-Cloverdale</incumbent_riding></candidate>
+</slate>
+```
+
+Rules: a claim with no key, claim text, summary, valid `<checked_on>`, known `<rating>` or `http(s)` `<source_url>` is skipped and reported; an evidence item with an unknown kind or no text is dropped. Only **party-level** stories go under `<news>`; a candidate's stay on the candidate. Ratings are explained in `check-bc-party-claims`.
+
+## Polls and riding projections (`<polls>`, `<projections>`)
+
+Provincial only, top-level in the file beside `<parties>`. They feed the provincial dashboard: the poll panel (an average plus every poll, in a fixed-height scrolling list) and the riding projections list (this riding first).
+
+```xml
+<polls>
+  <poll>
+    <pollster>Liaison Strategies</pollster>            <!-- required; with fielded_to, how a poll is matched -->
+    <fielded_from>2026-10-07</fielded_from>
+    <fielded_to>2026-10-08</fielded_to>                <!-- required: last day in the field (or the date an aggregator gives) -->
+    <published_on>2026-10-09</published_on>
+    <sample_size>1000</sample_size><method>IVR telephone</method>
+    <results>                                          <!-- at least two parties; names exactly as in <parties>; percent of decided and leaning voters -->
+      <result><party>BC NDP</party><percent>37</percent></result>
+    </results>
+    <source_url>https://…</source_url>                 <!-- required -->
+    <source_name>Pollster release, Oct. 9, 2026</source_name>
+    <note>Anything a reader should know: where a figure came from, what the poll doesn't report.</note>
+  </poll>
+</polls>
+<projections>
+  <projection>
+    <riding>Salmon Arm-Shuswap</riding>                <!-- required; as Elections BC prints it -->
+    <rating>safe</rating>                              <!-- the model's own label: safe | likely | leaning | toss up -->
+    <leader>Conservative Party</leader>                <!-- defaults to the largest share -->
+    <as_of>2026-10-11</as_of>                          <!-- required -->
+    <source_url>https://338canada.com/bc/1064e.htm</source_url>
+    <shares><share><party>Conservative Party</party><percent>55</percent><margin>8</margin></share></shares>
+  </projection>
+</projections>
+```
+
+The dashboard averages **each pollster's latest poll that ended in the field within 14 days of the newest poll on file**, unweighted; a party a pollster didn't report is averaged over those that did. Projections are modelled shares, not polls, and are labelled so on the page.
+
 ## Corrections (`<changes>`)
 
 The rest of the format only adds and updates. For the few corrections it can't express, put a

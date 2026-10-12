@@ -315,8 +315,27 @@ export interface Scorecard {
   categories: ScorecardCategory[]
 }
 
+/** What the party a provincial candidate runs for stands for, as of the date it was checked. */
+export interface PartyProfile {
+  name: string
+  slug: string
+  full_name: string | null
+  leader: string | null
+  leader_note: string | null
+  founded: string | null
+  founded_note: string | null
+  times_in_government: number | null
+  government_note: string | null
+  principles: string | null
+  platform: string[]
+  as_of: string | null
+  sources: { label: string; url: string }[]
+}
+
 export interface Portfolio {
   candidate: Candidate
+  /** Provincial only: the candidate's party, from the party table; null when none is on file. */
+  party_profile?: PartyProfile | null
   /** Background facts for the About section, grouped by Options.backgroundTopics. */
   background: EntryGroup[]
   /** Community, public service, affiliations and past activities, for the Background & Affiliations tab. */
@@ -423,3 +442,76 @@ export interface ArticleUpdate {
 }
 
 export type LatestUpdate = CandidateUpdate | ArticleUpdate
+
+/** One fact-check: what a party says, set against what the record shows. */
+export interface PartyClaim {
+  id: number
+  key: string
+  kind: 'claim' | 'pledge'
+  claim: string
+  source_url: string
+  source_name: string | null
+  topic: string | null
+  rating: string
+  summary: string
+  evidence: { kind: string; text: string; label: string | null; url: string | null }[]
+  checked_on: string | null
+}
+
+/** A news story about a party as a whole. */
+export interface PartyArticle {
+  id: number
+  title: string
+  url: string
+  outlet: string | null
+  published_on: string | null
+  summary: string | null
+  type: string
+}
+
+/** Every candidate a party is running across the province, from the official list. */
+export interface PartySlate {
+  candidates: { id: number; riding: string; name: string; incumbent_riding: string | null }[]
+  source_url: string | null
+  as_of: string | null
+  /** This riding's candidates for the party: name -> candidate page address. */
+  local: Record<string, string>
+  local_riding: string | null
+}
+
+/** A published province-wide poll, in percent of decided voters by party name. */
+export interface PollRow {
+  id: number
+  pollster: string
+  fielded_from: string | null
+  fielded_to: string
+  published_on: string | null
+  sample_size: number | null
+  method: string | null
+  results: Record<string, number>
+  source_url: string
+  source_name: string | null
+  note: string | null
+  in_average: boolean
+}
+
+export interface PollData {
+  polls: PollRow[]
+  average: {
+    parties: Record<string, { percent: number; polls: number }>
+    polls: number
+    from: string | null
+    to: string
+    window_days: number
+  } | null
+}
+
+/** A model's projected vote shares for one riding. */
+export interface RidingProjectionRow {
+  id: number
+  riding: string
+  rating: string | null
+  leader: string | null
+  shares: { party: string; percent: number; margin: number | null }[]
+  is_local: boolean
+}

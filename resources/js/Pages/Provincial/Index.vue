@@ -3,7 +3,7 @@
     <AdminMobileHeader :title="isProvincial ? election.name : 'Salmon Arm Elections'" :href="route('admin.elections.home')" />
 
     <div class="px-4 sm:px-0">
-      <ProvincialNav class="mb-6" />
+      <ProvincialNav :parties="partyPages" class="mb-6" />
       <div class="md:flex md:items-start md:justify-between gap-6 mb-6">
         <div>
           <h1 class="hidden md:block text-2xl font-semibold text-gray-900 dark:text-white">{{ election.name }}</h1>
@@ -20,26 +20,16 @@
         </div>
       </div>
 
-      <dl class="grid grid-cols-3 gap-3 mb-8">
-        <div class="rounded-lg bg-white dark:bg-gray-800 shadow-sm p-4">
-          <dt class="text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">Running</dt>
-          <dd class="mt-1 text-2xl font-semibold text-gray-900 dark:text-white">{{ stats.candidates }}</dd>
-        </div>
-        <div class="rounded-lg bg-white dark:bg-gray-800 shadow-sm p-4">
-          <dt class="text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">Sourced items</dt>
-          <dd class="mt-1 text-2xl font-semibold text-gray-900 dark:text-white">{{ stats.entries }}</dd>
-        </div>
-        <div class="rounded-lg bg-white dark:bg-gray-800 shadow-sm p-4">
-          <dt class="text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">Articles</dt>
-          <dd class="mt-1 text-2xl font-semibold text-gray-900 dark:text-white">{{ stats.articles }}</dd>
-        </div>
-      </dl>
+      <!-- An amalgamation of the current province-wide polls (replaces the old count tiles). -->
+      <PollPanel :data="polls" />
 
       <!-- Desktop: candidates take the main column; the sidebar runs Latest
            updates, the subject list, then Upcoming. Phones: updates, subjects,
            candidates, then Upcoming. -->
       <div class="grid grid-cols-1 gap-8 lg:grid-cols-3 lg:grid-rows-[auto_auto_1fr]">
-        <LatestUpdates :updates="latestUpdates" :now="now" class="lg:col-start-3 lg:row-start-1" />
+        <LatestUpdates :updates="latestUpdates" :now="now" scroll class="lg:col-start-3 lg:row-start-1" />
+
+        <RidingProjections :projections="ridingProjections.rows" :source="ridingProjections.source_url" :as-of="ridingProjections.as_of" class="lg:col-start-3 lg:row-start-2" />
 
         <div id="candidate-list" class="min-w-0 space-y-8 lg:col-span-2 lg:col-start-1 lg:row-span-3 lg:row-start-1">
           <p v-if="newCandidateCount" class="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-md bg-orange-500 px-4 py-3 text-sm font-semibold text-white dark:bg-orange-600">
@@ -84,49 +74,55 @@
           <section v-for="group in candidateGroups" :key="group.office">
             <h2 :class="sectionHeadingClass">{{ group.label }} <span class="font-normal normal-case tracking-normal text-gray-400">{{ group.candidates.length }}</span></h2>
             <TransitionGroup tag="ul" class="relative mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2" move-class="transition-transform duration-300 ease-out" enter-from-class="opacity-0 scale-95" enter-active-class="transition duration-200" leave-to-class="opacity-0 scale-95" leave-active-class="absolute transition duration-150">
-              <li v-for="candidate in group.candidates" :key="candidate.id" class="relative">
-                <Link
-                  :href="route('admin.elections.candidates.show', candidate.slug)"
-                  class="tap-target-touch relative flex h-full items-center gap-4 overflow-hidden rounded-lg shadow-sm p-4 pr-24 hover:ring-2 hover:ring-amber-400/60 transition-opacity"
-                  :class="[
-                    // Anything unread tints the whole card orange; the tabs that changed are named inside.
-                    newFor(candidate) ? 'bg-orange-50 ring-2 ring-orange-400 dark:bg-orange-500/10 dark:ring-orange-500/70' : 'bg-white dark:bg-gray-800',
-                    candidate.status === 'withdrawn' ? 'opacity-60' : '',
-                    selectedTag && !tagCell(candidate) ? 'opacity-40' : '',
-                    selectedTag && tagCell(candidate) ? 'ring-1 ring-indigo-300 dark:ring-indigo-500/50' : '',
-                  ]"
-                >
-                  <!-- A stripe of the party's colour down the card's left edge, inside the card so it can't outgrow it. -->
-                  <span v-if="partyStyle(candidate.party)" :class="partyStyle(candidate.party)!.bar" class="pointer-events-none absolute inset-y-0 left-0 w-2" aria-hidden="true" />
-                  <PartyPhoto :name="candidate.name" :url="candidate.photo_url" :party="candidate.party" photo-class="h-28 w-28 shrink-0 rounded-full text-3xl sm:h-32 sm:w-32" />
-                  <div class="min-w-0 flex-1">
-                    <div class="flex items-center gap-2">
-                      <span class="font-medium text-gray-900 dark:text-white truncate">{{ candidate.name }}</span>
-                      <span
-                        v-if="newFor(candidate)"
-                        class="shrink-0 rounded-full bg-orange-500 px-2 py-0.5 text-xs font-semibold text-white dark:bg-orange-600"
-                      >{{ newFor(candidate) }}</span>
-                    </div>
-                    <!-- The party, loud: it's what voters sort candidates by in a provincial race. -->
-                    <div v-if="partyStyle(candidate.party)" class="mt-1">
-                      <span :class="partyStyle(candidate.party)!.solid" class="inline-block max-w-full truncate rounded-md px-2.5 py-1 align-middle text-sm font-extrabold uppercase leading-none tracking-wide shadow-sm">{{ candidate.party }}</span>
-                    </div>
-                    <div class="text-sm text-gray-500 dark:text-gray-400 truncate" :class="partyStyle(candidate.party) ? 'mt-1' : ''">
-                      <span v-if="candidate.is_incumbent" class="font-medium text-amber-700 dark:text-amber-400">Incumbent</span>
-                      <span v-if="candidate.is_incumbent && candidate.occupation"> · </span>
-                      <span>{{ candidate.occupation }}</span>
-                    </div>
-                    <div v-if="newTabsFor(candidate)" class="text-xs font-medium text-orange-700 dark:text-orange-300 truncate">New in: {{ newTabsFor(candidate) }}</div>
-                    <div v-if="selectedTag && tagCell(candidate)" class="mt-1 flex items-start gap-1.5 text-xs">
-                      <span :class="tierBadgeClass(tagCell(candidate)!.tier)" class="shrink-0 rounded px-1.5 py-0.5 font-medium">{{ tierShortLabel[tagCell(candidate)!.tier] ?? tagCell(candidate)!.tier }}</span>
-                      <span class="min-w-0 line-clamp-2 text-gray-600 dark:text-gray-300">{{ tagCell(candidate)!.planks[0] }}</span>
-                    </div>
-                    <div v-else class="mt-0.5 text-xs text-gray-400 dark:text-gray-500">
-                      <span v-if="candidate.status !== 'nominated'">{{ options.statuses[candidate.status] ?? candidate.status }} · </span>
-                      {{ candidate.entries_count ?? 0 }} item{{ candidate.entries_count === 1 ? '' : 's' }} · {{ candidate.articles_count ?? 0 }} article{{ candidate.articles_count === 1 ? '' : 's' }}
-                    </div>
+              <!-- The card is the <li>; the name's link is stretched over it, and the party link sits above that, so neither nests in the other. -->
+              <li
+                v-for="candidate in group.candidates"
+                :key="candidate.id"
+                class="tap-target-touch relative flex h-full items-center gap-4 overflow-hidden rounded-lg shadow-sm p-4 pr-24 hover:ring-2 hover:ring-amber-400/60 transition-opacity"
+                :class="[
+                  // Anything unread tints the whole card orange; the tabs that changed are named inside.
+                  newFor(candidate) ? 'bg-orange-50 ring-2 ring-orange-400 dark:bg-orange-500/10 dark:ring-orange-500/70' : 'bg-white dark:bg-gray-800',
+                  candidate.status === 'withdrawn' ? 'opacity-60' : '',
+                  selectedTag && !tagCell(candidate) ? 'opacity-40' : '',
+                  selectedTag && tagCell(candidate) ? 'ring-1 ring-indigo-300 dark:ring-indigo-500/50' : '',
+                ]"
+              >
+                <!-- A stripe of the party's colour down the card's left edge, inside the card so it can't outgrow it. -->
+                <span v-if="partyStyle(candidate.party)" :class="partyStyle(candidate.party)!.bar" class="pointer-events-none absolute inset-y-0 left-0 w-2" aria-hidden="true" />
+                <PartyPhoto :name="candidate.name" :url="candidate.photo_url" :party="candidate.party" photo-class="h-28 w-28 shrink-0 rounded-full text-3xl sm:h-32 sm:w-32" />
+                <div class="min-w-0 flex-1">
+                  <div class="flex items-center gap-2">
+                    <Link :href="route('admin.elections.candidates.show', candidate.slug)" class="truncate font-medium text-gray-900 after:absolute after:inset-0 after:content-[''] dark:text-white">{{ candidate.name }}</Link>
+                    <span
+                      v-if="newFor(candidate)"
+                      class="shrink-0 rounded-full bg-orange-500 px-2 py-0.5 text-xs font-semibold text-white dark:bg-orange-600"
+                    >{{ newFor(candidate) }}</span>
                   </div>
-                </Link>
+                  <!-- The party, loud: it's what voters sort candidates by in a provincial race. -->
+                  <div v-if="partyStyle(candidate.party)" class="mt-1">
+                    <span :class="partyStyle(candidate.party)!.solid" class="inline-block max-w-full truncate rounded-md px-2.5 py-1 align-middle text-sm font-extrabold uppercase leading-none tracking-wide shadow-sm">{{ candidate.party }}</span>
+                  </div>
+                  <div class="text-sm text-gray-500 dark:text-gray-400 truncate" :class="partyStyle(candidate.party) ? 'mt-1' : ''">
+                    <span v-if="candidate.is_incumbent" class="font-medium text-amber-700 dark:text-amber-400">Incumbent</span>
+                    <span v-if="candidate.is_incumbent && candidate.occupation"> · </span>
+                    <span>{{ candidate.occupation }}</span>
+                  </div>
+                  <div v-if="newTabsFor(candidate)" class="text-xs font-medium text-orange-700 dark:text-orange-300 truncate">New in: {{ newTabsFor(candidate) }}</div>
+                  <div v-if="selectedTag && tagCell(candidate)" class="mt-1 flex items-start gap-1.5 text-xs">
+                    <span :class="tierBadgeClass(tagCell(candidate)!.tier)" class="shrink-0 rounded px-1.5 py-0.5 font-medium">{{ tierShortLabel[tagCell(candidate)!.tier] ?? tagCell(candidate)!.tier }}</span>
+                    <span class="min-w-0 line-clamp-2 text-gray-600 dark:text-gray-300">{{ tagCell(candidate)!.planks[0] }}</span>
+                  </div>
+                  <div v-else class="mt-0.5 text-xs text-gray-400 dark:text-gray-500">
+                    <span v-if="candidate.status !== 'nominated'">{{ options.statuses[candidate.status] ?? candidate.status }} · </span>
+                    {{ candidate.entries_count ?? 0 }} item{{ candidate.entries_count === 1 ? '' : 's' }} · {{ candidate.articles_count ?? 0 }} article{{ candidate.articles_count === 1 ? '' : 's' }}
+                  </div>
+                  <!-- The party's own page, inside the card and above the stretched card link. -->
+                  <Link
+                    v-if="candidate.party && partyPages?.[candidate.party]"
+                    :href="route('admin.elections.provincial.parties.show', partyPages[candidate.party])"
+                    class="relative z-10 mt-1.5 inline-flex max-w-full items-center gap-1 truncate text-xs font-medium text-indigo-600 hover:underline dark:text-indigo-400"
+                  >{{ candidate.party }}: news and fact-check <span aria-hidden="true">→</span></Link>
+                </div>
                 <!-- Compare toggle: a sibling of the card link, so tapping it never opens the profile. -->
                 <button
                   v-if="showCompare && candidate.status !== 'withdrawn'"
@@ -259,6 +255,8 @@
 
 <script setup lang="ts">
 import LatestUpdates from '../Partials/LatestUpdates.vue'
+import PollPanel from './PollPanel.vue'
+import RidingProjections from './RidingProjections.vue'
 import { cellOf, tierBadgeClass, tierShortLabel, tierWeight, type SubjectCoverage } from '../Partials/coverage'
 import ProvincialNav from './ProvincialNav.vue'
 import InviteButton from '../Partials/InviteButton.vue'
@@ -273,7 +271,7 @@ import EventItem from '../Partials/EventItem.vue'
 import { secondaryButtonClass, sectionHeadingClass } from '../Partials/classes'
 import { daysUntil, formatDate, formatDateTime, isHttpUrl, useReadOnly } from '../Partials/format'
 import { useUpdates } from '../Partials/updates'
-import type { Article, Candidate, ElectionEvent, ElectionInfo, Options, TagHeat, LatestUpdate } from '../Partials/types'
+import type { Article, Candidate, ElectionEvent, ElectionInfo, Options, TagHeat, LatestUpdate, PollData, RidingProjectionRow } from '../Partials/types'
 
 defineOptions({ layout: (h, page) => h(AdminLayout, { wide: true, hideBreadcrumbOnMobile: true }, () => page) })
 
@@ -282,7 +280,8 @@ const props = defineProps<{
   upcomingEvents: ElectionEvent[]
   pastEvents: ElectionEvent[]
   recentArticles: Article[]
-  stats: { candidates: number; entries: number; articles: number }
+  polls: PollData
+  ridingProjections: { rows: RidingProjectionRow[]; source_url: string | null; as_of: string | null }
   /** The subject heat map. */
   heat: TagHeat
   /** Who campaigns on which subject. */
@@ -294,6 +293,8 @@ const props = defineProps<{
   options: Options
   /** Which election this dashboard is for. */
   election: ElectionInfo
+  /** Provincial only: each party's name -> the address of its politics page. */
+  partyPages?: Record<string, string>
 }>()
 
 // The provincial dashboard has no Compare or subject heat map.
