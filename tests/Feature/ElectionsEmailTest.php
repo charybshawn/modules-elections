@@ -37,12 +37,32 @@ describe('update email', function () {
             ->and($email['sections'][1]['digest']['news'][0]['title'])->toBe('Provincial story');
     });
 
-    it('leaves out an election with nothing new, and a quiet window sends nothing', function () use ($build) {
-        emailImport('<articles><article><title>City story</title><url>https://n.example/c</url><outlet>Out</outlet></article></articles>', Election::MUNICIPAL);
-        $email = $build(now()->subMinute());
-        expect(collect($email['sections'])->pluck('key')->all())->toBe(['municipal']);
+    it('always has both elections, a quiet one saying what is coming and its latest stories, and a quiet window sends nothing', function () use ($build) {
+        emailImport('<articles><article><title>City story</title><url>https://n.example/c</url><outlet>Out</outlet><published_on>2026-10-05</published_on></article></articles>', Election::MUNICIPAL);
+        emailImport('<articles><article><title>Provincial story</title><url>https://n.example/p</url><outlet>Out</outlet><published_on>2026-10-06</published_on></article></articles>', Election::PROVINCIAL);
+        ElectionEvent::create(['election_id' => Election::provincial()->id, 'title' => 'Advance voting', 'kind' => 'forum', 'starts_at' => now()->addDays(3)]);
+
+        // Only the city had something new since the cut-off; the provincial side is quiet but still there.
+        \Cultpantry\Elections\Models\Article::forElection(Election::provincial())->update(['created_at' => now()->subHour()]);
+        ElectionEvent::query()->update(['created_at' => now()->subHour()]);
+        $email = $build(now()->subMinutes(10));
+        $sections = collect($email['sections'])->keyBy('key');
+
+        expect($sections->keys()->sort()->values()->all())->toBe(['municipal', 'provincial'])
+            ->and($sections['municipal']['total'])->toBeGreaterThan(0)->and($sections['municipal']['quiet'])->toBeNull()
+            ->and($sections['provincial']['total'])->toBe(0)
+            ->and($sections['provincial']['quiet']['stories'][0]['title'])->toBe('Provincial story')
+            ->and($sections['provincial']['quiet']['coming_up'][0])->toContain('Advance voting')
+            ->and($email['total'])->toBe($sections['municipal']['total']);
 
         expect($build(now()->addHour())['total'])->toBe(0);
+
+        $html = emailHtml($email);
+        expect($html)->toContain('Nothing new')->toContain('No new updates since the last email.')->toContain('Provincial story');
+        $text = view('elections::mail.update-text', ['email' => $email, 'p' => new \Cultpantry\Elections\Support\EmailPresenter])->render();
+        expect($text)->toContain('No new updates since the last email.')->toContain('Provincial story');
+        // Only the election with something new is named in the subject.
+        expect((new ElectionsUpdateNotification($email))->subject())->toBe('Election update: '.$sections['municipal']['total'].' for Salmon Arm');
     });
 
     it('adds the provincial extras: polls with the average and its movement, the riding projection, fact-checks and party news', function () use ($build) {
@@ -110,11 +130,27 @@ describe('update email', function () {
         $email = emailWith();
         $mail = (new ElectionsUpdateNotification($email))->toMail(new stdClass);
 
-        expect($mail->subject)->toBe('Election update: 1 for Salmon Arm')
+        config(['mail.from.address' => 'hello@example.test', 'mail.from.name' => 'Cult Pantry - Testing']);
+        $mail = (new ElectionsUpdateNotification($email))->toMail(new stdClass);
+
+        // Its own sender name rather than the app's, on the app's address.
+        expect($mail->from)->toBe(['hello@example.test', 'Team Cult Pantry'])
+            ->and($mail->subject)->toBe('Election update: 1 for Salmon Arm')
             ->and($mail->view)->toBe(['elections::mail.update', 'elections::mail.update-text']);
 
         $text = view('elections::mail.update-text', ['email' => $email, 'p' => new \Cultpantry\Elections\Support\EmailPresenter])->render();
         expect($text)->toContain('ELECTION UPDATE')->toContain('SALMON ARM MUNICIPAL ELECTION')->not->toContain('<');
+    });
+
+    it('lets .env override the election email\'s sender name and address, for this email only', function () {
+        config(['mail.from.address' => 'hello@example.test', 'mail.from.name' => 'Cult Pantry - Testing',
+            'elections.mail.from_name' => 'Salmon Arm Election Tracker', 'elections.mail.from_address' => 'elections@example.test']);
+        expect((new ElectionsUpdateNotification(emailWith()))->toMail(new stdClass)->from)->toBe(['elections@example.test', 'Salmon Arm Election Tracker']);
+
+        // A name alone keeps the app's address; the app's own setting is not touched.
+        config(['elections.mail.from_address' => null]);
+        expect((new ElectionsUpdateNotification(emailWith()))->toMail(new stdClass)->from)->toBe(['hello@example.test', 'Salmon Arm Election Tracker'])
+            ->and(config('mail.from.name'))->toBe('Cult Pantry - Testing');
     });
 
     it('imports change-log entries once, matches them on key, and rejects one with no commit time', function () {

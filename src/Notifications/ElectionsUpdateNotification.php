@@ -32,6 +32,9 @@ class ElectionsUpdateNotification extends Notification implements ShouldQueue
     public function toMail(object $notifiable): MailMessage
     {
         return (new MailMessage)
+            // Its own sender name, not the app's (which on staging reads "Cult Pantry - Testing"). Override in .env with
+            // ELECTIONS_MAIL_FROM_NAME / ELECTIONS_MAIL_FROM_ADDRESS (see config/elections.php); the address falls back to the app's.
+            ->from(config('elections.mail.from_address') ?: config('mail.from.address'), config('elections.mail.from_name') ?: 'Team Cult Pantry')
             ->subject($this->subject())
             ->view(['elections::mail.update', 'elections::mail.update-text'], ['email' => $this->email, 'p' => new EmailPresenter]);
     }
@@ -40,8 +43,8 @@ class ElectionsUpdateNotification extends Notification implements ShouldQueue
     public function subject(): string
     {
         $short = ['provincial' => 'BC provincial', 'municipal' => 'Salmon Arm'];
-        $parts = collect($this->email['sections'] ?? [])->map(fn (array $s) => $s['total'].' for '.$short[$s['key']])->all();
+        $parts = collect($this->email['sections'] ?? [])->filter(fn (array $s) => $s['total'] > 0)->map(fn (array $s) => $s['total'].' for '.$short[$s['key']])->all();
 
-        return 'Election update: '.($parts === [] ? 'nothing new' : implode(', ', $parts));
+        return 'Election update: '.($parts === [] ? 'what changed on the site' : implode(', ', $parts));
     }
 }

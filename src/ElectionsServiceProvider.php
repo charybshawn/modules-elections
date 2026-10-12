@@ -26,6 +26,12 @@ use Illuminate\Support\ServiceProvider;
 
 class ElectionsServiceProvider extends ServiceProvider
 {
+    public function register(): void
+    {
+        // Settings for this module (the update email's sender, overridable from .env); the app's own config/elections.php wins if it has one.
+        $this->mergeConfigFrom(__DIR__.'/../config/elections.php', 'elections');
+    }
+
     public function boot(): void
     {
         // 1. Admin routes -- additive merge into the existing admin route group.

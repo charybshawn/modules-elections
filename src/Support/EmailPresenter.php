@@ -79,7 +79,7 @@ class EmailPresenter
             $escaped = e($name);
             $pos = strpos($html, $escaped);
             if ($pos !== false && is_string($url) && preg_match('#^https?://#i', $url)) {
-                $html = substr_replace($html, '<a href="'.e($url).'" style="color:#4338ca;">'.$escaped.'</a>', $pos, strlen($escaped));
+                $html = substr_replace($html, '<a href="'.e($url).'" style="color:#a5b4fc;">'.$escaped.'</a>', $pos, strlen($escaped));
             }
         }
 

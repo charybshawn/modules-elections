@@ -10,6 +10,30 @@ ELECTION UPDATE
 {{ str_repeat('=', 60) }}
 {{ strtoupper($section['title']) }}@if ($section['subtitle']) - {{ $section['subtitle'] }}@endif
 
+@if ($section['total'] === 0)
+No new updates since the last email.
+
+@if ($section['quiet']['stories'] !== [])
+LATEST STORIES
+@foreach ($section['quiet']['stories'] as $story)
+  {{ $story['title'] }}@if ($story['outlet']) ({{ $story['outlet'] }})@endif
+
+@if ($p->safeUrl($story['url']))  {{ $story['url'] }}
+@endif
+@endforeach
+
+@endif
+@if ($section['quiet']['coming_up'] !== [])
+COMING UP
+@foreach ($section['quiet']['coming_up'] as $line)
+  - {{ $line }}
+@endforeach
+
+@endif
+Open the tracker: {{ $section['url'] }}
+
+@continue
+@endif
 @if ($section['provincial'])
 @php $x = $section['provincial']; $avg = $x['average']; @endphp
 @if ($avg)

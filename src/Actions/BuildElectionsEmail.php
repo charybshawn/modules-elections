@@ -2,6 +2,7 @@
 
 namespace Cultpantry\Elections\Actions;
 
+use Cultpantry\Elections\Models\Article;
 use Cultpantry\Elections\Models\ChangelogEntry;
 use Cultpantry\Elections\Models\Election;
 use Cultpantry\Elections\Models\ElectionEvent;
@@ -13,8 +14,10 @@ use Illuminate\Support\Carbon;
 
 /**
  * Everything the update email says, for both elections: one section each,
- * the one whose voting day is nearest first, and only for an election that
- * has something new. A section is the same headline digest the municipal
+ * the one whose voting day is nearest first. An election with nothing new
+ * still gets its section, a quiet one (what is coming up and its latest
+ * stories), so the email always speaks for both; only something new in either
+ * election, or a change-log entry, makes an email worth sending. A section is the same headline digest the municipal
  * email always carried (see BuildUpdateDigest), and the provincial one adds
  * what only it has: new polls and how the poll average moved, the model's
  * projection for this riding, new fact-checks and party-level news. After
@@ -38,7 +41,6 @@ class BuildElectionsEmail
     public function handle(Carbon $since, Carbon $until): array
     {
         $sections = collect([$this->section(Election::municipal(), $since, $until), $this->section(Election::provincial(), $since, $until)])
-            ->filter(fn (array $s) => $s['total'] > 0)
             // Soonest voting day first; one with no date (or already past) goes last.
             ->sortBy(fn (array $s) => $s['days_away'] === null || $s['days_away'] < 0 ? PHP_INT_MAX : $s['days_away'])
             ->values();
@@ -86,6 +88,22 @@ class BuildElectionsEmail
             'digest' => $digest,
             'provincial' => $provincial,
             'total' => $digest['total'] + ($provincial['total'] ?? 0),
+            // For a section with nothing new: what is coming up and the latest stories, so it still says something.
+            'quiet' => $digest['total'] + ($provincial['total'] ?? 0) === 0 ? $this->quiet($election) : null,
+        ];
+    }
+
+    /** The next few events and the newest stories of an election with nothing new. */
+    private function quiet(Election $election): array
+    {
+        $tz = config('app.timezone');
+
+        return [
+            'coming_up' => ElectionEvent::forElection($election)->upcoming()->orderBy('starts_at')->limit(4)->get(['title', 'starts_at'])
+                ->map(fn (ElectionEvent $e) => $e->title.' ('.$e->starts_at->timezone($tz)->format('l, M j').')')->all(),
+            'stories' => Article::forElection($election)->orderByRaw('published_on is null')->orderByDesc('published_on')->orderByDesc('id')->limit(3)
+                ->get(['title', 'url', 'outlet', 'published_on'])
+                ->map(fn (Article $a) => ['title' => $a->title, 'url' => $a->url, 'outlet' => $a->outlet, 'published_on' => $a->published_on?->toDateString()])->all(),
         ];
     }
 

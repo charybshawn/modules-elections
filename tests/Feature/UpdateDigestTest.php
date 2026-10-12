@@ -78,8 +78,8 @@ describe('Update digest', function () {
     it('links each candidate in a series item to their own story', function () {
         $html = emailHtml(emailWith(['digest' => ['news' => [['title' => 'Candidate profile', 'url' => null, 'outlet' => null, 'text' => 'Castanet added 2 to its series: Jane Example and Sam Sample.', 'links' => ['Jane Example' => 'https://c.example/1', 'Sam Sample' => 'https://c.example/2']]]]]));
 
-        expect($html)->toContain('<a href="https://c.example/1" style="color:#4338ca;">Jane Example</a>')
-            ->toContain('<a href="https://c.example/2" style="color:#4338ca;">Sam Sample</a>');
+        expect($html)->toContain('<a href="https://c.example/1" style="color:#a5b4fc;">Jane Example</a>')
+            ->toContain('<a href="https://c.example/2" style="color:#a5b4fc;">Sam Sample</a>');
     });
 
     it('lays the email out as sections with the content in them', function () {
