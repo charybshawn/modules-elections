@@ -121,6 +121,12 @@ class Candidate extends Model
         return $slug;
     }
 
+    /** Recorded votes, newest first. */
+    public function votes(): HasMany
+    {
+        return $this->hasMany(Vote::class)->orderByDesc('voted_on')->orderByDesc('id');
+    }
+
     public function entries(): HasMany
     {
         return $this->hasMany(Entry::class)

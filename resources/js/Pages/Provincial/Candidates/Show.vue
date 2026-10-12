@@ -1,0 +1,748 @@
+<template>
+  <AdminShowShell wide>
+    <template #mobile-header>
+      <AdminMobileHeader :title="candidate.name" :href="dashboardHref" />
+    </template>
+
+    <template v-if="!readOnly" #actions>
+      <IconButton
+        label="Delete candidate"
+        class="rounded-md text-gray-400 hover:text-red-600 active:bg-red-50 dark:text-gray-500 dark:hover:text-red-400 dark:active:bg-red-900/20"
+        @click="destroyCandidate"
+      >
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+        </svg>
+      </IconButton>
+    </template>
+
+    <template #header>
+      <!-- Search sits beside Back, clear of the sticky actions pill on the right. -->
+      <div class="flex items-center gap-4">
+        <Link :href="dashboardHref" class="hidden md:inline-flex tap-target-touch items-center text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white text-sm">
+          &larr; Back to Elections
+        </Link>
+        <QuickSearch :election="election.slug" />
+      </div>
+      <!-- pr-40 keeps a long name clear of the sticky actions pill. -->
+      <h1 class="hidden md:block mt-2 pr-40 text-2xl font-semibold text-gray-900 dark:text-white">{{ candidate.name }}</h1>
+    </template>
+
+    <div class="space-y-8 md:mt-6">
+      <!-- Identity and key facts (both breakpoints): photo above the facts on phones. -->
+      <div class="flex flex-col sm:flex-row gap-5">
+        <figure class="shrink-0">
+          <PartyPhoto :name="candidate.name" :url="candidate.photo_url" :party="candidate.party" variant="ribbon" photo-class="h-48 w-48 rounded-full text-5xl sm:h-56 sm:w-56" />
+          <figcaption v-if="candidate.photo_url && candidate.photo_credit" class="mt-1 text-[11px] text-gray-500 dark:text-gray-400">Photo: {{ candidate.photo_credit }}</figcaption>
+        </figure>
+        <div class="min-w-0 flex-1">
+          <div class="flex flex-wrap items-center gap-2">
+            <span v-if="partyStyle(candidate.party)" :class="partyStyle(candidate.party)!.solid" class="rounded-md px-3 py-1 text-sm font-extrabold uppercase tracking-wide shadow-sm">{{ candidate.party }}</span>
+            <span class="px-2 py-0.5 text-xs font-semibold rounded-full bg-amber-100 text-amber-800 dark:bg-amber-900/60 dark:text-amber-200">
+              {{ options.offices[candidate.office] ?? candidate.office }}
+            </span>
+            <span v-if="candidate.is_incumbent" class="px-2 py-0.5 text-xs font-semibold rounded-full bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200">Incumbent</span>
+            <span :class="statusBadgeClass" class="px-2 py-0.5 text-xs font-semibold rounded-full">{{ options.statuses[candidate.status] ?? candidate.status }}</span>
+          </div>
+
+          <dl class="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div v-if="candidate.occupation" class="min-w-0 sm:col-span-2">
+              <dt class="text-sm text-gray-500 dark:text-gray-400">Occupation</dt>
+              <dd class="text-gray-900 dark:text-white">{{ candidate.occupation }}</dd>
+            </div>
+            <div v-for="fact in contactFacts" :key="fact.label" class="min-w-0">
+              <dt class="text-sm text-gray-500 dark:text-gray-400">{{ fact.label }}</dt>
+              <dd class="text-gray-900 dark:text-white break-words">
+                <a :href="fact.href" :target="fact.external ? '_blank' : undefined" :rel="fact.external ? 'noopener noreferrer' : undefined" class="hover:text-indigo-600 dark:hover:text-indigo-400">{{ fact.text }}</a>
+              </dd>
+            </div>
+          </dl>
+          <p v-if="candidate.status === 'declared'" class="mt-3 text-sm text-gray-500 dark:text-gray-400">Not yet confirmed on the City's official nominations list.</p>
+        </div>
+      </div>
+
+      <p v-if="newSummary" class="text-sm font-medium text-amber-800 dark:text-amber-300">{{ newSummary }}</p>
+
+      <!-- Tabs: each is its own URL (?tab=), like Customers' views. Underline
+           tabs from md up; on phones, where seven tabs wouldn't fit across,
+           a native picker dressed as a menu button so it reads as navigation. -->
+      <div>
+        <div class="md:hidden">
+          <label for="candidate-tab" class="block mb-1.5 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Sections</label>
+          <div class="relative">
+            <svg class="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5" :class="otherNewCount ? 'text-orange-600 dark:text-orange-400' : 'text-indigo-600 dark:text-indigo-300'" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
+            <select
+              id="candidate-tab"
+              :value="activeTab"
+              :class="otherNewCount
+                ? 'border-orange-500 bg-orange-50 text-orange-900 focus:border-orange-500 focus:ring-orange-500 dark:border-orange-400 dark:bg-orange-900/30 dark:text-white'
+                : 'border-indigo-500 bg-indigo-50 text-indigo-900 focus:border-indigo-500 focus:ring-indigo-500 dark:border-indigo-400 dark:bg-indigo-900/40 dark:text-white'"
+              class="block w-full appearance-none bg-none rounded-lg border-2 py-3 pl-11 pr-10 text-base font-semibold shadow-sm"
+              @change="switchTab(($event.target as HTMLSelectElement).value)"
+            >
+              <option v-for="tab in tabs" :key="tab.id" :value="tab.id">{{ tab.title }}{{ tab.count ? ` (${tab.count})` : '' }}{{ tab.newCount ? ` · ${tab.newCount} new` : '' }}</option>
+            </select>
+            <svg class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5" :class="otherNewCount ? 'text-orange-600 dark:text-orange-400' : 'text-indigo-600 dark:text-indigo-300'" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l4-4 4 4m0 6l-4 4-4-4" />
+            </svg>
+          </div>
+          <p v-if="otherNewCount" class="mt-1.5 text-sm font-medium text-orange-700 dark:text-orange-300">{{ otherNewCount }} new in other sections -- tap above to switch.</p>
+        </div>
+
+        <nav class="hidden md:flex gap-1 overflow-x-auto scrollbar-hide border-b border-gray-200 dark:border-gray-700" aria-label="Candidate sections">
+          <Link
+            v-for="tab in tabs"
+            :key="tab.id"
+            :href="tabHref(tab.id)"
+            preserve-state
+            preserve-scroll
+            :aria-current="activeTab === tab.id ? 'page' : undefined"
+            :class="[
+              'tap-target-touch -mb-px inline-flex items-center gap-1.5 rounded-t-md py-3 px-3 border-b-2 font-medium text-sm whitespace-nowrap transition-colors',
+              // A tab with something new is filled orange; the open tab keeps a darker underline.
+              tab.newCount
+                ? [activeTab === tab.id ? 'border-orange-800' : 'border-orange-500', 'bg-orange-500 text-white hover:bg-orange-600 dark:bg-orange-600 dark:hover:bg-orange-500']
+                : activeTab === tab.id
+                  ? 'border-indigo-500 text-indigo-600 dark:text-indigo-400'
+                  : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600',
+            ]"
+          >
+            {{ tab.title }}
+            <span v-if="tab.count" :class="tab.newCount ? 'text-orange-100' : 'text-gray-400 dark:text-gray-500'" class="text-xs font-normal">{{ tab.count }}</span>
+            <span v-if="tab.newCount" class="rounded-full bg-white px-1.5 py-0.5 text-xs font-semibold leading-none text-orange-700" :aria-label="`${tab.newCount} new`">{{ tab.newCount }} new</span>
+          </Link>
+        </nav>
+
+        <!-- About: the City councillor-page layout -- a biography, then each
+             background category as a short bulleted list. -->
+        <div v-if="activeTab === 'about'" class="divide-y divide-gray-200 dark:divide-gray-700">
+          <p v-if="newerThan(candidate.profile_changed_at, 'about')" :class="changeNoteClass">Profile details (bio, links or status) were updated since your last visit.</p>
+          <AccountSection title="Biography" description="A short, neutral summary, with where it came from.">
+            <template v-if="candidate.bio">
+              <p class="text-sm sm:text-base leading-relaxed text-gray-900 dark:text-gray-100 whitespace-pre-line">{{ candidate.bio }}</p>
+              <p v-if="isHttpUrl(candidate.bio_source_url)" class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                Source: <a :href="candidate.bio_source_url" target="_blank" rel="noopener noreferrer" class="underline decoration-gray-300 underline-offset-2 dark:decoration-gray-600">{{ hostOf(candidate.bio_source_url) }}</a>
+              </p>
+            </template>
+            <p v-else class="text-sm text-gray-500 dark:text-gray-400">No biography on file yet.</p>
+          </AccountSection>
+
+          <AccountSection
+            v-for="group in portfolio.background"
+            :key="group.topic ?? 'all'"
+            :title="options.backgroundTopics[group.topic ?? ''] ?? group.topic ?? ''"
+            :description="backgroundDescriptions[group.topic ?? '']"
+          >
+            <FactList :entries="group.entries" :editable="!readOnly" :is-new="isNewEntry" @delete="deleteEntry" />
+          </AccountSection>
+
+          <p v-if="tabs.length === 2 && !affiliationEntries.length" class="py-6 text-sm text-gray-500 dark:text-gray-400">
+            Nothing on their platform or statements is on file yet -- the next research import will fill this in.
+          </p>
+        </div>
+
+        <!-- Background & Affiliations: roles, memberships and past activities,
+             grouped by category. -->
+        <div v-else-if="activeTab === 'affiliations'" class="divide-y divide-gray-200 dark:divide-gray-700">
+          <AccountSection
+            v-for="group in portfolio.affiliations"
+            :key="group.topic ?? 'all'"
+            :title="options.backgroundTopics[group.topic ?? ''] ?? group.topic ?? ''"
+            :description="backgroundDescriptions[group.topic ?? '']"
+          >
+            <FactList :entries="group.entries" :editable="!readOnly" :is-new="isNewEntry" @delete="deleteEntry" />
+          </AccountSection>
+          <p v-if="!portfolio.affiliations.length" class="py-6 text-sm text-gray-500 dark:text-gray-400">
+            No community roles, affiliations or past activities are on file yet -- the next background research import will fill this in.
+          </p>
+        </div>
+
+        <!-- Platform: what the candidate themselves put out, ranked by their
+             own emphasis into tiers, each plank with the statements behind it. -->
+        <div v-else-if="activeTab === 'platform' && portfolio.platform" class="divide-y divide-gray-200 dark:divide-gray-700">
+          <!-- Filter by subject, in place: the chips here and on each plank. -->
+          <div v-if="platformSubjects.length > 1" class="pb-4 pt-8 md:pt-6">
+            <div class="-mx-4 flex gap-1.5 overflow-x-auto px-4 py-1 scrollbar-hide sm:mx-0 sm:flex-wrap sm:px-0" role="group" aria-label="Filter planks by subject">
+              <button
+                type="button"
+                :aria-pressed="platformFilter.tag === null"
+                :class="platformFilter.tag === null ? 'bg-gray-900 text-white dark:bg-white dark:text-gray-900' : 'bg-white text-gray-700 ring-1 ring-gray-300 hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-300 dark:ring-gray-600'"
+                class="tap-target-touch shrink-0 rounded-full px-3 py-1 text-sm font-medium"
+                @click="platformFilter.tag = null"
+              >All {{ allPlanks.length }}</button>
+              <button
+                v-for="s in platformSubjects"
+                :key="s.slug"
+                type="button"
+                :aria-pressed="platformFilter.tag === s.slug"
+                :class="platformFilter.tag === s.slug ? 'bg-indigo-600 text-white' : 'bg-white text-gray-700 ring-1 ring-gray-300 hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-300 dark:ring-gray-600'"
+                class="tap-target-touch shrink-0 rounded-full px-3 py-1 text-sm font-medium"
+                @click="platformFilter.tag = platformFilter.tag === s.slug ? null : s.slug"
+              >{{ s.name }} <span class="opacity-70">{{ s.count }}</span></button>
+            </div>
+            <p v-if="activeSubject" class="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-gray-600 dark:text-gray-300">
+              <span>{{ filteredPlankCount }} of {{ allPlanks.length }} planks on <span class="font-semibold text-gray-900 dark:text-white">{{ activeSubject.name }}</span></span>
+              <Link :href="route('admin.elections.tags.show', activeSubject.slug)" class="tap-target-touch inline-flex items-center font-medium text-indigo-600 underline underline-offset-2 dark:text-indigo-400">Everyone on this</Link>
+              <button type="button" class="tap-target-touch inline-flex items-center font-medium underline underline-offset-2" @click="platformFilter.tag = null">Show all</button>
+            </p>
+          </div>
+
+          <p v-if="portfolio.platform.limited_sources" class="py-4 text-sm text-amber-800 dark:text-amber-300">
+            Limited sources: this platform rests on {{ portfolio.platform.source_count === 1 ? 'a single source' : 'very little published material' }}, so its order is a rough guide.
+          </p>
+
+          <!-- Controls: open or close every plank; admins can switch on editing. -->
+          <div class="flex flex-wrap items-center justify-between gap-2 py-3">
+            <p class="text-xs text-gray-500 dark:text-gray-400">Ranked by how much the candidate emphasizes each one. Tap a plank for their plan, their words and, on pillars, the AI analysis.</p>
+            <div class="flex shrink-0 items-center gap-3 text-xs font-medium">
+              <button type="button" class="tap-target-touch text-indigo-600 hover:underline dark:text-indigo-400" @click="openPlanks.ids = visiblePlankIds">Expand all</button>
+              <button type="button" class="tap-target-touch text-indigo-600 hover:underline dark:text-indigo-400" @click="openPlanks.ids = []">Collapse all</button>
+              <button v-if="!readOnly" type="button" :aria-pressed="editing" :class="editing ? 'bg-red-50 text-red-700 ring-red-200 dark:bg-red-500/10 dark:text-red-300 dark:ring-red-500/30' : 'text-gray-600 ring-gray-300 dark:text-gray-300 dark:ring-gray-600'" class="tap-target-touch rounded-md px-2 py-1 ring-1" @click="editing = !editing">{{ editing ? 'Done editing' : 'Edit' }}</button>
+            </div>
+          </div>
+
+          <!-- The platform: one compact, expandable row per plank, grouped by tier. -->
+          <section v-for="group in filteredTiers" :key="group.tier" class="py-3">
+            <h3 class="text-sm font-semibold text-gray-900 dark:text-white">{{ group.title }}</h3>
+            <p class="text-xs text-gray-500 dark:text-gray-400">{{ tierDescriptions[group.tier] }}</p>
+            <TransitionGroup tag="ol" class="mt-2 divide-y divide-gray-100 dark:divide-gray-700/60" enter-from-class="opacity-0 -translate-y-1" enter-active-class="transition duration-200">
+              <PlankRow
+                v-for="plank in group.planks"
+                :key="plank.id"
+                :plank="plank"
+                :position="plankPosition(plank)"
+                :open="openPlanks.ids.includes(plank.id)"
+                :options="options"
+                :editing="editing"
+                :is-new="isNewPlank(plank)"
+                :is-updated="isUpdatedPlank(plank)"
+                :is-new-entry="isNewEntry"
+                :active-tag="platformFilter.tag"
+                @toggle="togglePlank(plank.id)"
+                @delete="deletePlank"
+                @delete-entry="deleteEntry"
+                @tag="platformFilter.tag = $event"
+              />
+            </TransitionGroup>
+          </section>
+
+          <AccountSection v-if="portfolio.platform.unranked.length && !activeSubject" title="Not yet ranked" description="Statements on file that the research hasn't grouped into a plank yet.">
+            <ul class="space-y-5">
+              <li v-for="entry in portfolio.platform.unranked" :key="entry.id">
+                <EntryCard :entry="entry" :options="options" :editable="editing" :is-new="isNewEntry(entry)" @delete="deleteEntry" />
+              </li>
+            </ul>
+          </AccountSection>
+        </div>
+
+        <!-- Scorecards: third-party questionnaires under the publisher's own headers -->
+        <div v-else-if="activeTab === 'scorecards'" class="divide-y-4 divide-gray-100 dark:divide-gray-800">
+          <p v-if="newCounts.scorecards" :class="changeNoteClass">Scorecard answers or readings were updated since your last visit.</p>
+          <ScorecardView v-for="scorecard in portfolio.scorecards" :key="scorecard.key" :scorecard="scorecard" :candidate-name="candidate.name" :stances="options.scorecardStances" />
+        </div>
+
+        <!-- Voting record: recorded votes and what else they did in office, by year -->
+        <div v-else-if="activeSection && activeSection.years">
+          <RecordTab :years="activeSection.years ?? []" :options="options" :editable="!readOnly" :is-new="isNewEntry" @delete-vote="deleteVote" @delete-entry="deleteEntry" />
+        </div>
+
+        <!-- In their own words, Endorsements, Campaign finance -->
+        <div v-else-if="activeSection" class="divide-y divide-gray-200 dark:divide-gray-700">
+          <AccountSection
+            v-for="group in activeSection.groups"
+            :key="group.topic ?? 'all'"
+            :title="group.topic ? (options.topics[group.topic] ?? group.topic) : activeSection.title"
+          >
+            <ul class="space-y-5">
+              <li v-for="entry in group.entries" :key="entry.id">
+                <EntryCard
+                  :entry="entry"
+                  :options="options"
+                  :editable="!readOnly"
+                  :show-kind="activeSection.key === 'words'"
+                  :is-new="isNewEntry(entry)"
+                  @delete="deleteEntry"
+                />
+              </li>
+            </ul>
+          </AccountSection>
+        </div>
+
+        <!-- In the news -->
+        <div v-else-if="activeTab === 'news'">
+          <AccountSection title="Coverage" description="News stories that mention this candidate, in a column for each type of story.">
+            <!-- Search across every column; with hundreds of stories this is how you find one. -->
+            <div v-if="portfolio.articles.length > 8" class="mb-3">
+              <label for="news-search" class="sr-only">Search coverage</label>
+              <input
+                id="news-search"
+                v-model="newsSearch"
+                type="search"
+                placeholder="Search coverage by title, outlet or summary"
+                class="w-full rounded-md border-gray-300 text-base sm:max-w-sm sm:text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+              />
+              <p v-if="newsSearch.trim()" class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ matchingStories }} of {{ portfolio.articles.length }} stories match.</p>
+            </div>
+
+            <!-- Phones stack the columns, so jump between them. -->
+            <nav v-if="newsSections.length > 1" class="-mx-4 mb-2 flex gap-1.5 overflow-x-auto px-4 py-1 scrollbar-hide sm:mx-0 sm:flex-wrap sm:px-0 lg:hidden" aria-label="Types of story">
+              <a
+                v-for="section in newsSections"
+                :key="section.slug"
+                :href="`#news-${section.slug}`"
+                :class="section.badge"
+                class="tap-target-touch inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1 text-sm font-semibold"
+                @click.prevent="jumpToNews(section.slug)"
+              >{{ section.name }} <span class="opacity-70">{{ section.total }}</span></a>
+            </nav>
+
+            <p v-if="newsSections.length === 0" class="mt-3 text-sm text-gray-500 dark:text-gray-400">No stories match.</p>
+
+            <div class="mt-3 grid grid-cols-1 items-start gap-4" :class="newsColumnsClass">
+              <section v-for="section in newsSections" :id="`news-${section.slug}`" :key="section.slug" class="min-w-0 scroll-mt-32 rounded-lg border border-gray-200 bg-gray-50/60 p-3 dark:border-gray-700 dark:bg-gray-800/40">
+                <h3 class="flex flex-wrap items-center gap-2 text-sm font-semibold text-gray-900 dark:text-white">
+                  <span :class="section.badge" class="rounded px-2 py-0.5 text-xs font-bold uppercase tracking-wide">{{ section.name }}</span>
+                  <span class="text-xs font-normal text-gray-500 dark:text-gray-400">
+                    {{ section.articles.length === section.total ? section.total : `${section.articles.length} of ${section.total}` }} {{ section.total === 1 ? 'story' : 'stories' }}
+                  </span>
+                </h3>
+                <p v-if="section.hint" class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ section.hint }}</p>
+
+                <!-- A tall column scrolls inside itself from large screens up, so one big type never pushes the others off the page. -->
+                <ul class="mt-3 space-y-2 lg:max-h-[70vh] lg:overflow-y-auto lg:pr-1">
+                  <li v-for="article in visibleIn(section)" :key="article.id" class="rounded-md bg-white p-2.5 shadow-sm dark:bg-gray-800">
+                    <a v-if="isHttpUrl(article.url)" :href="article.url" target="_blank" rel="noopener noreferrer" class="line-clamp-2 text-sm font-medium leading-snug text-gray-900 hover:underline dark:text-white" :class="isStoryOpen(article) ? 'line-clamp-none' : ''">{{ article.title }}</a>
+                    <span v-if="isNewArticle(article)" :class="newPillClass" class="ml-1 align-middle">New</span>
+                    <!-- Blurb: two lines, expandable. -->
+                    <p v-if="article.summary" class="mt-1 text-xs leading-relaxed text-gray-600 dark:text-gray-300" :class="isStoryOpen(article) ? '' : 'line-clamp-2'">{{ article.summary }}</p>
+
+                    <div v-if="isStoryOpen(article)" class="mt-1.5">
+                      <TagChips :tags="article.tags.filter(isSubjectTag)" />
+                      <button v-if="!readOnly" type="button" class="tap-target-touch mt-1 text-xs text-red-600 hover:text-red-800 dark:text-red-400" @click="deleteArticle(article)">Remove article</button>
+                    </div>
+
+                    <!-- Footer: where and when on the left, expand on the right. -->
+                    <div class="mt-1.5 flex items-center justify-between gap-3 text-[11px]">
+                      <span class="min-w-0 truncate text-gray-500 dark:text-gray-400">{{ [article.outlet, formatDate(article.published_on)].filter(Boolean).join(' · ') }}</span>
+                      <button
+                        v-if="isExpandable(article)"
+                        type="button"
+                        class="tap-target-touch shrink-0 font-medium text-indigo-600 hover:underline dark:text-indigo-400"
+                        :aria-expanded="isStoryOpen(article)"
+                        @click="toggleStory(article)"
+                      >{{ isStoryOpen(article) ? 'Less' : 'More' }}</button>
+                    </div>
+                  </li>
+                </ul>
+
+                <div v-if="section.articles.length > NEWS_SHOWN" class="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1">
+                  <button
+                    v-if="newsCount(section.slug) < section.articles.length"
+                    type="button"
+                    class="tap-target-touch text-xs font-medium text-indigo-600 hover:underline dark:text-indigo-400"
+                    @click="showMoreNews(section.slug)"
+                  >Show {{ Math.min(NEWS_STEP, section.articles.length - newsCount(section.slug)) }} more ({{ section.articles.length - newsCount(section.slug) }} left)</button>
+                  <button
+                    v-if="newsCount(section.slug) > NEWS_SHOWN"
+                    type="button"
+                    class="tap-target-touch text-xs font-medium text-gray-500 hover:underline dark:text-gray-400"
+                    @click="resetNews(section.slug)"
+                  >Show fewer</button>
+                </div>
+              </section>
+            </div>
+          </AccountSection>
+        </div>
+
+        <!-- Research notes: admins only (the server omits notes for invited viewers) -->
+        <div v-else-if="activeTab === 'notes'">
+          <p v-if="newCounts.notes" :class="changeNoteClass">The research notes were updated since your last visit.</p>
+          <AccountSection title="Research notes" description="Where facts came from, conflicts between sources and follow-ups. Admins only -- invited viewers never see this tab.">
+            <p class="text-sm leading-relaxed text-gray-900 dark:text-gray-100 whitespace-pre-line">{{ candidate.notes }}</p>
+          </AccountSection>
+        </div>
+      </div>
+    </div>
+  </AdminShowShell>
+</template>
+
+<script setup lang="ts">
+import { computed, nextTick, onMounted, provide, reactive, ref, watch } from 'vue'
+import { Link, router, useRemember, usePage } from '@inertiajs/vue3'
+import AdminLayout from '@/Layouts/AdminLayout.vue'
+import AdminMobileHeader from '@/Components/Admin/AdminMobileHeader.vue'
+import AdminShowShell from '@/Components/Admin/AdminShowShell.vue'
+import AccountSection from '@/Components/Admin/Accounts/AccountSection.vue'
+import IconButton from '@/Components/IconButton.vue'
+import { useConfirmDialog } from '@/composables/useConfirmDialog'
+import PartyPhoto from '../PartyPhoto.vue'
+import { partyStyle } from '../party'
+import EntryCard from '../../Partials/EntryCard.vue'
+import FactList from '../../Partials/FactList.vue'
+import PlankRow from '../../Partials/PlankRow.vue'
+import RecordTab from '../RecordTab.vue'
+import QuickSearch from '../../Partials/QuickSearch.vue'
+import ScorecardView from '../../Partials/ScorecardView.vue'
+import TagChips from '../../Partials/TagChips.vue'
+import { newPillClass } from '../../Partials/classes'
+import { isNewsTag, isSubjectTag, newsTagClass } from '../newsTags'
+import { focusKey } from '../../Partials/focus'
+import { formatDate, hostOf, isHttpUrl, useReadOnly } from '../../Partials/format'
+import { tabScope, toUnix, useUpdates } from '../../Partials/updates'
+import type { Article, ElectionInfo, Entry, Options, Plank, Portfolio, Vote } from '../../Partials/types'
+
+defineOptions({ layout: (h, page) => h(AdminLayout, { hideBreadcrumbOnMobile: true }, () => page) })
+
+const changeNoteClass = 'rounded-md bg-orange-100 px-3 py-2 text-sm font-medium text-orange-900 dark:bg-orange-500/20 dark:text-orange-200'
+
+const props = defineProps<{
+  portfolio: Portfolio
+  /** about, a portfolio section key, or news -- from ?tab=, checked server-side. */
+  activeTab: string
+  options: Options
+  /** The election this candidate is running in. */
+  election: ElectionInfo
+}>()
+
+// Back goes to the dashboard of the candidate's own election.
+const dashboardHref = computed(() => route('admin.elections.provincial'))
+
+// Computed: Inertia replaces the prop object on every visit.
+const candidate = computed(() => props.portfolio.candidate)
+const readOnly = useReadOnly()
+const { confirmDialog } = useConfirmDialog()
+
+const statusBadgeClass = computed(() => ({
+  nominated: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
+  declared: 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200',
+  withdrawn: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200',
+}[candidate.value.status] ?? 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200'))
+
+const contactFacts = computed(() => {
+  const c = candidate.value
+  const list: { label: string; text: string; href: string; external: boolean }[] = []
+  if (isHttpUrl(c.website)) list.push({ label: 'Website', text: hostOf(c.website), href: c.website, external: true })
+  if (isHttpUrl(c.facebook_url)) list.push({ label: 'Facebook', text: 'Campaign page', href: c.facebook_url, external: true })
+  if (isHttpUrl(c.instagram_url)) list.push({ label: 'Instagram', text: 'Profile', href: c.instagram_url, external: true })
+  if (c.email) list.push({ label: 'Email', text: c.email, href: `mailto:${c.email}`, external: false })
+  if (c.phone) list.push({ label: 'Phone', text: c.phone, href: `tel:${c.phone}`, external: false })
+  return list
+})
+
+const backgroundDescriptions: Record<string, string> = {
+  career: 'Work, profession and employers.',
+  business: 'Businesses they own or run.',
+  education: 'Schooling and credentials.',
+  community: 'Boards, volunteering and community groups.',
+  public_service: 'Elected and appointed roles, committees and past campaigns.',
+  local_roots: 'Their time in Salmon Arm and the Shuswap.',
+  affiliation: 'Faith communities, clubs, societies, associations and parties they belong or have belonged to.',
+  past_activity: 'What they have done before running: projects, campaigns, events and causes.',
+  corporate_roles: 'Company boards, directorships and officer roles, from the public registry and company filings.',
+  holdings: 'Property, shares, company ownership and other assets, from public records and mandated disclosures.',
+  political_giving: 'Donations they have made to parties, candidates and campaigns, from public filings.',
+}
+
+// ---- New since last visit (per viewer, per tab) ----
+// Each tab remembers when it was last looked at. Opening a candidate marks only
+// the tab you land on as seen, so what's new on their other tabs stays flagged
+// until you open them. The marks as they stood when the page opened are kept
+// for this visit, so the tabs stay orange and the items keep their "New" tags
+// while you read them (switching tabs keeps this component alive).
+const updates = useUpdates(props.election.slug)
+const TAB_IDS = ['about', 'affiliations', 'platform', 'scorecards', 'words', 'record', 'endorsements', 'finance', 'news', 'notes']
+const lastLook = reactive<Record<string, number>>({})
+
+const markTab = (tab: string) => updates.mark(tabScope(candidate.value.slug, tab))
+const openPage = async () => {
+  await updates.ensure()
+  for (const key of Object.keys(lastLook)) delete lastLook[key]
+  for (const tab of TAB_IDS) {
+    const at = updates.seenAt(tabScope(candidate.value.slug, tab))
+    if (at !== null) lastLook[tab] = at
+  }
+  markTab(props.activeTab)
+}
+onMounted(openPage)
+// The same page component can be reused for another candidate.
+watch(() => candidate.value.slug, openPage)
+watch(
+  () => props.activeTab,
+  async (tab) => {
+    await updates.ensure()
+    markTab(tab)
+  },
+)
+
+const newerThan = (iso: string | null | undefined, tab: string | null | undefined) => {
+  const since = tab ? lastLook[tab] : undefined
+  return since !== undefined && (toUnix(iso) ?? 0) > since
+}
+const isNewEntry = (entry: Entry | Vote) => newerThan(entry.added_at, entry.tab)
+const isNewArticle = (article: Article) => newerThan(article.linked_at, 'news')
+
+const backgroundEntries = computed(() => props.portfolio.background.flatMap((g) => g.entries))
+const affiliationEntries = computed(() => props.portfolio.affiliations.flatMap((g) => g.entries))
+
+// ---- Platform ----
+const tierDescriptions: Record<string, string> = {
+  top: 'What they put front and centre: named priorities and positions they return to across their own material.',
+  also: 'Positions they state clearly, but with less emphasis.',
+  mentioned: 'Raised once or in passing.',
+}
+
+const allPlanks = computed(() => props.portfolio.platform?.tiers.flatMap((t) => t.planks) ?? [])
+const plankEntries = computed(() => [...allPlanks.value.flatMap((p) => p.sources), ...(props.portfolio.platform?.unranked ?? [])])
+/** 1-based position across the whole platform, top tier first. */
+const plankPosition = (plank: Plank) => allPlanks.value.findIndex((p) => p.id === plank.id) + 1
+// ---- Platform: filter by subject in place (remembered so Back keeps it) ----
+// ---- In the news: one column per type of story (news-kind tags; a story can be in several) ----
+// Built for hundreds of stories: each column starts at NEWS_SHOWN cards, grows NEWS_STEP at a
+// time and scrolls inside itself; a search narrows every column; a blurb expands on demand.
+const NEWS_SHOWN = 5
+const NEWS_STEP = 10
+const BLURB_CHARS = 110
+const NEWS_ORDER = ['news-personal', 'news-legislative', 'news-opinion', 'news-background']
+const NEWS_HINTS: Record<string, string> = {
+  'news-personal': 'Their own personal life and personal legal matters, as reported. Never family.',
+  'news-legislative': 'Anything that relates to their public office: council, committee and Legislature business, votes, policy positions, statements and appearances.',
+  'news-opinion': 'Opinion pieces, editorials and letters.',
+  'news-background': 'Who they are and the context of the race: profiles, introductions, announcements, forums and how to vote.',
+}
+const newsSearch = ref('')
+const newsLimits = reactive<Record<string, number>>({})
+const openStories = reactive({ ids: [] as number[] })
+const newsCount = (slug: string) => newsLimits[slug] ?? NEWS_SHOWN
+const showMoreNews = (slug: string) => {
+  newsLimits[slug] = newsCount(slug) + NEWS_STEP
+}
+const resetNews = (slug: string) => {
+  newsLimits[slug] = NEWS_SHOWN
+}
+const isStoryOpen = (article: Article) => openStories.ids.includes(article.id)
+const toggleStory = (article: Article) => {
+  openStories.ids = isStoryOpen(article) ? openStories.ids.filter((id) => id !== article.id) : [...openStories.ids, article.id]
+}
+/** Only worth a More button when there is more to show: a long blurb, subjects or admin actions. */
+const isExpandable = (article: Article) =>
+  (article.summary?.length ?? 0) > BLURB_CHARS || article.title.length > 70 || article.tags.some(isSubjectTag) || !readOnly.value
+
+const matchesNews = (article: Article) => {
+  const q = newsSearch.value.trim().toLowerCase()
+  return !q || [article.title, article.outlet, article.summary].some((v) => (v ?? '').toLowerCase().includes(q))
+}
+const matchingStories = computed(() => props.portfolio.articles.filter(matchesNews).length)
+
+type NewsSection = { slug: string; name: string; articles: Article[]; total: number; badge: string; hint: string | null }
+const newsSections = computed<NewsSection[]>(() => {
+  const bySlug = new Map<string, { slug: string; name: string; articles: Article[]; total: number }>()
+  const unfiled = { articles: [] as Article[], total: 0 }
+  for (const article of props.portfolio.articles) {
+    const matches = matchesNews(article)
+    const types = article.tags.filter(isNewsTag)
+    if (types.length === 0) {
+      unfiled.total++
+      if (matches) unfiled.articles.push(article)
+    }
+    for (const tag of types) {
+      const section = bySlug.get(tag.slug) ?? { slug: tag.slug, name: tag.name, articles: [], total: 0 }
+      section.total++
+      if (matches) section.articles.push(article)
+      bySlug.set(tag.slug, section)
+    }
+  }
+  const rank = (slug: string) => (NEWS_ORDER.includes(slug) ? NEWS_ORDER.indexOf(slug) : NEWS_ORDER.length)
+  const sections: NewsSection[] = [...bySlug.values()]
+    .sort((a, b) => rank(a.slug) - rank(b.slug) || a.name.localeCompare(b.name))
+    .map((section) => ({ ...section, badge: newsTagClass(section.slug), hint: NEWS_HINTS[section.slug] ?? null }))
+  if (unfiled.total) sections.push({ slug: 'unfiled', name: 'Not yet filed', ...unfiled, badge: newsTagClass(''), hint: 'Not yet filed under a type of story.' })
+  // While searching, a column with no match has nothing to show.
+  return newsSearch.value.trim() ? sections.filter((section) => section.articles.length > 0) : sections
+})
+// One column per type from large screens up (up to four across; more wrap), stacked below that.
+const newsColumnsClass = computed(
+  () => (({ 1: 'lg:grid-cols-1', 2: 'lg:grid-cols-2', 3: 'lg:grid-cols-3' }) as Record<number, string>)[newsSections.value.length] ?? 'lg:grid-cols-2 xl:grid-cols-4',
+)
+const visibleIn = (section: NewsSection) => section.articles.slice(0, newsCount(section.slug))
+const jumpToNews = (slug: string) => {
+  nextTick(() => document.getElementById(`news-${slug}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' }))
+}
+
+const platformFilter = useRemember(reactive({ tag: null as string | null }), 'elections-platform-filter') as { tag: string | null }
+const platformSubjects = computed(() => {
+  const counts = new Map<string, { slug: string; name: string; count: number }>()
+  for (const plank of allPlanks.value) {
+    for (const tag of plank.tags) {
+      const row = counts.get(tag.slug) ?? { slug: tag.slug, name: tag.name, count: 0 }
+      row.count++
+      counts.set(tag.slug, row)
+    }
+  }
+  return [...counts.values()].sort((a, b) => b.count - a.count || a.name.localeCompare(b.name))
+})
+const activeSubject = computed(() => platformSubjects.value.find((s) => s.slug === platformFilter.tag) ?? null)
+const filteredTiers = computed(() =>
+  (props.portfolio.platform?.tiers ?? [])
+    // A remembered subject this candidate doesn't have filters nothing.
+    .map((group) => ({ ...group, planks: activeSubject.value ? group.planks.filter((p) => p.tags.some((t) => t.slug === activeSubject.value!.slug)) : group.planks }))
+    .filter((group) => group.planks.length > 0),
+)
+// ---- Platform: which planks are open (remembered so Back keeps them), and admin edit mode ----
+const openPlanks = useRemember(reactive({ ids: [] as number[] }), 'elections-platform-open') as { ids: number[] }
+const togglePlank = (id: number) => {
+  openPlanks.ids = openPlanks.ids.includes(id) ? openPlanks.ids.filter((x) => x !== id) : [...openPlanks.ids, id]
+}
+const visiblePlankIds = computed(() => filteredTiers.value.flatMap((g) => g.planks.map((p) => p.id)))
+const editing = ref(false)
+
+// A link straight to a plank (#plank-<key>, e.g. from quick search) opens it and scrolls to it.
+onMounted(() => {
+  const key = decodeURIComponent(window.location.hash.replace(/^#plank-/, ''))
+  const plank = allPlanks.value.find((p) => p.key === key)
+  if (!plank) return
+  if (!openPlanks.ids.includes(plank.id)) openPlanks.ids = [...openPlanks.ids, plank.id]
+  nextTick(() => document.getElementById(`plank-${plank.key}`)?.scrollIntoView({ block: 'start' }))
+})
+
+// ?focus=plank-<key> or entry-<id> (from the dashboard's Latest updates): open
+// whatever holds that item, scroll to it and mark it. Read from the page URL so
+// the cards know at first render.
+const page = usePage()
+const focusFromUrl = (): string | null => new URL(page.url, 'http://local').searchParams.get('focus')
+const focus = ref<string | null>(focusFromUrl())
+provide(focusKey, focus)
+
+const revealFocus = () => {
+  const target = focus.value
+  if (!target) return
+  const plank = target.startsWith('plank-')
+    ? allPlanks.value.find((p) => `plank-${p.key}` === target)
+    : allPlanks.value.find((p) => p.sources.some((e) => `entry-${e.id}` === target))
+  if (plank && !openPlanks.ids.includes(plank.id)) openPlanks.ids = [...openPlanks.ids, plank.id]
+  // Twice: once for the plank to open, once for its statements to render.
+  nextTick(() => nextTick(() => document.getElementById(target)?.scrollIntoView({ block: 'center', behavior: 'smooth' })))
+}
+onMounted(revealFocus)
+watch(
+  () => page.url,
+  () => {
+    focus.value = focusFromUrl()
+    revealFocus()
+  },
+)
+
+const filteredPlankCount = computed(() => filteredTiers.value.reduce((n, g) => n + g.planks.length, 0))
+
+/** A plank added since the last look (or whose statements were) is "new"; one only edited is "updated". */
+const isNewPlank = (plank: Plank) => newerThan(plank.added_at, 'platform') || plank.sources.some(isNewEntry)
+const isUpdatedPlank = (plank: Plank) => !isNewPlank(plank) && newerThan(plank.changed_at, 'platform')
+const sectionEntries = (key: string): (Entry | Vote)[] => {
+  const section = props.portfolio.sections.find((s) => s.key === key)
+  if (!section) return []
+  // The record tab holds votes and items by year; the rest hold entries in groups.
+  return section.years ? section.years.flatMap((y) => y.items) : section.groups.flatMap((g) => g.entries)
+}
+
+// New items per tab, counted the way the server's update feed counts them.
+const newCounts = computed<Record<string, number>>(() => ({
+  about: (newerThan(candidate.value.profile_changed_at, 'about') ? 1 : 0) + backgroundEntries.value.filter(isNewEntry).length,
+  affiliations: affiliationEntries.value.filter(isNewEntry).length,
+  platform: allPlanks.value.filter((p) => newerThan(p.changed_at, 'platform')).length + plankEntries.value.filter(isNewEntry).length,
+  scorecards: props.portfolio.scorecards.filter((sc) => newerThan(sc.changed_at, 'scorecards')).length,
+  ...Object.fromEntries(props.portfolio.sections.map((s) => [s.key, sectionEntries(s.key).filter(isNewEntry).length])),
+  news: props.portfolio.articles.filter(isNewArticle).length,
+  notes: newerThan(candidate.value.notes_changed_at, 'notes') ? 1 : 0,
+}))
+
+const newSummary = computed(() => {
+  const visible = tabs.value.reduce((n, tab) => n + tab.newCount, 0)
+  return visible > 0 ? `${visible} new item${visible === 1 ? '' : 's'} since your last visit -- the orange tabs show where, and each item is tagged.` : ''
+})
+
+// ---- Tabs ----
+const tabs = computed(() => [
+  { id: 'about', title: 'About', count: backgroundEntries.value.length },
+  { id: 'affiliations', title: 'Background & Affiliations', count: affiliationEntries.value.length },
+  ...(props.portfolio.platform ? [{ id: 'platform', title: 'Platform', count: allPlanks.value.length }] : []),
+  ...(props.portfolio.scorecards.length
+    ? [{ id: 'scorecards', title: props.portfolio.scorecards.length === 1 ? props.portfolio.scorecards[0].title : 'Scorecards', count: 0 }]
+    : []),
+  ...props.portfolio.sections.map((s) => ({ id: s.key, title: s.title, count: sectionEntries(s.key).length })),
+  ...(props.portfolio.articles.length ? [{ id: 'news', title: 'In the news', count: props.portfolio.articles.length }] : []),
+  ...(!readOnly.value && candidate.value.notes ? [{ id: 'notes', title: 'Research notes', count: 0 }] : []),
+].map((tab) => ({ ...tab, newCount: newCounts.value[tab.id] ?? 0 })))
+
+const activeSection = computed(() => props.portfolio.sections.find((s) => s.key === props.activeTab) ?? null)
+
+const tabHref = (id: string): string => {
+  const params: Record<string, string> = { candidate: candidate.value.slug }
+  if (id !== 'about') params.tab = id
+  return route('admin.elections.candidates.show', params)
+}
+
+const switchTab = (id: string) => {
+  if (id !== props.activeTab) router.get(tabHref(id), {}, { preserveState: true, preserveScroll: true })
+}
+
+// New items outside the open section: turns the phone menu orange.
+const otherNewCount = computed(() => tabs.value.reduce((n, tab) => n + (tab.id === props.activeTab ? 0 : tab.newCount), 0))
+
+// ---- Entries ----
+const deleteEntry = async (entry: Entry) => {
+  const confirmed = await confirmDialog({
+    title: 'Delete entry',
+    message: `Delete "${entry.summary.slice(0, 80)}${entry.summary.length > 80 ? '…' : ''}"? A later import would bring it back if the research file still has it.`,
+    confirmLabel: 'Delete',
+    variant: 'danger',
+  })
+  if (confirmed) {
+    router.delete(route('admin.elections.entries.destroy', [candidate.value.slug, entry.id]), { preserveScroll: true, preserveState: true })
+  }
+}
+
+const deleteVote = async (vote: Vote) => {
+  const confirmed = await confirmDialog({
+    title: 'Delete vote',
+    message: `Delete the vote "${vote.title.slice(0, 80)}${vote.title.length > 80 ? '…' : ''}"? A later import would bring it back if the research file still has it.`,
+    confirmLabel: 'Delete',
+    variant: 'danger',
+  })
+  if (confirmed) {
+    router.delete(route('admin.elections.votes.destroy', [candidate.value.slug, vote.id]), { preserveScroll: true, preserveState: true })
+  }
+}
+
+const deletePlank = async (plank: Plank) => {
+  const confirmed = await confirmDialog({
+    title: 'Delete plank',
+    message: `Delete "${plank.title}" and the ${plank.sources.length} statement(s) filed under it? A later import would bring it back if the research file still has it.`,
+    confirmLabel: 'Delete',
+    variant: 'danger',
+  })
+  if (confirmed) {
+    router.delete(route('admin.elections.planks.destroy', [candidate.value.slug, plank.id]), { preserveScroll: true, preserveState: true })
+  }
+}
+
+const deleteArticle = async (article: Article) => {
+  const confirmed = await confirmDialog({
+    title: 'Remove article',
+    message: `Remove "${article.title}" from every candidate it's linked to?`,
+    confirmLabel: 'Remove',
+    variant: 'danger',
+  })
+  if (confirmed) router.delete(route('admin.elections.articles.destroy', article.id), { preserveScroll: true, preserveState: true })
+}
+
+const destroyCandidate = async () => {
+  const confirmed = await confirmDialog({
+    title: 'Delete candidate',
+    message: `Delete ${candidate.value.name} and all ${props.portfolio.entryCount} item(s) on file for them? This can't be undone.`,
+    confirmLabel: 'Delete',
+    variant: 'danger',
+  })
+  if (confirmed) router.delete(route('admin.elections.candidates.destroy', candidate.value.slug))
+}
+</script>

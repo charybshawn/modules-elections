@@ -5,9 +5,11 @@ namespace Cultpantry\Elections\Actions;
 use Cultpantry\Elections\Http\Resources\ArticleResource;
 use Cultpantry\Elections\Http\Resources\CandidateResource;
 use Cultpantry\Elections\Http\Resources\EntryResource;
+use Cultpantry\Elections\Http\Resources\VoteResource;
 use Cultpantry\Elections\Http\Resources\PlankResource;
 use Cultpantry\Elections\Http\Resources\TagResource;
 use Cultpantry\Elections\Models\Candidate;
+use Cultpantry\Elections\Models\Vote;
 use Cultpantry\Elections\Models\Entry;
 use Cultpantry\Elections\Models\Plank;
 use Cultpantry\Elections\Models\ScorecardAnswer;
@@ -29,7 +31,9 @@ use Illuminate\Support\Collection;
  *                          questionnaires like Vote4Tomorrow, under the
  *                          publisher's own category headers ('scorecards')
  *   In their own words  -- statements and Q&A answers, grouped by topic
- *   Prior record        -- incumbents' past council record
+ *   Prior record        -- incumbents' past council record (municipal); for provincial
+ *                          candidates it is the Voting record: recorded votes and
+ *                          record in office, by year
  *   Endorsements
  *   Campaign finance
  *
@@ -49,13 +53,30 @@ class BuildCandidatePortfolio
 
     public function handle(Candidate $candidate): array
     {
-        $candidate->load(['entries.tags', 'articles.tags', 'planks.tags', 'planks.entries.tags', 'planks.rankHistory']);
+        $candidate->load(['election', 'entries.tags', 'votes.tags', 'articles.tags', 'planks.tags', 'planks.entries.tags', 'planks.rankHistory']);
 
         $background = $candidate->entries->where('kind', 'background')->values();
 
         $sections = [];
         foreach (self::SECTIONS as $key => $section) {
             $entries = $candidate->entries->whereIn('kind', $section['kinds'])->values();
+            // Provincial candidates: how they voted and what else they did in office, by year.
+            // A municipal candidate's record tab stays what it was (items grouped by topic):
+            // council records don't look like legislature divisions.
+            if ($key === 'record' && $candidate->election?->isProvincial()) {
+                if ($entries->isEmpty() && $candidate->votes->isEmpty()) {
+                    continue;
+                }
+                $sections[] = [
+                    'key' => $key,
+                    'title' => 'Voting record',
+                    'groups' => [],
+                    'years' => $this->recordYears($candidate, $entries),
+                    'vote_count' => $candidate->votes->count(),
+                ];
+
+                continue;
+            }
             if ($entries->isEmpty()) {
                 continue;
             }
@@ -81,6 +102,75 @@ class BuildCandidatePortfolio
             'entryCount' => $candidate->entries->count(),
             'now' => now()->getTimestamp(),
         ];
+    }
+
+    /**
+     * The record tab's years, newest first. A bill is one item: its own stage votes
+     * (readings, committal, report stage) up front and its amendments, clause votes
+     * and procedural votes folded under it. Votes with no bill (motions) and the
+     * narrative items stand alone. A bill sits in the year of its latest vote, so it
+     * appears once.
+     *
+     * @return list<array{year: int|null, votes: int, items: list<array<string, mixed>>}>
+     */
+    private function recordYears(Candidate $candidate, \Illuminate\Support\Collection $entries): array
+    {
+        $items = collect();
+        $stageOrder = array_flip(Vote::MAIN_STAGES);
+
+        [$billed, $loose] = $candidate->votes->partition(fn (Vote $v) => $v->bill_key !== null && $v->bill_key !== '');
+
+        foreach ($billed->groupBy('bill_key') as $key => $group) {
+            $resolved = fn (Vote $v) => VoteResource::make($v)->resolve();
+            $main = $group->filter(fn (Vote $v) => isset($stageOrder[$v->stage]))
+                ->sortBy([fn (Vote $a, Vote $b) => $stageOrder[$a->stage] <=> $stageOrder[$b->stage], ['voted_on', 'asc'], ['id', 'asc']])
+                ->values();
+            $other = $group->reject(fn (Vote $v) => isset($stageOrder[$v->stage]))->sortBy([['voted_on', 'asc'], ['id', 'asc']])->values();
+            $last = $group->max('voted_on');
+            $first = $group->min('voted_on');
+            $tags = $group->flatMap(fn (Vote $v) => $v->tags)->unique('id')->sortBy('name')->values();
+
+            $items->push([
+                'at' => $last?->toDateString(),
+                'id' => $group->min('id'),
+                'type' => 'bill',
+                'item' => [
+                    'id' => $group->min('id'),
+                    'bill_key' => $key,
+                    'bill_title' => $group->first()->bill_title ?? $group->first()->title,
+                    'reference' => $group->first()->reference,
+                    'first_on' => $first?->toDateString(),
+                    'last_on' => $last?->toDateString(),
+                    'vote_count' => $group->count(),
+                    'stage_votes' => $main->map($resolved)->all(),
+                    'other_votes' => $other->map($resolved)->all(),
+                    'tags' => TagResource::collection($tags)->resolve(),
+                    'added_at' => $group->max('created_at')?->toIso8601String(),
+                    'tab' => 'record',
+                ],
+            ]);
+        }
+        foreach ($loose as $vote) {
+            $items->push(['at' => $vote->voted_on?->toDateString(), 'id' => $vote->id, 'type' => 'vote', 'item' => VoteResource::make($vote)->resolve()]);
+        }
+        foreach ($entries as $entry) {
+            $items->push(['at' => $entry->published_on?->toDateString(), 'id' => $entry->id, 'type' => 'entry', 'item' => EntryResource::make($entry)->resolve()]);
+        }
+
+        return $items
+            ->groupBy(fn (array $i) => $i['at'] === null ? 'undated' : substr($i['at'], 0, 4))
+            ->map(fn ($group, $year) => [
+                'year' => $year === 'undated' ? null : (int) $year,
+                'votes' => $group->sum(fn (array $i) => match ($i['type']) {
+                    'bill' => $i['item']['vote_count'],
+                    'vote' => 1,
+                    default => 0,
+                }),
+                'items' => $group->sortBy([['at', 'desc'], ['id', 'desc']])->map(fn (array $i) => ['type' => $i['type'], ...$i['item']])->values()->all(),
+            ])
+            ->sortByDesc(fn (array $y) => $y['year'] ?? 0)
+            ->values()
+            ->all();
     }
 
     /**

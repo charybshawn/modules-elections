@@ -7,6 +7,7 @@ use Cultpantry\Elections\Models\ElectionEvent;
 use Cultpantry\Elections\Models\Entry;
 use Cultpantry\Elections\Models\Plank;
 use Cultpantry\Elections\Models\ScorecardAnswer;
+use Cultpantry\Elections\Models\Vote;
 
 /**
  * Every controlled value list the pages need for labels and selects, in one
@@ -32,6 +33,9 @@ class Options
             'analysisParts' => Plank::ANALYSIS_PARTS,
             'scorecardStances' => ScorecardAnswer::STANCES,
             'eventKinds' => ElectionEvent::KINDS,
+            'voteLabels' => Vote::VOTES,
+            'voteOutcomes' => Vote::OUTCOMES,
+            'voteStages' => Vote::STAGES,
         ];
     }
 }

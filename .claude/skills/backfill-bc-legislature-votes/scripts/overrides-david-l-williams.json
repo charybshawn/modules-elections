@@ -1,0 +1,226 @@
+{
+ "overrides": [
+  {
+   "date": "2025-02-26",
+   "vote": "yea",
+   "for": 44,
+   "against": 48,
+   "starts": "8 John Rustad moved",
+   "title": "Address in Reply to the Speech from the Throne — amendment stating the government does not have the confidence of the Legislative Assembly, moved by John Rustad",
+   "tags": [
+    "legislature-process"
+   ]
+  },
+  {
+   "date": "2025-03-13",
+   "vote": "nay",
+   "for": 48,
+   "against": 44,
+   "starts": "Pursuant to Order, the House resumed",
+   "title": "Motion that the Speaker do now leave the Chair, for the House to go into Committee of Supply",
+   "tags": [
+    "legislature-process",
+    "provincial-budget-taxes"
+   ]
+  },
+  {
+   "date": "2025-04-14",
+   "vote": "yea",
+   "for": 92,
+   "against": null,
+   "starts": "18 The House resumed",
+   "title": "Motion 18 regarding acknowledging the findings of the Truth and Reconciliation Commission and the National Inquiry into Missing and Murdered Indigenous Women and Girls",
+   "tags": [
+    "reconciliation"
+   ]
+  },
+  {
+   "date": "2025-04-16",
+   "vote": "yea",
+   "for": 90,
+   "against": 1,
+   "starts": "Guarantee) Amendment Act",
+   "title": "Bill M212: Income Tax (Grocery Rebate Guarantee) Amendment Act, 2025 — first reading, introduced by John Rustad",
+   "tags": [
+    "provincial-budget-taxes"
+   ]
+  },
+  {
+   "date": "2025-05-06",
+   "vote": "nay",
+   "for": 46,
+   "against": 44,
+   "starts": "7 p.m. on Tuesday, May 27, 2025",
+   "title": "Time allocation motion setting deadlines for the remaining stages of several bills, including Bill 14 and Bill 15",
+   "tags": [
+    "legislature-process",
+    "energy-electricity",
+    "infrastructure-permitting"
+   ]
+  },
+  {
+   "date": "2025-12-01",
+   "vote": "nay",
+   "for": 48,
+   "against": 40,
+   "starts": "The Hon. Mike Farnworth moved — That, pursuant to Standing Order 16 (4), a. the deferred",
+   "title": "Motion (Hon. Mike Farnworth) to further defer the division on second reading of Bill M219: Health Authorities Amendment Act, 2025, and any Section B divisions",
+   "tags": [
+    "legislature-process",
+    "health-care"
+   ],
+   "bill": "Bill M219",
+   "stage": "procedural"
+  },
+  {
+   "date": "2026-02-26",
+   "vote": "nay",
+   "for": 46,
+   "against": 46,
+   "starts": "Lynne Block reserved",
+   "title": "Motion that the Speaker do now leave the Chair, for the House to go into Committee of Supply",
+   "tags": [
+    "legislature-process",
+    "provincial-budget-taxes"
+   ]
+  },
+  {
+   "date": "2026-03-12",
+   "vote": "yea",
+   "for": 36,
+   "against": 50,
+   "starts": "A debate arose on the amendment",
+   "title": "Motion 13 (support for the B.C. Human Rights Code) — amendment moved by Á’a:líya Warbus",
+   "tags": [
+    "human-rights"
+   ]
+  },
+  {
+   "date": "2026-03-12",
+   "vote": "yea",
+   "for": 83,
+   "against": 3,
+   "starts": "A debate arose on the amendment",
+   "title": "Motion 13 (Hon. Mike Farnworth): that the House affirms its unequivocal support for the B.C. Human Rights Code and the Tribunal’s powers to enforce it",
+   "tags": [
+    "human-rights"
+   ]
+  },
+  {
+   "date": "2026-03-30",
+   "vote": "nay",
+   "for": 46,
+   "against": 43,
+   "starts": "The Hon. Mike Farnworth moved — That pursuant to Standing Order 16 (4)",
+   "title": "Motion (Hon. Mike Farnworth) to further defer the Private Members’ Time division and any Section B divisions",
+   "tags": [
+    "legislature-process"
+   ]
+  },
+  {
+   "date": "2026-03-31",
+   "vote": "yea",
+   "for": 45,
+   "against": 46,
+   "starts": "M 203 In consideration",
+   "title": "Motion M 203 that the application of the merit principle within the B.C. Public Service be overseen by an independent officer of the Legislature",
+   "tags": [
+    "legislature-process"
+   ]
+  },
+  {
+   "date": "2026-04-27",
+   "vote": "yea",
+   "for": 45,
+   "against": 45,
+   "starts": "M 205 Pursuant",
+   "title": "Motion M 205 — subamendment",
+   "tags": [
+    "legislature-process"
+   ]
+  },
+  {
+   "date": "2026-05-04",
+   "vote": "nay",
+   "for": 46,
+   "against": 45,
+   "starts": "M 205 Pursuant",
+   "title": "Motion M 205 — amendment",
+   "tags": [
+    "legislature-process"
+   ]
+  },
+  {
+   "date": "2026-05-06",
+   "vote": "nay",
+   "for": 48,
+   "against": 41,
+   "starts": "The Hon. Mike Farnworth moved — That, pursuant to Standing Order 81.1",
+   "title": "Time allocation motion (Hon. Mike Farnworth): questions on second reading of Bill 9 and any amendment to be put by 3 a.m. on May 7, 2026",
+   "tags": [
+    "legislature-process",
+    "transparency"
+   ],
+   "bill": "Bill 9",
+   "stage": "procedural"
+  },
+  {
+   "date": "2026-05-06",
+   "vote": "nay",
+   "for": 48,
+   "against": 42,
+   "starts": "On the motion that the Bill be placed",
+   "title": "Bill 9: Freedom of Information and Protection of Privacy Amendment Act, 2026 — motion to place the bill on the Orders of the Day for committal at the next sitting",
+   "tags": [
+    "transparency"
+   ]
+  },
+  {
+   "date": "2026-05-06",
+   "vote": "nay",
+   "for": 50,
+   "against": 40,
+   "starts": "On the motion that the House adjourn",
+   "title": "Motion that the House adjourn",
+   "tags": [
+    "legislature-process"
+   ]
+  },
+  {
+   "date": "2026-05-19",
+   "vote": "nay",
+   "for": 48,
+   "against": 42,
+   "starts": "The Hon. Mike Farnworth moved — That, pursuant to Standing Order 16 (4), a division called",
+   "title": "Motion (Hon. Mike Farnworth) to defer to the next sitting the division on an amendment to Bill 9: Freedom of Information and Protection of Privacy Amendment Act, 2026",
+   "tags": [
+    "legislature-process",
+    "transparency"
+   ],
+   "bill": "Bill 9",
+   "stage": "procedural"
+  },
+  {
+   "date": "2026-05-21",
+   "vote": "nay",
+   "for": 49,
+   "against": 42,
+   "starts": "The proposed amendment moved by the Hon. Diana Gibson",
+   "title": "Bill 9: Freedom of Information and Protection of Privacy Amendment Act, 2026 — amendment to clause 2, moved by Diana Gibson (Minister of Citizens’ Services)",
+   "tags": [
+    "transparency"
+   ]
+  },
+  {
+   "date": "2026-05-26",
+   "vote": "nay",
+   "for": 48,
+   "against": 41,
+   "starts": "The proposed amendment moved by the Hon. Diana Gibson",
+   "title": "Bill 9: Freedom of Information and Protection of Privacy Amendment Act, 2026 — amendment to clause 13, moved by Diana Gibson (Minister of Citizens’ Services)",
+   "tags": [
+    "transparency"
+   ]
+  }
+ ]
+}

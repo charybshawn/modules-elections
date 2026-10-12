@@ -38,12 +38,12 @@ class CandidateController extends Controller implements HasMiddleware
         ]);
     }
 
-    /** The BC provincial election's dashboard: the same page as Salmon Arm's, scoped to the riding. */
+    /** The BC provincial election's dashboard: its own page (Provincial/Index), scoped to the riding. */
     public function provincial(BuildElectionDashboard $buildElectionDashboard): Response
     {
         $this->authorize('viewAny', Candidate::class);
 
-        return Inertia::render('Vendor/elections/Index', [
+        return Inertia::render('Vendor/elections/Provincial/Index', [
             ...$buildElectionDashboard->handle(Election::provincial()),
             'options' => Options::all(),
         ]);
@@ -70,7 +70,10 @@ class CandidateController extends Controller implements HasMiddleware
             ...($request->user()?->isAdmin() && filled($candidate->notes) ? ['notes'] : []),
         ];
 
-        return Inertia::render('Vendor/elections/Candidates/Show', [
+        // Each election has its own page files, so a change to one can't change the other.
+        $page = $candidate->election->isProvincial() ? 'Vendor/elections/Provincial/Candidates/Show' : 'Vendor/elections/Candidates/Show';
+
+        return Inertia::render($page, [
             'portfolio' => $portfolio,
             'activeTab' => in_array($tab, $tabs, true) ? $tab : 'about',
             'election' => $candidate->election->toPage(),

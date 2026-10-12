@@ -107,6 +107,12 @@ export interface Options {
   backgroundTopics: Record<string, string>
   sourceTypes: Record<string, string>
   plankTiers: Record<string, string>
+  /** How a recorded vote reads: yea, nay, abstained. */
+  voteLabels?: Record<string, string>
+  /** passed, defeated. */
+  voteOutcomes?: Record<string, string>
+  /** first_reading ... procedural. */
+  voteStages?: Record<string, string>
   scorecardStances: Record<string, string>
   planStatuses: Record<string, string>
   planAspects: Record<string, string>
@@ -168,10 +174,65 @@ export interface EntryGroup {
   entries: Entry[]
 }
 
+export interface Vote {
+  type?: 'vote'
+  id: number
+  body: string
+  voted_on: string | null
+  year: number | null
+  title: string
+  reference: string | null
+  /** Groups a bill's votes (unique within a session); null for a motion. */
+  bill_key?: string | null
+  bill_title?: string | null
+  /** first_reading, second_reading, committal, report_stage, third_reading (a bill's own stages), or amendment, clause, procedural. */
+  stage?: string | null
+  description: string | null
+  vote: string
+  outcome: string | null
+  tally_for: number | null
+  tally_against: number | null
+  source_url: string
+  source_name: string | null
+  added_at: string | null
+  tab: string
+  tags: TagRef[]
+}
+
+/** A bill as one entry: its own stage votes, with amendments and committee votes folded under it. */
+export interface BillRecord {
+  type?: 'bill'
+  id: number
+  bill_key: string
+  bill_title: string
+  reference: string | null
+  first_on: string | null
+  last_on: string | null
+  vote_count: number
+  stage_votes: Vote[]
+  other_votes: Vote[]
+  tags: TagRef[]
+  added_at: string | null
+  tab: string
+}
+
+/** One line of the record tab: a bill, a motion, or a narrative item. */
+export type RecordItem = (BillRecord & { type: 'bill' }) | (Vote & { type: 'vote' }) | (Entry & { type: 'entry' })
+
+export interface RecordYear {
+  /** null for items with no date. */
+  year: number | null
+  votes: number
+  items: RecordItem[]
+}
+
 export interface PortfolioSection {
   key: string
   title: string
   groups: EntryGroup[]
+  /** The record tab only: votes and items by year, newest first. */
+  years?: RecordYear[]
+  vote_count?: number
 }
 
 export interface ScorecardItem {

@@ -16,6 +16,7 @@ use Cultpantry\Elections\Models\PulseIssue;
 use Cultpantry\Elections\Models\PulseSnapshot;
 use Cultpantry\Elections\Models\ScorecardItem;
 use Cultpantry\Elections\Models\Tag;
+use Cultpantry\Elections\Models\Vote;
 use Cultpantry\Elections\Policies\AdminWritePolicy;
 use Cultpantry\Elections\Policies\CandidatePolicy;
 use Illuminate\Console\Scheduling\Schedule;
@@ -56,6 +57,7 @@ class ElectionsServiceProvider extends ServiceProvider
         Gate::policy(Article::class, AdminWritePolicy::class);
         Gate::policy(ElectionEvent::class, AdminWritePolicy::class);
         Gate::policy(Tag::class, AdminWritePolicy::class);
+        Gate::policy(Vote::class, AdminWritePolicy::class);
 
         // 4a. The one exception to "viewers are read-only": anyone with
         //     Elections access may invite someone else to Elections. Guarded
@@ -70,6 +72,7 @@ class ElectionsServiceProvider extends ServiceProvider
         Relation::morphMap([
             'elections_plank' => Plank::class,
             'elections_entry' => Entry::class,
+            'elections_vote' => Vote::class,
             'elections_article' => Article::class,
             'elections_pulse_issue' => PulseIssue::class,
             'elections_scorecard_item' => ScorecardItem::class,

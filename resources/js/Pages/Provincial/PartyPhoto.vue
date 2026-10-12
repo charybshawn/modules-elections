@@ -17,7 +17,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import CandidatePhoto from './CandidatePhoto.vue'
+import CandidatePhoto from '../Partials/CandidatePhoto.vue'
 import { partyStyle } from './party'
 
 const props = defineProps<{

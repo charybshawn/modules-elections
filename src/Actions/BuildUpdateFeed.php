@@ -59,6 +59,10 @@ class BuildUpdateFeed
             $add($row->candidate_id, UpdateTabs::forEntry($row->kind, $row->topic), $row->created_at);
         }
 
+        foreach (DB::table('elections_votes')->get(['candidate_id', 'created_at']) as $row) {
+            $add($row->candidate_id, 'record', $row->created_at);
+        }
+
         foreach (DB::table('elections_planks')->get(['candidate_id', 'created_at', 'updated_at']) as $row) {
             $add($row->candidate_id, 'platform', $this->latest($row->created_at, $row->updated_at));
         }

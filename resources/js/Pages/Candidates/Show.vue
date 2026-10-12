@@ -32,12 +32,11 @@
       <!-- Identity and key facts (both breakpoints): photo above the facts on phones. -->
       <div class="flex flex-col sm:flex-row gap-5">
         <figure class="shrink-0">
-          <PartyPhoto :name="candidate.name" :url="candidate.photo_url" :party="candidate.party" variant="ribbon" photo-class="h-48 w-48 rounded-full text-5xl sm:h-56 sm:w-56" />
+          <CandidatePhoto :name="candidate.name" :url="candidate.photo_url" class="h-48 w-48 rounded-full text-5xl sm:h-56 sm:w-56" />
           <figcaption v-if="candidate.photo_url && candidate.photo_credit" class="mt-1 text-[11px] text-gray-500 dark:text-gray-400">Photo: {{ candidate.photo_credit }}</figcaption>
         </figure>
         <div class="min-w-0 flex-1">
           <div class="flex flex-wrap items-center gap-2">
-            <span v-if="partyStyle(candidate.party)" :class="partyStyle(candidate.party)!.solid" class="rounded-md px-3 py-1 text-sm font-extrabold uppercase tracking-wide shadow-sm">{{ candidate.party }}</span>
             <span class="px-2 py-0.5 text-xs font-semibold rounded-full bg-amber-100 text-amber-800 dark:bg-amber-900/60 dark:text-amber-200">
               {{ options.offices[candidate.office] ?? candidate.office }}
             </span>
@@ -243,7 +242,7 @@
           <ScorecardView v-for="scorecard in portfolio.scorecards" :key="scorecard.key" :scorecard="scorecard" :candidate-name="candidate.name" :stances="options.scorecardStances" />
         </div>
 
-        <!-- In their own words, Prior record, Endorsements, Campaign finance -->
+        <!-- In their own words, Endorsements, Campaign finance -->
         <div v-else-if="activeSection" class="divide-y divide-gray-200 dark:divide-gray-700">
           <AccountSection
             v-for="group in activeSection.groups"
@@ -372,8 +371,7 @@ import AdminShowShell from '@/Components/Admin/AdminShowShell.vue'
 import AccountSection from '@/Components/Admin/Accounts/AccountSection.vue'
 import IconButton from '@/Components/IconButton.vue'
 import { useConfirmDialog } from '@/composables/useConfirmDialog'
-import PartyPhoto from '../Partials/PartyPhoto.vue'
-import { partyStyle } from '../Partials/party'
+import CandidatePhoto from '../Partials/CandidatePhoto.vue'
 import EntryCard from '../Partials/EntryCard.vue'
 import FactList from '../Partials/FactList.vue'
 import PlankRow from '../Partials/PlankRow.vue'
@@ -401,7 +399,7 @@ const props = defineProps<{
 }>()
 
 // Back goes to the dashboard of the candidate's own election.
-const dashboardHref = computed(() => route(props.election.kind === 'provincial' ? 'admin.elections.provincial' : 'admin.elections.index'))
+const dashboardHref = computed(() => route('admin.elections.index'))
 
 // Computed: Inertia replaces the prop object on every visit.
 const candidate = computed(() => props.portfolio.candidate)

@@ -15,6 +15,7 @@ use Cultpantry\Elections\Models\ScorecardAnswer;
 use Cultpantry\Elections\Models\ScorecardItem;
 use Cultpantry\Elections\Models\ScorecardResponse;
 use Cultpantry\Elections\Models\Tag;
+use Cultpantry\Elections\Models\Vote;
 use Cultpantry\Elections\Support\Audit;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Carbon;
@@ -97,6 +98,7 @@ class ImportElectionFromXml
         $result = [
             'candidates' => $counts(),
             'entries' => $counts(),
+            'votes' => $counts(),
             'planks' => $counts(),
             'articles' => $counts(),
             'events' => $counts(),
@@ -174,7 +176,7 @@ class ImportElectionFromXml
     public function summarize(array $result): string
     {
         $parts = [];
-        foreach (['tags', 'candidates', 'entries', 'planks', 'articles', 'events', 'pulse', 'scorecards', 'responses', 'tagged', 'plans', 'analyses'] as $type) {
+        foreach (['tags', 'candidates', 'entries', 'votes', 'planks', 'articles', 'events', 'pulse', 'scorecards', 'responses', 'tagged', 'plans', 'analyses'] as $type) {
             ['created' => $created, 'updated' => $updated, 'unchanged' => $unchanged] = $result[$type];
             if ($created + $updated + $unchanged === 0) {
                 continue;
@@ -267,6 +269,86 @@ class ImportElectionFromXml
         foreach ($node->planks->plank ?? [] as $plankNode) {
             $this->importPlank($candidate, $plankNode, $result);
         }
+
+        foreach ($node->votes->vote ?? [] as $voteNode) {
+            $this->importVote($candidate, $voteNode, $result);
+        }
+    }
+
+    /**
+     * One recorded vote: <vote><body>legislature</body><voted_on>2025-04-15</voted_on>
+     * <title>…</title><reference>Bill 7</reference><bill_key>43rd1st:Bill 7</bill_key><bill_title>Bill 7: …</bill_title>
+     * <stage>third_reading</stage><description>the record's wording</description>
+     * <vote>yea</vote><outcome>passed</outcome><tally_for>46</tally_for><tally_against>43</tally_against>
+     * <source_url>…</source_url><source_name>…</source_name><tags>…</tags></vote>.
+     * The same record, day, question and wording is the same vote.
+     */
+    private function importVote(Candidate $candidate, SimpleXMLElement $node, array &$result): void
+    {
+        $label = "{$candidate->name}: vote";
+        $title = $this->text($node, 'title');
+        $sourceUrl = $this->text($node, 'source_url');
+        $votedOn = $this->date($node, 'voted_on', $label);
+        $how = $this->text($node, 'vote');
+        $body = $this->text($node, 'body');
+
+        if ($title === null || $votedOn === null) {
+            $this->problems[] = "{$label}: skipped a vote with no <title> or a valid <voted_on>.";
+
+            return;
+        }
+        if ($sourceUrl === null || ! $this->isHttpUrl($sourceUrl)) {
+            $this->problems[] = "{$label} \"".mb_strimwidth($title, 0, 60, '…').'" skipped -- no http(s) <source_url>.';
+
+            return;
+        }
+        if (! array_key_exists((string) $how, Vote::VOTES)) {
+            $this->problems[] = "{$label} \"".mb_strimwidth($title, 0, 60, '…')."\" skipped -- <vote> must be one of: ".implode(', ', array_keys(Vote::VOTES)).'.';
+
+            return;
+        }
+        if (! array_key_exists((string) $body, Vote::BODIES)) {
+            $this->problems[] = "{$label} \"".mb_strimwidth($title, 0, 60, '…')."\" skipped -- <body> must be one of: ".implode(', ', array_keys(Vote::BODIES)).'.';
+
+            return;
+        }
+
+        $outcome = $this->text($node, 'outcome');
+        if ($outcome !== null && ! array_key_exists($outcome, Vote::OUTCOMES)) {
+            $this->problems[] = "{$label} \"".mb_strimwidth($title, 0, 60, '…')."\": unknown outcome \"{$outcome}\", left out.";
+            $outcome = null;
+        }
+
+        $stage = $this->text($node, 'stage');
+        if ($stage !== null && ! array_key_exists($stage, Vote::STAGES)) {
+            $this->problems[] = "{$label} \"".mb_strimwidth($title, 0, 60, '…')."\": unknown stage \"{$stage}\", left out.";
+            $stage = null;
+        }
+
+        $reference = $this->text($node, 'reference');
+        $description = $this->text($node, 'description');
+        $hash = Vote::hashFor($sourceUrl, $votedOn, $reference, $description ?? $title);
+        $vote = $candidate->votes()->where('match_hash', $hash)->first() ?? $candidate->votes()->make();
+
+        $vote->fill([
+            'body' => $body,
+            'voted_on' => $votedOn,
+            'title' => $title,
+            'reference' => $reference,
+            'bill_key' => $this->text($node, 'bill_key'),
+            'bill_title' => $this->text($node, 'bill_title'),
+            'stage' => $stage,
+            'description' => $description,
+            'vote' => $how,
+            'outcome' => $outcome,
+            'tally_for' => $this->positiveInt($node, 'tally_for'),
+            'tally_against' => $this->positiveInt($node, 'tally_against'),
+            'source_url' => $sourceUrl,
+            'source_name' => $this->text($node, 'source_name'),
+        ]);
+
+        $this->tally($vote, $result['votes']);
+        $this->syncTags($vote, $node, "{$label} \"".mb_strimwidth($title, 0, 50, '…').'"', $result);
     }
 
     /**
@@ -856,6 +938,7 @@ class ImportElectionFromXml
      *   <tagging>
      *     <plank candidate="Name" key="plank-key"><tags><tag>slug</tag></tags></plank>
      *     <entry candidate="Name" hash="match_hash"><tags>…</tags></entry>
+     *     <vote candidate="Name" hash="match_hash"><tags>…</tags></vote>
      *     <article url="https://…"><tags>…</tags></article>
      *     <issue taken_on="YYYY-MM-DD" key="issue-key"><tags>…</tags></issue>
      *     <item scorecard="scorecard-key" key="statement-key"><tags>…</tags></item>
@@ -869,6 +952,7 @@ class ImportElectionFromXml
             $a = fn (string $name) => trim((string) $ref[$name]);
             $model = match ($ref->getName()) {
                 'plank' => Plank::whereHas('candidate', fn ($q) => $q->forElection($this->election)->where('name', $a('candidate')))->where('key', $a('key'))->first(),
+                'vote' => Vote::whereHas('candidate', fn ($q) => $q->forElection($this->election)->where('name', $a('candidate')))->where('match_hash', $a('hash'))->first(),
                 'entry' => Entry::whereHas('candidate', fn ($q) => $q->forElection($this->election)->where('name', $a('candidate')))->where('match_hash', $a('hash'))->first(),
                 'article' => Article::forElection($this->election)->where('url_hash', Article::hashFor($a('url')))->first(),
                 'issue' => PulseIssue::whereHas('snapshot', fn ($q) => $q->whereDate('taken_on', $a('taken_on')))->where('key', $a('key'))->first(),

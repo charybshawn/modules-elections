@@ -13,6 +13,7 @@ it('audits every route in this module that changes data', function () {
         'DELETE admin/elections/candidates/{candidate}',
         'DELETE admin/elections/candidates/{candidate}/entries/{entry}',
         'DELETE admin/elections/candidates/{candidate}/planks/{plank}',
+        'DELETE admin/elections/candidates/{candidate}/votes/{vote}',
         'DELETE admin/elections/events/{event}',
         'DELETE admin/elections/pulse/{snapshot}',
         'POST admin/elections/import',

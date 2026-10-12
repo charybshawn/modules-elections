@@ -44,7 +44,7 @@ describe('elections landing page', function () {
             ->get(route('admin.elections.provincial'))
             ->assertOk()
             ->assertInertia(fn ($page) => $page
-                ->component('Vendor/elections/Index', false)
+                ->component('Vendor/elections/Provincial/Index', false)
                 ->where('election.slug', Election::PROVINCIAL)
                 ->where('election.offices', ['mla' => 'MLA'])
                 ->has('candidates', 1)

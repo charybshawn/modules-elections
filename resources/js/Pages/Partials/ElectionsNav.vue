@@ -33,7 +33,7 @@
         <span v-if="section.unread" class="rounded-full bg-white px-1.5 py-0.5 text-[11px] font-bold uppercase leading-none tracking-wide text-orange-700">new</span>
       </Link>
     </nav>
-    <QuickSearch :election="election" />
+    <QuickSearch />
 
     <!-- Phones: the sections as always-visible buttons in a fixed bottom bar,
          dressed like the other admin pages' bottom drawers. The search stays up top. -->
@@ -75,13 +75,7 @@ import { useUpdates } from './updates'
 // Each section lights up when it has something the viewer hasn't looked at.
 // Candidates counts every candidate tab plus the events list; Browse by subject,
 // Community Pulse and each City plan sheet are marked seen when opened.
-const props = defineProps<{
-  /** The election these tabs belong to (its slug); the municipal one when left out. */
-  election?: string
-}>()
-const provincial = computed(() => props.election !== undefined && props.election !== 'salmon-arm-2026')
-
-const updates = useUpdates(props.election)
+const updates = useUpdates()
 onMounted(() => updates.ensure())
 
 // Outline icons (Heroicons, MIT) so each tab reads at a glance.
@@ -106,24 +100,12 @@ const solid = {
   plans: ['M18.375 2.25c-1.035 0-1.875.84-1.875 1.875v15.75c0 1.035.84 1.875 1.875 1.875h.75c1.035 0 1.875-.84 1.875-1.875V4.125c0-1.036-.84-1.875-1.875-1.875h-.75ZM9.75 8.625c0-1.036.84-1.875 1.875-1.875h.75c1.036 0 1.875.84 1.875 1.875v11.25c0 1.035-.84 1.875-1.875 1.875h-.75a1.875 1.875 0 0 1-1.875-1.875V8.625ZM3 13.125c0-1.036.84-1.875 1.875-1.875h.75c1.036 0 1.875.84 1.875 1.875v6.75c0 1.035-.84 1.875-1.875 1.875h-.75A1.875 1.875 0 0 1 3 19.875v-6.75Z'],
 }
 
-const home = {
-  icon: 'M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25',
-  solid: ['M11.47 3.841a.75.75 0 0 1 1.06 0l8.69 8.69a.75.75 0 1 0 1.06-1.061l-8.689-8.69a2.25 2.25 0 0 0-3.182 0l-8.69 8.69a.75.75 0 1 0 1.061 1.06l8.69-8.689Z', 'M12 5.432l8.159 8.159c.03.03.06.058.091.086v6.198c0 1.035-.84 1.875-1.875 1.875H15a.75.75 0 0 1-.75-.75v-4.5a.75.75 0 0 0-.75-.75h-3a.75.75 0 0 0-.75.75V21a.75.75 0 0 1-.75.75H5.625a1.875 1.875 0 0 1-1.875-1.875v-6.198a2.29 2.29 0 0 0 .091-.086L12 5.432Z'],
-}
-
-// The provincial election has a roster and dashboard so far: its candidates, plus the way back to the hub.
-const provincialSections = computed(() => [
-  { name: 'admin.elections.provincial', title: 'Candidates', short: 'Candidates', tone: 'text-indigo-500 dark:text-indigo-400', icon: icons.candidates, solid: solid.candidates, active: true, unread: updates.candidatesUnread().items + updates.sectionUnread('events') > 0 },
-  { name: 'admin.elections.home', title: 'All elections', short: 'Elections', tone: 'text-amber-500 dark:text-amber-400', icon: home.icon, solid: home.solid, active: false, unread: false },
-])
-
-const municipalSections = computed(() => [
+const sections = computed(() => [
   { name: 'admin.elections.index', title: 'Candidates', short: 'Candidates', tone: 'text-indigo-500 dark:text-indigo-400', icon: icons.candidates, solid: solid.candidates, active: route().current('admin.elections.index') || route().current('admin.elections.candidates.*') || route().current('admin.elections.compare'), unread: updates.candidatesUnread().items + updates.sectionUnread('events') > 0 },
   { name: 'admin.elections.tags.index', title: 'Browse by subject', short: 'Subjects', tone: 'text-amber-500 dark:text-amber-400', icon: icons.subjects, solid: solid.subjects, active: route().current('admin.elections.tags.*'), unread: updates.sectionUnread('subjects') > 0 },
   { name: 'admin.elections.pulse.index', title: 'Community Pulse', short: 'Pulse', tone: 'text-rose-500 dark:text-rose-400', icon: icons.pulse, solid: solid.pulse, active: route().current('admin.elections.pulse.*'), unread: updates.sectionUnread('pulse') > 0 },
   { name: 'admin.elections.plans.index', title: 'City Plans + Finances', short: 'City Plans', tone: 'text-emerald-600 dark:text-emerald-400', icon: icons.plans, solid: solid.plans, active: route().current('admin.elections.plans.*') || route().current('admin.elections.finances') || route().current('admin.elections.grants'), unread: updates.plansUnread() > 0 || updates.financesUnread() || updates.grantsUnread() },
 ])
 
-const sections = computed(() => (provincial.value ? provincialSections.value : municipalSections.value))
 
 </script>

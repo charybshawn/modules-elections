@@ -18,9 +18,10 @@ class BuildTagDirectory
         // Municipal records only; provincial ones don't count toward these subjects yet.
         $municipal = Election::municipal();
         $candidateIds = Candidate::forElection($municipal)->pluck('id');
-        $tags = Tag::subjects()->withCount([
+        $tags = Tag::municipalSubjects()->withCount([
             'planks' => fn ($q) => $q->forElection($municipal),
             'entries' => fn ($q) => $q->forElection($municipal),
+            'votes' => fn ($q) => $q->forElection($municipal),
             'articles' => fn ($q) => $q->forElection($municipal),
             'pulseIssues',
             'scorecardItems',
@@ -34,7 +35,7 @@ class BuildTagDirectory
             'name' => $tag->name,
             'description' => $tag->description,
             'candidates' => $tag->planks->pluck('candidate_id')->unique()->intersect($candidateIds)->count(),
-            'records' => $tag->planks_count + $tag->entries_count + $tag->articles_count + $tag->pulse_issues_count + $tag->scorecard_items_count,
+            'records' => $tag->planks_count + $tag->entries_count + $tag->votes_count + $tag->articles_count + $tag->pulse_issues_count + $tag->scorecard_items_count,
         ];
 
         $headings = collect(Entry::TOPICS)

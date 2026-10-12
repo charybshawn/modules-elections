@@ -45,7 +45,7 @@ class ExportElectionToXml
         }
 
         $candidatesNode = $xml->addChild('candidates');
-        foreach (Candidate::forElection($election)->with(['entries.tags', 'planks.tags', 'planks.entries.tags'])->orderBy('name')->get() as $candidate) {
+        foreach (Candidate::forElection($election)->with(['entries.tags', 'votes.tags', 'planks.tags', 'planks.entries.tags'])->orderBy('name')->get() as $candidate) {
             $node = $candidatesNode->addChild('candidate');
             foreach (self::CANDIDATE_FIELDS as $field) {
                 $this->addChild($node, $field, $candidate->{$field});
@@ -58,6 +58,28 @@ class ExportElectionToXml
                 $entriesNode = $node->addChild('entries');
                 foreach ($loose as $entry) {
                     $this->appendEntry($entriesNode, $entry);
+                }
+            }
+
+            if ($candidate->votes->isNotEmpty()) {
+                $votesNode = $node->addChild('votes');
+                foreach ($candidate->votes->sortBy([['voted_on', 'asc'], ['id', 'asc']]) as $vote) {
+                    $v = $votesNode->addChild('vote');
+                    $this->addChild($v, 'body', $vote->body);
+                    $this->addChild($v, 'voted_on', $vote->voted_on?->toDateString());
+                    $this->addChild($v, 'title', $vote->title);
+                    $this->addChild($v, 'reference', $vote->reference);
+                    $this->addChild($v, 'bill_key', $vote->bill_key);
+                    $this->addChild($v, 'bill_title', $vote->bill_title);
+                    $this->addChild($v, 'stage', $vote->stage);
+                    $this->addChild($v, 'description', $vote->description);
+                    $this->addChild($v, 'vote', $vote->vote);
+                    $this->addChild($v, 'outcome', $vote->outcome);
+                    $this->addChild($v, 'tally_for', $vote->tally_for === null ? null : (string) $vote->tally_for);
+                    $this->addChild($v, 'tally_against', $vote->tally_against === null ? null : (string) $vote->tally_against);
+                    $this->addChild($v, 'source_url', $vote->source_url);
+                    $this->addChild($v, 'source_name', $vote->source_name);
+                    $this->appendTags($v, $vote);
                 }
             }
 

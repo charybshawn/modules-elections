@@ -40,6 +40,25 @@ class Tag extends Model
         return $query->where($this->getTable().'.kind', 'subject');
     }
 
+    /**
+     * The municipal subject vocabulary: subject tags, minus any used only by
+     * provincial votes (those would show as empty subjects on municipal pages).
+     */
+    public function scopeMunicipalSubjects(Builder $query): Builder
+    {
+        $municipal = Election::municipal();
+
+        return $query->subjects()->where(function (Builder $q) use ($municipal) {
+            $q->whereDoesntHave('votes')
+                ->orWhereHas('votes', fn ($v) => $v->forElection($municipal))
+                ->orWhereHas('planks')
+                ->orWhereHas('entries')
+                ->orWhereHas('articles')
+                ->orWhereHas('pulseIssues')
+                ->orWhereHas('scorecardItems');
+        });
+    }
+
     public function scopeNews(Builder $query): Builder
     {
         return $query->where($this->getTable().'.kind', 'news');
@@ -87,6 +106,11 @@ class Tag extends Model
     public function articles(): MorphToMany
     {
         return $this->morphedByMany(Article::class, 'taggable', 'elections_taggables')->withTimestamps();
+    }
+
+    public function votes(): MorphToMany
+    {
+        return $this->morphedByMany(Vote::class, 'taggable', 'elections_taggables')->withTimestamps();
     }
 
     public function pulseIssues(): MorphToMany
