@@ -17,21 +17,19 @@ Public pages only. Standard library only. Pause between requests.
 import html
 import json
 import re
+import os
 import sys
-import time
-import urllib.request
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import cache  # noqa: E402  (shared persistent cache)
 
 UA = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36"
 LIMS = "https://lims.leg.bc.ca/hdms/file/"
 API = "https://api.lims.leg.bc.ca/hdms/"
 
 
-def get(url: str) -> str:
-    time.sleep(0.4)
-    req = urllib.request.Request(url, headers={"User-Agent": UA})
-    with urllib.request.urlopen(req, timeout=90) as r:
-        return r.read().decode("utf-8", "ignore")
-
+def get(url: str, ttl=None) -> str:
+    return cache.fetch(url, ttl=ttl)
 
 def text_of(fragment: str) -> str:
     return html.unescape(re.sub(r"\s+", " ", re.sub(r"<[^>]+>", " ", fragment))).strip()
@@ -39,7 +37,7 @@ def text_of(fragment: str) -> str:
 
 def issue_files(session: str) -> dict[int, str]:
     """issue number -> transcript path, from the debates feed's redirect links."""
-    nodes = json.loads(get(f"{API}debates/{session}"))["allHansardFileAttributes"]["nodes"]
+    nodes = json.loads(get(f"{API}debates/{session}", ttl=6 * 3600))["allHansardFileAttributes"]["nodes"]
     out: dict[int, str] = {}
     for n in nodes:
         for da in (n.get("debateAttributes") or {}).get("nodes") or []:
@@ -51,16 +49,16 @@ def issue_files(session: str) -> dict[int, str]:
 
 def member_block(session: str, member: str) -> tuple[str, str]:
     """(index year, the member's block of the Members Index, as lines)."""
-    idx = json.loads(get(f"{API}index/{session}"))["allHansardFileAttributes"]["nodes"]
+    idx = json.loads(get(f"{API}index/{session}", ttl=6 * 3600))["allHansardFileAttributes"]["nodes"]
     main = next(n for n in idx if "members-index" in n["fileName"].lower())
     base = main["filePath"].lstrip("/")
     year = main["fileName"][:4]
-    page = get(f"{LIMS}{base}/{main['fileName']}")
+    page = get(f"{LIMS}{base}/{main['fileName']}", ttl=12 * 3600)
     m = re.search(r'<a href="([^"]+)"[^>]*><b>' + re.escape(member), page)
     if not m:
         sys.exit(f"{member!r} not found in the {session} Members Index")
     href, anchor = m.group(1).split("#")
-    letter_page = get(f"{LIMS}{base}/{href}")
+    letter_page = get(f"{LIMS}{base}/{href}", ttl=12 * 3600)
     i = letter_page.index(f'name="{anchor}"')
     j = letter_page.find('name="mh', i + 10)
     block = letter_page[i : j if j > 0 else len(letter_page)]

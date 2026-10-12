@@ -1,0 +1,14 @@
+{
+ "name": "David L Williams",
+ "slug": "david-l-williams",
+ "surname": "Williams",
+ "sponsor_name": "David Williams",
+ "index_name": "Williams, David",
+ "speaker": "David Williams",
+ "election": "bc-provincial-salmon-arm-shuswap",
+ "parliament": "43rd",
+ "sessions": {
+  "43rd1st": {"progress_id": 173},
+  "43rd2nd": {"progress_id": 206}
+ }
+}

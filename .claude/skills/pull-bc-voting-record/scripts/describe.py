@@ -11,6 +11,13 @@ for _d in sorted(os.listdir(BASE)):
     _t = re.sub(r"\s+", " ", open(_p, encoding="utf-8", errors="ignore").read())
     for _m in _NAMEPAT.finditer(_t):
         BILLNAMES.setdefault((_sess, "Bill " + _m.group(1).replace(" ", "")), _m.group(2).strip())
+# An incremental run reads only the new sittings, so a bill introduced earlier has no "intituled" text
+# on disk; fall back to the Legislature's bill list (bill_context.py writes <work-dir>/ctx/bills-*.json).
+import glob as _glob
+for _p in sorted(_glob.glob(os.path.join(BASE, "ctx", "bills-*.json"))):
+    _sess = os.path.basename(_p)[6:-5]
+    for _ref, _b in json.load(open(_p)).items():
+        BILLNAMES.setdefault((_sess, _ref), _b["title"])
 MONTHS = "January|February|March|April|May|June|July|August|September|October|November|December"
 NOISE = re.compile(rf"^(({MONTHS}) \d{{1,2}}, \d{{4}} \d+|\d+ ({MONTHS}) \d{{1,2}}, \d{{4}}|\(In Committee.*\)|\d+|{SURNAME})$")
 def paragraphs(lines):

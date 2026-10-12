@@ -398,7 +398,7 @@ For planks already on file, or to take an analysis off a plank:
 
 ## Votes and bill notes (`<votes>`, `<bill_notes>` under a `<candidate>`)
 
-Provincial only (a legislature's recorded divisions). Written by `backfill-bc-legislature-votes`;
+Provincial only (a legislature's recorded divisions). Written by `pull-bc-voting-record`;
 shown on the candidate's Voting record tab, one entry per bill.
 
 ```xml

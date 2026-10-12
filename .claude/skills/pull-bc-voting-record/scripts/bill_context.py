@@ -14,19 +14,17 @@ Writes <outdir>/bills-<session>.json keyed by "Bill 7" / "Bill M202". Public pag
 import html
 import json
 import re
+import os
 import sys
-import time
-import urllib.request
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import cache  # noqa: E402  (shared persistent cache)
 
 UA = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36"
 
 
-def get(url: str) -> str:
-    time.sleep(0.4)
-    req = urllib.request.Request(url, headers={"User-Agent": UA})
-    with urllib.request.urlopen(req, timeout=90) as r:
-        return r.read().decode("utf-8", "ignore")
-
+def get(url: str, ttl=None) -> str:
+    return cache.fetch(url, ttl=ttl)
 
 def text_of(fragment: str) -> str:
     return html.unescape(re.sub(r"\s+", " ", re.sub(r"<[^>]+>", " ", fragment))).strip()
@@ -43,15 +41,23 @@ def explanatory_note(page: str) -> str:
 
 
 def main() -> None:
-    outdir, session, pid = sys.argv[1:4]
-    bills = json.loads(get(f"https://api.lims.leg.bc.ca/pdms/bills/progress-of-bills/{pid}"))
+    args = sys.argv[1:]
+    only = None
+    if "--only" in args:  # fetch Explanatory Notes only for these bills ("Bill 7,Bill M202"); keep the notes already on file
+        i = args.index("--only")
+        only = {x.strip() for x in args[i + 1].split(",") if x.strip()}
+        del args[i:i + 2]
+    outdir, session, pid = args[0:3]
+    path = f"{outdir}/bills-{session}.json"
+    prior = json.load(open(path)) if os.path.exists(path) else {}
+    bills = json.loads(get(f"https://api.lims.leg.bc.ca/pdms/bills/progress-of-bills/{pid}", ttl=6 * 3600))
     out = {}
     for b in bills:
         n = b["billNumber"]
         ref = f"Bill M{n}" if b.get("billTypeId") == 2 else f"Bill {n}"
         first = next((f for f in b["files"]["nodes"] if f["readingTypeName"] == "1st Reading"), None)
-        note = ""
-        if first:
+        note = prior.get(ref, {}).get("explanatory_note", "")
+        if first and not note and (only is None or ref in only):
             try:
                 note = explanatory_note(get("https://lims.leg.bc.ca/pdms" + first["path"]))
             except Exception as e:  # a missing file shouldn't stop the run
@@ -71,7 +77,6 @@ def main() -> None:
             "explanatory_note": note,
             "text_url": ("https://lims.leg.bc.ca/pdms" + first["path"]) if first else None,
         }
-    path = f"{outdir}/bills-{session}.json"
     json.dump(out, open(path, "w"), ensure_ascii=False, indent=1)
     with_note = sum(1 for v in out.values() if v["explanatory_note"])
     print(f"{session}: {len(out)} bills, {with_note} with an explanatory note -> {path}")

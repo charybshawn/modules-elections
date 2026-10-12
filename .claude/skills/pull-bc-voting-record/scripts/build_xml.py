@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Turn the parsed divisions into an import file for one MLA.
 
-    python3 -I build_xml.py <work-dir> <Surname> "<Candidate name as on file>" <out.xml> [overrides.json]
+    python3 -I build_xml.py <work-dir> <Surname> "<Candidate name as on file>" <out.xml> [overrides.json] [--since YYYY-MM-DD]
 
 Reads <work-dir>/index.json (the sitting days), divisions.json (parse.py) and
 described.json (describe.py). Writes <election id="bc-provincial-salmon-arm-shuswap"> with
@@ -12,11 +12,18 @@ members, so "not listed" is not the same as "not_listed".
 """
 import html, json, os, re, sys
 
+SINCE = None
+if "--since" in sys.argv:  # only votes after this date (an incremental run); earlier ones are already on file
+    _i = sys.argv.index("--since")
+    SINCE = sys.argv[_i + 1]
+    del sys.argv[_i:_i + 2]
 WORK, SURNAME, NAME, OUT = sys.argv[1:5]
 OVR = json.load(open(sys.argv[5])) if len(sys.argv) > 5 else {}
 index = {f"{i['session']}-{i['file']}": i for i in json.load(open(os.path.join(WORK, "index.json")))}
 divisions = json.load(open(os.path.join(WORK, "divisions.json")))
 described = json.load(open(os.path.join(WORK, "described.json")))
+if SINCE:
+    described = [r for r in described if r["date"] > SINCE]
 e = lambda s: html.escape(s, quote=False)
 
 # Subject tags by bill / motion topic. Existing municipal tags are reused where they truly fit.

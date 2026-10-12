@@ -13,21 +13,19 @@ opening (up to ~2,500 characters). Writes <outdir>/sponsor-<session>.json keyed 
 import html
 import json
 import re
+import os
 import sys
-import time
-import urllib.request
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import cache  # noqa: E402  (shared persistent cache)
 
 UA = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36"
 LIMS = "https://lims.leg.bc.ca/hdms/file/"
 API = "https://api.lims.leg.bc.ca/hdms/"
 
 
-def get(url: str) -> str:
-    time.sleep(0.4)
-    req = urllib.request.Request(url, headers={"User-Agent": UA})
-    with urllib.request.urlopen(req, timeout=90) as r:
-        return r.read().decode("utf-8", "ignore")
-
+def get(url, ttl=None):
+    return cache.fetch(url, ttl=ttl)
 
 def text_of(fragment: str) -> str:
     return html.unescape(re.sub(r"\s+", " ", re.sub(r"<[^>]+>", " ", fragment))).strip()
@@ -35,7 +33,7 @@ def text_of(fragment: str) -> str:
 
 def day_files(session: str) -> dict[str, list[str]]:
     """YYYY-MM-DD -> transcript paths (a sitting day can have a.m. and p.m. issues)."""
-    nodes = json.loads(get(f"{API}debates/{session}"))["allHansardFileAttributes"]["nodes"]
+    nodes = json.loads(get(f"{API}debates/{session}", ttl=6 * 3600))["allHansardFileAttributes"]["nodes"]
     out: dict[str, set[str]] = {}
     for n in nodes:
         for da in (n.get("debateAttributes") or {}).get("nodes") or []:
@@ -70,13 +68,23 @@ def opening(page, ref, sponsor):
 
 
 def main():
-    outdir, session = sys.argv[1:3]
+    args = sys.argv[1:]
+    only = None
+    if "--only" in args:  # look only for these bills ("Bill 7,Bill M202"); keep what is already on file
+        i = args.index("--only")
+        only = {x.strip() for x in args[i + 1].split(",") if x.strip()}
+        del args[i:i + 2]
+    outdir, session = args[0:2]
     bills = json.load(open(f"{outdir}/bills-{session}.json"))
+    target = f"{outdir}/sponsor-{session}.json"
+    prior = json.load(open(target)) if os.path.exists(target) else {}
     files = day_files(session)
     days = sorted(files)
     cache = {}
-    out = {}
+    out = dict(prior)
     for ref, b in bills.items():
+        if (only is not None and ref not in only) or ref in prior:
+            continue
         lo, hi = b.get("first_reading"), b.get("second_reading")
         if not hi:
             continue

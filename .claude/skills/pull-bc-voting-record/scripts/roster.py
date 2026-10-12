@@ -14,8 +14,11 @@ that caucus until they left. Say so in the synopsis when a caucus has shrunk.
 import html
 import json
 import re
+import os
 import sys
-import urllib.request
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import cache  # noqa: E402  (shared persistent cache)
 from html.parser import HTMLParser
 
 URL = "https://en.wikipedia.org/wiki/43rd_Parliament_of_British_Columbia"
@@ -62,8 +65,7 @@ def key_of(name: str) -> str:
 
 
 def main() -> None:
-    req = urllib.request.Request(URL, headers={"User-Agent": UA})
-    page = urllib.request.urlopen(req, timeout=90).read().decode("utf-8", "ignore")
+    page = cache.fetch(URL, ttl=3 * 86400)
     p = Tables()
     p.feed(page)
     table = next(t for t in p.tables if t and "Electoral district" in t[0])
