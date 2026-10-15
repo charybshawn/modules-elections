@@ -59,7 +59,8 @@ class NotifyUpdatesCommand extends Command
         }
 
         $digest = $build->handle($since, $until);
-        if ($digest['total'] === 0) {
+        // Change-log entries only ride along; with no election news there is no email.
+        if ($digest['election_total'] === 0) {
             $this->line('Nothing new.');
 
             return self::SUCCESS;

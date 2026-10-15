@@ -36,7 +36,7 @@ class BuildElectionsEmail
     public function __construct(private BuildUpdateDigest $digests, private BuildPollAverage $polls) {}
 
     /**
-     * @return array{total: int, since: string, until: string, voting_days: list<array<string, mixed>>, sections: list<array<string, mixed>>, changelog: list<array{title: string, body: string, scope: string, scope_label: string, committed_at: string}>}
+     * @return array{total: int, election_total: int, since: string, until: string, voting_days: list<array<string, mixed>>, sections: list<array<string, mixed>>, changelog: list<array{title: string, body: string, scope: string, scope_label: string, committed_at: string}>}
      */
     public function handle(Carbon $since, Carbon $until): array
     {
@@ -62,6 +62,8 @@ class BuildElectionsEmail
 
         return [
             'total' => $sections->sum('total') + count($changelog),
+            // Election news alone: site change-log entries ride along with it but never justify an email.
+            'election_total' => $sections->sum('total'),
             'since' => $since->toIso8601String(),
             'until' => $until->toIso8601String(),
             'voting_days' => $this->votingDays(),

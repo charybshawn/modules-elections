@@ -95,8 +95,18 @@ describe('update email', function () {
         $email = $build(now()->subHours(3));
 
         expect(collect($email['changelog'])->pluck('title')->all())->toBe(['inside'])
-            // A change-log entry alone is enough to send an email.
-            ->and($email['total'])->toBe(1);
+            // A change-log entry counts in the total but is not election news.
+            ->and($email['total'])->toBe(1)
+            ->and($email['election_total'])->toBe(0);
+    });
+
+    it('sends nothing when only the site change log is new, and keeps those entries for the next real update', function () {
+        \Cultpantry\Elections\Models\UpdateDigest::create(['covers_through' => now()->subHours(3), 'recipients' => 0]);
+        ChangelogEntry::create(['key' => 'site-only', 'committed_at' => now()->subHour(), 'title' => 'Site only', 'body' => 'b', 'scope' => 'both']);
+
+        $this->artisan('elections:notify-updates')->expectsOutput('Nothing new.')->assertSuccessful();
+        // Nothing was recorded, so the window has not moved past the entry.
+        expect(\Cultpantry\Elections\Models\UpdateDigest::count())->toBe(1);
     });
 
     it('lists the change log with the biggest effect on the experience first, newest first among equals, each tagged with its page', function () use ($build) {
