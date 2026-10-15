@@ -51,7 +51,7 @@
             <div style="padding:6px 0;{{ ! $loop->last ? 'border-bottom:1px solid #1f2937;' : '' }}">
                 <span style="display:inline-block;background:{{ $bg }};color:{{ $fg }};font-size:11px;font-weight:700;padding:2px 7px;border-radius:4px;">{{ $check['rating_label'] }}</span>
                 <span style="display:inline-block;background:{{ $p->colour($check['party']) }};color:#ffffff;font-size:11px;font-weight:700;padding:2px 7px;border-radius:4px;">{{ $check['party'] }}</span>
-                <div style="font-size:14px;line-height:1.5;"><a href="{{ $check['url'] }}" style="color:#f3f4f6;text-decoration:none;">{{ Str::limit($check['claim'], 150) }}</a></div>
+                <div style="font-size:14px;line-height:1.5;"><a href="{{ $check['url'] }}" style="color:#f3f4f6;text-decoration:none;">{{ Str::limit($check['claim'], 220, '...', true) }}</a></div>
             </div>
         @endforeach
         @if ($x['more_fact_checks'] > 0)<div style="font-size:13px;color:#9ca3af;padding-top:6px;">Plus {{ $x['more_fact_checks'] }} more in the tracker.</div>@endif
@@ -65,7 +65,7 @@
             <div style="padding:6px 0;{{ ! $loop->last ? 'border-bottom:1px solid #1f2937;' : '' }}">
                 @if ($p->safeUrl($story['url']))<a href="{{ $story['url'] }}" style="font-size:15px;font-weight:600;color:#f3f4f6;text-decoration:none;">{{ $story['title'] }}</a>@else<span style="font-size:15px;font-weight:600;color:#f3f4f6;">{{ $story['title'] }}</span>@endif
                 <span style="display:inline-block;background:{{ $p->colour($story['party']) }};color:#ffffff;font-size:11px;font-weight:700;padding:1px 6px;border-radius:4px;vertical-align:1px;">{{ $story['party'] }}</span>@if ($story['outlet'])<span style="font-size:12px;color:#9ca3af;"> · {{ $story['outlet'] }}</span>@endif
-                @if ($story['text'])<div style="font-size:14px;line-height:1.5;color:#9ca3af;">{{ Str::limit($story['text'], 200) }}</div>@endif
+                @if ($story['text'])<div style="font-size:14px;line-height:1.5;color:#9ca3af;">{{ Str::limit($story['text'], 340, '...', true) }}</div>@endif
             </div>
         @endforeach
         @if ($x['more_party_news'] > 0)<div style="font-size:13px;color:#9ca3af;padding-top:6px;">Plus {{ $x['more_party_news'] }} more {{ Str::plural('story', $x['more_party_news']) }} in the tracker.</div>@endif

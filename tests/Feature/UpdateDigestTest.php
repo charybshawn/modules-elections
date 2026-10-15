@@ -75,6 +75,16 @@ describe('Update digest', function () {
             ->and($h->first(fn ($s) => str_starts_with($s, '**Sam Sample**')))->toEndWith('...')->not->toContain('....');
     });
 
+    it('ends an excerpt on a whole sentence, not mid-claim, and keeps abbreviations together', function () use ($import, $entry, $candidate, $digest) {
+        $since = now()->subMinute();
+        $long = 'Posted on Oct. 14 that a rival has a long record of repeating a contested claim on the matter, which the page says it will keep raising until the vote. A second sentence follows that should not appear in the one-liner at all.';
+        $import('<candidates>'.$candidate('Jane Example', '<entries>'.$entry($long, 'https://site.example/jane').'</entries>').'</candidates>');
+
+        $line = collect($digest($since)['highlights'])->first();
+
+        expect($line)->toBe('**Jane Example** posted on Oct. 14 that a rival has a long record of repeating a contested claim on the matter, which the page says it will keep raising until the vote.');
+    });
+
     it('links each candidate in a series item to their own story', function () {
         $html = emailHtml(emailWith(['digest' => ['news' => [['title' => 'Candidate profile', 'url' => null, 'outlet' => null, 'text' => 'Castanet added 2 to its series: Jane Example and Sam Sample.', 'links' => ['Jane Example' => 'https://c.example/1', 'Sam Sample' => 'https://c.example/2']]]]]));
 

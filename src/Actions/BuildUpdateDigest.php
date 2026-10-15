@@ -232,10 +232,40 @@ class BuildUpdateDigest
         return $n.' '.Str::plural($noun, $n);
     }
 
-    /** Whitespace collapsed and cut at a word boundary. */
+    /**
+     * Whitespace collapsed, then the first whole sentence when it fits within
+     * about two and a half times the limit, so a claim is never cut off mid-thought; only
+     * when there is no such sentence is it cut at a word boundary.
+     */
     private function excerpt(?string $text, int $limit = 160): string
     {
-        $cut = Str::limit(trim(preg_replace('/\s+/', ' ', (string) $text)), $limit, '...', true);
+        $text = trim(preg_replace('/\s+/', ' ', (string) $text));
+
+        $max = (int) round($limit * 2.6);
+        if (mb_strlen($text) <= $max && preg_match('/[.!?]["\x{201D}\x{2019}]?$/u', $text) === 1
+            && preg_match('/[.!?]["\x{201D}\x{2019}]?\s+[A-Z"\x{201C}]/u', $text) !== 1) {
+            return $text;   // one whole sentence that fits
+        }
+        if (mb_strlen($text) <= $limit) {
+            return $text;
+        }
+        if (preg_match_all('/[.!?]["\x{201D}\x{2019}]?(?=\s+[A-Z"\x{201C}])/u', $text, $m, PREG_OFFSET_CAPTURE)) {
+            foreach ($m[0] as [$mark, $at]) {
+                $end = $at + strlen($mark);
+                $sentence = substr($text, 0, $end);
+                if (mb_strlen($sentence) > $max) {
+                    break;
+                }
+                // Not an abbreviation or initial ("Oct.", "Coun.", "J.").
+                if (preg_match('/(?:\b(?:Jan|Feb|Mar|Apr|Aug|Sept?|Oct|Nov|Dec|Mr|Mrs|Ms|Dr|St|Coun|Hon|No|vs|Inc|Ltd|Sr|Jr|U\.S|B\.C)|\b[A-Z])\.$/', $sentence) === 1) {
+                    continue;
+                }
+
+                return $sentence;
+            }
+        }
+
+        $cut = Str::limit($text, $limit, '...', true);
 
         // No "J.L...." when the cut lands right after punctuation.
         return preg_replace('/[.,;:!?]+\.\.\.$/', '...', $cut);
