@@ -5,6 +5,7 @@ use Cultpantry\Elections\Models\Candidate;
 use Cultpantry\Elections\Models\Entry;
 use Cultpantry\Elections\Models\ImportRecord;
 use Cultpantry\Elections\Models\Plank;
+use Cultpantry\Elections\Models\UpdateDigest;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Support\Facades\File;
 
@@ -45,6 +46,29 @@ describe('elections:import-pending', function () {
 
         $this->artisan('elections:import-pending')->expectsOutputToContain('No pending research files.')->assertSuccessful();
         expect(ImportRecord::count())->toBe(2);
+    });
+
+    it('records an update-email baseline when every imported file is quiet', function () {
+        researchDir(['2026-10-03-01-roster.xml' => str_replace('<election>', '<election notify="false">', candidateXml('Jane Example'))]);
+
+        $this->artisan('elections:import-pending')->expectsOutputToContain('Quiet import')->assertSuccessful();
+
+        expect(Candidate::where('name', 'Jane Example')->exists())->toBeTrue()
+            ->and(UpdateDigest::count())->toBe(1);
+    });
+
+    it('leaves the email alone when an ordinary file is imported, unless --silent', function () {
+        researchDir([
+            '2026-10-03-01-quiet.xml' => str_replace('<election>', '<election notify="false">', candidateXml('Jane Example')),
+            '2026-10-03-02-loud.xml' => candidateXml('Sam Sample'),
+        ]);
+
+        $this->artisan('elections:import-pending')->assertSuccessful();
+        expect(UpdateDigest::count())->toBe(0);
+
+        researchDir(['2026-10-03-03-another.xml' => candidateXml('Pat Person')]);
+        $this->artisan('elections:import-pending', ['--silent' => true])->assertSuccessful();
+        expect(UpdateDigest::count())->toBe(1);
     });
 
     it('imports an edited file again', function () {

@@ -4,6 +4,7 @@ namespace Cultpantry\Elections\Console;
 
 use Cultpantry\Elections\Actions\ImportElectionFromXml;
 use Cultpantry\Elections\Models\ImportRecord;
+use Cultpantry\Elections\Models\UpdateDigest;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use RuntimeException;
@@ -17,11 +18,18 @@ use Throwable;
  * ledger is keyed by content hash: the files themselves are never moved, so
  * a deploy's working tree stays clean, and editing a file makes it pending
  * again. Runs on deploy and hourly (see the service provider).
+ *
+ * Quiet imports: a file whose root is <election notify="false"> (or any run
+ * with --silent) is imported without announcing it. Once the run finishes
+ * with nothing but quiet files, an update-digest baseline is recorded, so the
+ * hourly notify-updates has nothing new to email. A run that also imports an
+ * ordinary file still mails everything in its window.
  */
 class ImportPendingCommand extends Command
 {
     protected $signature = 'elections:import-pending
         {--dry-run : Import the pending files, report, then roll everything back (nothing is recorded)}
+        {--silent : Record an update-digest baseline afterwards so the imported files are not emailed}
         {--mark-only : Record the pending files as imported without importing them (to adopt files already loaded another way)}';
 
     protected $description = 'Import research XML files that have not been imported yet, in filename order';
@@ -54,6 +62,9 @@ class ImportPendingCommand extends Command
             DB::beginTransaction();
         }
 
+        $imported = 0;
+        $allQuiet = true;
+
         foreach ($pending as $path) {
             $name = basename($path);
             $hash = hash_file('sha256', $path);
@@ -72,7 +83,8 @@ class ImportPendingCommand extends Command
 
             DB::beginTransaction();
             try {
-                $result = $import->handleString((string) file_get_contents($path), $name);
+                $xml = (string) file_get_contents($path);
+                $result = $import->handleString($xml, $name);
                 if (! $dryRun) {
                     ImportRecord::create([
                         'filename' => $name,
@@ -101,6 +113,8 @@ class ImportPendingCommand extends Command
                 throw $e;
             }
             DB::commit();
+            $imported++;
+            $allQuiet = $allQuiet && static::isQuiet($xml);
 
             $this->line('  '.$import->summarize([...$result, 'problems' => []]));
             foreach ($result['problems'] as $problem) {
@@ -110,9 +124,24 @@ class ImportPendingCommand extends Command
 
         if ($dryRun) {
             DB::rollBack();
+
+            return self::SUCCESS;
+        }
+
+        if ($imported > 0 && ($this->option('silent') || $allQuiet)) {
+            UpdateDigest::create(['covers_through' => now(), 'recipients' => 0]);
+            $this->line('Quiet import: update email baseline recorded, nothing will be mailed for these files.');
         }
 
         return self::SUCCESS;
+    }
+
+    /** True when the file's root element says <election notify="false">. */
+    private static function isQuiet(string $xml): bool
+    {
+        $root = @simplexml_load_string($xml);
+
+        return $root !== false && (string) ($root['notify'] ?? '') === 'false';
     }
 
     public static function directory(): string
