@@ -192,12 +192,10 @@
             Limited sources: this platform rests on {{ portfolio.platform.source_count === 1 ? 'a single source' : 'very little published material' }}, so its order is a rough guide.
           </p>
 
-          <!-- Controls: open or close every plank; admins can switch on editing. -->
+          <!-- Controls: admins can switch on editing. -->
           <div class="flex flex-wrap items-center justify-between gap-2 py-3">
-            <p class="text-xs text-gray-500 dark:text-gray-400">Ranked by how much the candidate emphasizes each one. Tap a plank for their plan, their words and, on pillars, the AI analysis.</p>
+            <p class="text-xs text-gray-500 dark:text-gray-400">Ranked by how much the candidate emphasizes each one. Tap a plank to open their plan, their words and, on pillars, the AI analysis.</p>
             <div class="flex shrink-0 items-center gap-3 text-xs font-medium">
-              <button type="button" class="tap-target-touch text-indigo-600 hover:underline dark:text-indigo-400" @click="openPlanks.ids = visiblePlankIds">Expand all</button>
-              <button type="button" class="tap-target-touch text-indigo-600 hover:underline dark:text-indigo-400" @click="openPlanks.ids = []">Collapse all</button>
               <button v-if="!readOnly" type="button" :aria-pressed="editing" :class="editing ? 'bg-red-50 text-red-700 ring-red-200 dark:bg-red-500/10 dark:text-red-300 dark:ring-red-500/30' : 'text-gray-600 ring-gray-300 dark:text-gray-300 dark:ring-gray-600'" class="tap-target-touch rounded-md px-2 py-1 ring-1" @click="editing = !editing">{{ editing ? 'Done editing' : 'Edit' }}</button>
             </div>
           </div>
@@ -212,14 +210,15 @@
                 :key="plank.id"
                 :plank="plank"
                 :position="plankPosition(plank)"
-                :open="openPlanks.ids.includes(plank.id)"
+                :open="openPlankId === plank.id"
                 :options="options"
                 :editing="editing"
                 :is-new="isNewPlank(plank)"
                 :is-updated="isUpdatedPlank(plank)"
                 :is-new-entry="isNewEntry"
                 :active-tag="platformFilter.tag"
-                @toggle="togglePlank(plank.id)"
+                @toggle="openPlankId = plank.id"
+                @close="openPlankId = null"
                 @delete="deletePlank"
                 @delete-entry="deleteEntry"
                 @tag="platformFilter.tag = $event"
@@ -582,12 +581,8 @@ const filteredTiers = computed(() =>
     .map((group) => ({ ...group, planks: activeSubject.value ? group.planks.filter((p) => p.tags.some((t) => t.slug === activeSubject.value!.slug)) : group.planks }))
     .filter((group) => group.planks.length > 0),
 )
-// ---- Platform: which planks are open (remembered so Back keeps them), and admin edit mode ----
-const openPlanks = useRemember(reactive({ ids: [] as number[] }), 'elections-platform-open') as { ids: number[] }
-const togglePlank = (id: number) => {
-  openPlanks.ids = openPlanks.ids.includes(id) ? openPlanks.ids.filter((x) => x !== id) : [...openPlanks.ids, id]
-}
-const visiblePlankIds = computed(() => filteredTiers.value.flatMap((g) => g.planks.map((p) => p.id)))
+// ---- Platform: which plank is open in its modal, and admin edit mode ----
+const openPlankId = ref<number | null>(null)
 const editing = ref(false)
 
 // A link straight to a plank (#plank-<key>, e.g. from quick search) opens it and scrolls to it.
@@ -595,7 +590,7 @@ onMounted(() => {
   const key = decodeURIComponent(window.location.hash.replace(/^#plank-/, ''))
   const plank = allPlanks.value.find((p) => p.key === key)
   if (!plank) return
-  if (!openPlanks.ids.includes(plank.id)) openPlanks.ids = [...openPlanks.ids, plank.id]
+  openPlankId.value = plank.id
   nextTick(() => document.getElementById(`plank-${plank.key}`)?.scrollIntoView({ block: 'start' }))
 })
 
@@ -613,7 +608,7 @@ const revealFocus = () => {
   const plank = target.startsWith('plank-')
     ? allPlanks.value.find((p) => `plank-${p.key}` === target)
     : allPlanks.value.find((p) => p.sources.some((e) => `entry-${e.id}` === target))
-  if (plank && !openPlanks.ids.includes(plank.id)) openPlanks.ids = [...openPlanks.ids, plank.id]
+  if (plank) openPlankId.value = plank.id
   // Twice: once for the plank to open, once for its statements to render.
   nextTick(() => nextTick(() => document.getElementById(target)?.scrollIntoView({ block: 'center', behavior: 'smooth' })))
 }
